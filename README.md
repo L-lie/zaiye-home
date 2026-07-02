@@ -1,26 +1,43 @@
-# 再野文化工作室官网
+再野文化工作室
 
-一个面向中国客户的影视美术 / 视觉设计个人工作室静态官网。
+Zaiye Culture Studio
 
-## 域名方向
+一个专注于影视美术与视觉叙事的独立创作工作室。
 
-- `llie.com`
-- `llie.studio`
-- `llie.art`
-- `llie.design`
-- `llie-lab.com`
-- `llie.works`
-- `zaiye.studio`
-- `zaiyeculture.com`
+我们围绕“世界观构建”展开视觉创作，为影视、剧集、舞台与宣传项目提供从概念到执行的视觉设计支持。
 
-如果主要服务国内客户，也可以考虑：
+✦ 我们在做什么
 
-- `lliestudio.cn`
-- `llieart.cn`
-- `llie-design.cn`
+再野文化工作室专注于以下视觉领域：
 
-## 修改建议
+影视概念设计（Film Concept Design）
+场景视觉开发（Worldbuilding / Environment Design）
+视觉特效前期设计（VFX Pre-Visualization）
+舞台视觉与综艺美术设计
+宣传片与品牌视觉系统
 
-- 把 `assets/hero-production-design.png` 替换成真实作品图或片场图。
-- 把 `index.html` 里的项目名、职责、年份替换为真实履历。
-- Prompt Vault 作为浏览器提示词工具入口，后续可以独立成产品页或精选 prompt 库。
+我们关注的不只是画面，而是“视觉如何服务叙事”。
+
+✦ 创作方向
+
+我们的工作围绕以下关键词展开：
+
+叙事驱动的视觉设计
+具有空间逻辑的场景构建
+高密度信息的世界观表达
+现实与超现实之间的视觉平衡
+✦ 网站用途
+
+本网站用于：
+
+展示视觉项目与设计案例
+发布工具与实验性产品
+提供浏览器扩展与创作辅助工具下载入口
+✦ 项目 / 工具
+Prompt Vault
+浏览器端 Prompt 管理与调用工具（开发中 / 发布中）
+✦ 联系与合作
+
+用于影视项目、美术设计与视觉开发合作。
+
+（可在后续补充邮箱或作品集链接）
