@@ -85,6 +85,18 @@ a {
   padding: 120px clamp(20px, 5vw, 64px) 88px;
 }
 
+.gallery-hero {
+  padding: 150px clamp(20px, 5vw, 64px) 56px;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(16, 16, 15, 0.86), rgba(16, 16, 15, 0.96)),
+    radial-gradient(circle at 75% 20%, rgba(201, 152, 84, 0.16), transparent 30%);
+}
+
+.gallery-hero h1 {
+  max-width: 980px;
+}
+
 .hero-image,
 .hero-scrim {
   position: absolute;
@@ -391,6 +403,38 @@ h3 {
   color: var(--muted);
 }
 
+.gallery-page {
+  padding-top: 42px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.gallery-item {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 10px;
+}
+
+.gallery-item img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  background: #0d0d0c;
+}
+
+.gallery-item span {
+  min-height: 42px;
+  color: rgba(246, 241, 232, 0.74);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
 .scope {
   background: var(--panel);
   border-top: 1px solid var(--line);
@@ -524,7 +568,8 @@ address a:hover {
   }
 
   .project-grid,
-  .scope-grid {
+  .scope-grid,
+  .gallery-grid {
     grid-template-columns: 1fr;
   }
 
