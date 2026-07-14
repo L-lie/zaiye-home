@@ -48,6 +48,8 @@ const activeProject = params.get("project");
 
 function inRule(item, rules, key) {
   if (!key || !rules[key]) return true;
+  const field = rules === TYPE_RULES ? item.types : item.projects;
+  if (Array.isArray(field) && field.length > 0) return field.includes(key);
   return rules[key].includes(Number(item.slide));
 }
 

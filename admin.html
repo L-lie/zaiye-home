@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>本地编辑器 | 再野文化工作室</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <header class="admin-header">
+      <a class="brand" href="index.html">
+        <span>再野文化工作室</span>
+        <small>LOCAL EDITOR</small>
+      </a>
+      <div class="header-actions">
+        <button id="loadDefault" type="button">读取当前作品数据</button>
+        <button id="importJson" type="button">导入 JSON</button>
+        <button id="exportJson" type="button">导出 portfolio-index.json</button>
+        <input id="jsonFile" type="file" accept="application/json,.json" hidden />
+        <a href="gallery.html" target="_blank" rel="noreferrer">预览作品页</a>
+      </div>
+    </header>
+
+    <main class="admin-shell">
+      <aside class="list-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">作品条目</p>
+            <strong id="itemCount">0 项</strong>
+          </div>
+          <button id="addItem" type="button">新增</button>
+        </div>
+        <input id="searchItems" type="search" placeholder="搜索标题、文件、页码" />
+        <div id="itemList" class="item-list"></div>
+      </aside>
+
+      <section class="edit-panel">
+        <div class="notice">
+          这是本地编辑器，不会直接改线上网站。导出 JSON 后，把文件上传到 GitHub 的
+          <code>assets/portfolio/portfolio-index.json</code>，网站才会更新。
+        </div>
+
+        <div class="editor-grid">
+          <section class="form-card">
+            <p class="eyebrow">当前作品</p>
+            <label>
+              标题
+              <textarea id="title" rows="4" placeholder="作品标题、项目名、工具、说明"></textarea>
+            </label>
+            <div class="two">
+              <label>
+                简历页码
+                <input id="slide" type="number" min="0" step="1" />
+              </label>
+              <label>
+                图片路径
+                <input id="file" placeholder="assets/portfolio/slide-01-01.jpeg" />
+              </label>
+            </div>
+            <label>
+              补充说明
+              <textarea id="note" rows="3" placeholder="可选：只在数据里保存，后续详情页可用"></textarea>
+            </label>
+            <div class="actions">
+              <button id="duplicateItem" type="button">复制条目</button>
+              <button id="deleteItem" class="danger" type="button">删除条目</button>
+            </div>
+          </section>
+
+          <section class="form-card">
+            <p class="eyebrow">分类</p>
+            <div class="check-group" data-checks="projects">
+              <strong>项目类型</strong>
+            </div>
+            <div class="check-group" data-checks="types">
+              <strong>资料类型</strong>
+            </div>
+          </section>
+
+          <section class="preview-card">
+            <p class="eyebrow">图片预览</p>
+            <div class="preview-frame">
+              <img id="preview" alt="" />
+              <span id="previewEmpty">没有图片预览</span>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <template id="rowTemplate">
+      <button class="item-row" type="button">
+        <img alt="" />
+        <span>
+          <strong></strong>
+          <small></small>
+        </span>
+      </button>
+    </template>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

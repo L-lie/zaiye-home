@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="再野文化工作室 Canvas - 用来整理提示词、参考图、生成结果和项目备注的无限画布。"
+    />
+    <title>Canvas | 再野文化工作室</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="canvas.css" />
+  </head>
+  <body>
+    <header class="canvas-header">
+      <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
+        <span class="brand-mark">再野文化工作室</span>
+        <span class="brand-line">ZAIYE CANVAS</span>
+      </a>
+      <div class="header-actions">
+        <button id="saveBoard" type="button">保存</button>
+        <button id="exportBoard" type="button">导出</button>
+        <button id="importBoard" type="button">导入</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden />
+        <a href="index.html#lab">回到官网</a>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="side-panel" aria-label="画布工具">
+        <section class="tool-block">
+          <p class="eyebrow">项目</p>
+          <label>
+            画布名称
+            <input id="boardTitle" value="未命名项目" />
+          </label>
+          <label>
+            项目备注
+            <textarea id="boardNote" rows="4" placeholder="例如：某剧某场景的视觉方向、生成目标、需要避开的内容"></textarea>
+          </label>
+        </section>
+
+        <section class="tool-block">
+          <p class="eyebrow">添加</p>
+          <div class="button-grid">
+            <button id="addPrompt" type="button">Prompt 卡</button>
+            <button id="addNote" type="button">文字备注</button>
+            <button id="addFrame" type="button">分组框</button>
+            <button id="addImage" type="button">图片</button>
+          </div>
+          <input id="imageFile" type="file" accept="image/*" multiple hidden />
+        </section>
+
+        <section class="tool-block">
+          <p class="eyebrow">当前条目</p>
+          <label>
+            标题
+            <input id="itemTitle" placeholder="选中画布上的条目后编辑" disabled />
+          </label>
+          <label>
+            内容
+            <textarea id="itemBody" rows="7" placeholder="Prompt、备注、图片说明" disabled></textarea>
+          </label>
+          <div class="button-grid">
+            <button id="duplicateItem" type="button" disabled>复制</button>
+            <button id="deleteItem" type="button" disabled>删除</button>
+          </div>
+        </section>
+
+        <section class="tool-block small">
+          <p class="eyebrow">视图</p>
+          <div class="button-grid">
+            <button id="zoomOut" type="button">缩小</button>
+            <button id="zoomIn" type="button">放大</button>
+            <button id="resetView" type="button">回到中心</button>
+            <button id="clearBoard" type="button">清空</button>
+          </div>
+          <p class="hint">拖动空白处移动画布，滚轮缩放。图片可以直接拖进画布。</p>
+        </section>
+      </aside>
+
+      <section class="stage-wrap" aria-label="无限画布">
+        <div class="stage-toolbar">
+          <span id="statusText">已保存到本机</span>
+          <span id="zoomText">100%</span>
+        </div>
+        <div id="viewport" class="viewport">
+          <div id="canvasGrid" class="canvas-grid" aria-hidden="true"></div>
+          <div id="board" class="board"></div>
+        </div>
+      </section>
+    </main>
+
+    <template id="itemTemplate">
+      <article class="canvas-item" tabindex="0">
+        <div class="item-head">
+          <strong></strong>
+          <span></span>
+        </div>
+        <div class="item-body"></div>
+      </article>
+    </template>
+
+    <script src="canvas.js"></script>
+  </body>
+</html>

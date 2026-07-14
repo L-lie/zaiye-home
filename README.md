@@ -26,3 +26,10 @@
 - `assets/hero-production-design.png` 目前是气质占位图，后续可以换成真实片场图、置景图或作品拼贴。
 - 把 `index.html` 里的项目名、职责、年份继续替换为更完整的真实履历。
 - Prompt Vault 作为浏览器提示词工具入口，后续可以独立成产品页或精选 prompt 库。
+
+## 本地编辑器
+
+- `admin.html` 是作品数据编辑器，不是真正会写回服务器的后台。
+- 作品数据来自 `assets/portfolio/portfolio-index.json`。
+- 编辑完成后点“导出 portfolio-index.json”，再把导出的文件上传覆盖 GitHub 里的 `assets/portfolio/portfolio-index.json`。
+- 搜索只筛选左侧列表；要编辑某个作品，需要先点选那一条。
