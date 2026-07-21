@@ -163,11 +163,16 @@
 }
 
 .notes-toolbar {
+  position: sticky;
+  z-index: 8;
+  top: 89px;
   display: grid;
   grid-template-columns: minmax(280px, 620px) minmax(180px, 1fr) auto;
   gap: 18px;
   align-items: end;
   padding: 22px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
 }
 
 .search-field input {
@@ -247,7 +252,7 @@
 
 #notesNav {
   position: sticky;
-  top: 116px;
+  top: 220px;
   gap: 6px;
 }
 
@@ -312,7 +317,7 @@
 
 .notes-category {
   margin-bottom: 68px;
-  scroll-margin-top: 120px;
+  scroll-margin-top: 220px;
 }
 
 .notes-category:last-child {
@@ -329,7 +334,7 @@
 .note-section {
   max-width: 900px;
   margin-bottom: 46px;
-  scroll-margin-top: 120px;
+  scroll-margin-top: 220px;
 }
 
 .note-section:last-child {
@@ -465,6 +470,7 @@
   }
 
   .notes-toolbar {
+    top: 0;
     align-items: start;
   }
 

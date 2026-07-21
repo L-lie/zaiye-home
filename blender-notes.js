@@ -31,6 +31,7 @@ const elements = {
 };
 
 let notes = null;
+let scrollSyncFrame = null;
 let mode = null;
 
 function base64ToBytes(value) {
@@ -228,7 +229,8 @@ function createNavigation() {
       const willOpen = categoryButton.getAttribute("aria-expanded") !== "true";
       categoryButton.setAttribute("aria-expanded", String(willOpen));
       subnav.classList.toggle("is-open", willOpen);
-      document.querySelector(`#category-${category.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const categoryElement = elements.notesContent.querySelector(`#category-${category.id}`);
+      if (categoryElement) scrollToNote(categoryElement);
     });
     group.append(categoryButton, subnav);
     fragment.append(group);
@@ -272,10 +274,50 @@ function createContent() {
   elements.notesContent.replaceChildren(fragment);
 }
 
+function stickyOffset() {
+  const headerStyle = getComputedStyle(document.querySelector(".notes-site-header"));
+  const headerHeight = headerStyle.position === "fixed" ? document.querySelector(".notes-site-header").offsetHeight : 0;
+  return headerHeight + elements.notesApp.querySelector(".notes-toolbar").offsetHeight + 18;
+}
+
+function setActiveNavigation(categoryIndex, sectionIndex) {
+  elements.notesNav.querySelectorAll(".notes-subnav-button").forEach((item) => {
+    item.classList.toggle(
+      "is-active",
+      item.dataset.categoryIndex === String(categoryIndex) && item.dataset.sectionIndex === String(sectionIndex),
+    );
+  });
+
+  const group = elements.notesNav.querySelector(`.notes-nav-group[data-category-index="${categoryIndex}"]`);
+  if (!group) return;
+  group.querySelector(".notes-nav-button").setAttribute("aria-expanded", "true");
+  group.querySelector(".notes-subnav").classList.add("is-open");
+}
+
+function syncActiveNavigation() {
+  scrollSyncFrame = null;
+  const sections = [...elements.notesContent.querySelectorAll(".note-section:not([hidden])")];
+  if (!sections.length) return;
+  const threshold = stickyOffset() + 24;
+  const active = sections.reduce((current, section) => (section.getBoundingClientRect().top <= threshold ? section : current), sections[0]);
+  setActiveNavigation(active.dataset.categoryIndex, active.dataset.sectionIndex);
+}
+
+function requestNavigationSync() {
+  if (scrollSyncFrame !== null || elements.notesApp.hidden) return;
+  scrollSyncFrame = requestAnimationFrame(syncActiveNavigation);
+}
+
+function scrollToNote(section) {
+  const top = section.getBoundingClientRect().top + window.scrollY - stickyOffset();
+  window.scrollTo({ top, behavior: "smooth" });
+}
+
 function renderNotebook() {
   createNavigation();
   createContent();
   filterNotes();
+  requestNavigationSync();
 }
 
 function filterNotes() {
@@ -325,6 +367,7 @@ function filterNotes() {
   } else {
     empty?.remove();
   }
+  requestNavigationSync();
 }
 
 function makeId(label) {
@@ -417,6 +460,8 @@ elements.unlockForm.addEventListener("submit", async (event) => {
 
 elements.startLocal.addEventListener("click", () => openNotebook(loadLocalNotebook(), "local"));
 elements.notesSearch.addEventListener("input", filterNotes);
+window.addEventListener("scroll", requestNavigationSync, { passive: true });
+window.addEventListener("resize", requestNavigationSync);
 elements.closeNotes.addEventListener("click", () => {
   if (mode === "owner") sessionStorage.removeItem(SESSION_KEY);
   notes = null;
@@ -447,11 +492,10 @@ if (sessionSecret) {
 elements.notesNav.addEventListener("click", (event) => {
   const button = event.target.closest(".notes-subnav-button");
   if (!button) return;
-  elements.notesNav.querySelectorAll(".notes-subnav-button").forEach((item) => item.classList.remove("is-active"));
-  button.classList.add("is-active");
-  document
-    .querySelector(`[data-category-index="${button.dataset.categoryIndex}"][data-section-index="${button.dataset.sectionIndex}"]`)
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  setActiveNavigation(button.dataset.categoryIndex, button.dataset.sectionIndex);
+  const section = elements.notesContent
+    .querySelector(`[data-category-index="${button.dataset.categoryIndex}"][data-section-index="${button.dataset.sectionIndex}"]`);
+  if (section) scrollToNote(section);
 });
 
 elements.newNote.addEventListener("click", openEditor);
