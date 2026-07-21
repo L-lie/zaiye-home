@@ -191,7 +191,7 @@ async function rememberWithBrowser(secret) {
 async function unlock(secret, offerToSave = false) {
   elements.message.textContent = "正在解锁…";
   try {
-    const response = await fetch(PRIVATE_LIBRARY_URL, { cache: "no-store" });
+    const response = await fetch(`${PRIVATE_LIBRARY_URL}?v=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error();
     const data = await decryptNotes(await response.json(), secret);
     if (!Array.isArray(data.notebooks)) throw new Error();
@@ -228,5 +228,9 @@ elements.lock.addEventListener("click", () => {
   elements.key.focus();
 });
 
-sessionStorage.removeItem(SESSION_KEY);
-loadPublicNotebooks();
+const sessionSecret = sessionStorage.getItem(SESSION_KEY);
+if (sessionSecret) {
+  unlock(sessionSecret);
+} else {
+  loadPublicNotebooks();
+}

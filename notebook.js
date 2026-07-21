@@ -8,8 +8,6 @@ const SESSION_KEY = "zaiye-notes-session-key";
 
 const elements = {
   accessPanel: document.querySelector("#accessPanel"),
-  unlockForm: document.querySelector("#unlockForm"),
-  unlockKey: document.querySelector("#unlockKey"),
   unlockMessage: document.querySelector("#unlockMessage"),
   startLocal: document.querySelector("#startLocal"),
   notesApp: document.querySelector("#notesApp"),
@@ -444,30 +442,15 @@ function saveEditorNote() {
   return true;
 }
 
-elements.unlockForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const secret = elements.unlockKey.value.trim();
-  if (!secret) return;
-  elements.unlockMessage.textContent = "正在解锁…";
-  try {
-    const response = await fetch(notebookSettings.privateDataUrl, { cache: "no-store" });
-    if (!response.ok) throw new Error("暂时没有可读取的私人笔记");
-    const data = await decryptNotes(await response.json(), secret);
-    sessionStorage.setItem(SESSION_KEY, secret);
-    elements.unlockMessage.textContent = "";
-    elements.unlockKey.value = "";
-    openNotebook(data, "owner");
-  } catch {
-    elements.unlockMessage.textContent = "密钥不正确，或加密笔记尚未生成";
-  }
-});
-
 elements.startLocal.addEventListener("click", () => openNotebook(loadLocalNotebook(), "local"));
 elements.notesSearch.addEventListener("input", filterNotes);
 window.addEventListener("scroll", requestNavigationSync, { passive: true });
 window.addEventListener("resize", requestNavigationSync);
 elements.closeNotes.addEventListener("click", () => {
-  if (mode === "owner") sessionStorage.removeItem(SESSION_KEY);
+  if (mode === "owner") {
+    window.location.href = "notes.html";
+    return;
+  }
   notes = null;
   mode = null;
   elements.notesApp.hidden = true;
@@ -477,7 +460,7 @@ elements.closeNotes.addEventListener("click", () => {
 const sessionSecret = sessionStorage.getItem(SESSION_KEY);
 if (sessionSecret) {
   elements.unlockMessage.textContent = "正在打开笔记…";
-  fetch(notebookSettings.privateDataUrl, { cache: "no-store" })
+  fetch(`${notebookSettings.privateDataUrl}?v=${Date.now()}`, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) throw new Error();
       return response.json();
@@ -489,7 +472,7 @@ if (sessionSecret) {
     })
     .catch(() => {
       sessionStorage.removeItem(SESSION_KEY);
-      elements.unlockMessage.textContent = "解锁状态已失效，请重新输入密钥";
+      window.location.replace("notes.html");
     });
 }
 
