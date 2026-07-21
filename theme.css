@@ -34,28 +34,65 @@ html[data-theme="dark"] {
 }
 
 .theme-toggle {
-  position: fixed;
-  z-index: 100;
-  right: 22px;
-  bottom: 22px;
-  width: 48px;
-  height: 48px;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
   padding: 0;
-  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  background: color-mix(in srgb, var(--panel) 72%, transparent);
   color: var(--ink);
-  box-shadow: 0 10px 30px var(--shadow);
   cursor: pointer;
-  font: 600 1.3rem/1 system-ui, sans-serif;
-  backdrop-filter: blur(12px);
+  font: 600 1rem/1 system-ui, sans-serif;
 }
 
 .theme-toggle:hover {
   border-color: color-mix(in srgb, var(--amber) 60%, var(--line));
   color: var(--amber);
+}
+
+.brand {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  object-fit: cover;
+}
+
+.brand-copy {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.site-header .site-nav {
+  margin-left: auto;
+}
+
+.site-header > .theme-toggle {
+  margin-left: 18px;
+}
+
+.header-actions .theme-toggle {
+  margin-left: 4px;
+}
+
+.theme-toggle--standalone {
+  position: fixed;
+  z-index: 100;
+  top: 18px;
+  right: 18px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px var(--shadow);
 }
 
 html[data-theme="light"] .site-header,
@@ -277,10 +314,19 @@ html[data-theme="light"] .muted {
 }
 
 @media (max-width: 560px) {
-  .theme-toggle {
-    right: 14px;
-    bottom: 14px;
-    width: 44px;
-    height: 44px;
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .site-header > .theme-toggle {
+    width: 36px;
+    height: 36px;
+    margin-left: auto;
+  }
+
+  .theme-toggle--standalone {
+    top: 12px;
+    right: 12px;
   }
 }

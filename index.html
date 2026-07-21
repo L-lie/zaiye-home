@@ -18,7 +18,7 @@
     />
     <meta property="og:url" content="https://zaiye.art/" />
     <meta property="og:image" content="https://zaiye.art/assets/hero-production-design.png" />
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js"></script>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="theme.css" />
@@ -26,15 +26,18 @@
   <body>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="再野文化工作室 home">
-        <span class="brand-mark">再野文化工作室</span>
-        <span class="brand-line">ZAIYE CULTURE</span>
+        <img class="brand-logo" src="assets/site-logo.png" alt="" />
+        <span class="brand-copy">
+          <span class="brand-mark">再野文化工作室</span>
+          <span class="brand-line">ZAIYE CULTURE</span>
+        </span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="gallery.html">作品</a>
         <a href="#scope">服务</a>
         <a href="canvas.html">Canvas</a>
         <a href="notes.html">学习笔记</a>
-        <a href="#lab">Prompt Vault</a>
+        <a href="prompt-vault.html">Prompt Vault</a>
         <a href="#contact">联系</a>
       </nav>
     </header>
@@ -48,7 +51,7 @@
         />
         <div class="hero-scrim"></div>
         <div class="hero-content">
-          <p class="eyebrow">影视美术 / 场景视觉 / 陈设道具 / 舞台综艺 / 提示词工作流</p>
+          <p class="eyebrow">影视美术 / 场景视觉 / 陈设道具 / 舞台综艺</p>
           <h1>把文字里的世界做成镜头里的现场</h1>
           <p class="hero-copy">
             再野文化工作室参与电影、网大、剧集、综艺、舞台与宣传片项目的美术设计工作，
@@ -62,7 +65,7 @@
         <div class="hero-footer" aria-label="Studio highlights">
           <span>影视美术设计</span>
           <span>场景 / 陈设 / 道具</span>
-          <span>Prompt Vault</span>
+          <span>舞台 / 综艺 / 实景</span>
         </div>
       </section>
 
@@ -72,10 +75,6 @@
           <p>
             再野文化工作室由美术设计蔡再田主理，作品涉及电影、网大、剧集、综艺、舞台、
             宣传片和实景项目。页面以项目经历和美术资料为索引，便于快速了解可合作的方向。
-          </p>
-          <p>
-            Prompt Vault 是另一个独立入口：它是浏览器里的提示词管理工具，用来收集、整理、
-            筛选、备份和快速插入 Prompt，不作为美术作品集的主线。
           </p>
         </div>
       </section>
@@ -98,45 +97,8 @@
             <h3>综艺 / 舞台 / 实景</h3>
             <p>棚内空间、舞台视觉、实景搭建、施工级模型与现场沟通。</p>
           </div>
-          <div>
-            <h3>提示词工作流</h3>
-            <p>用 Prompt Vault 管理提示词、项目、场景、类型、标签和备份文件。</p>
-          </div>
         </div>
       </section>
-
-      <section class="lab" id="lab">
-        <div class="lab-panel">
-          <div>
-            <p class="eyebrow">Prompt Vault</p>
-            <h2>浏览器里的提示词管理工具</h2>
-          </div>
-          <p>
-            Prompt Vault 用来收集、整理、预览、同步、导入导出并快速插入 Prompt。
-            它更像一个放在浏览器里的素材柜，而不是生成工具。
-          </p>
-          <div class="lab-actions">
-            <a class="button primary dark" href="canvas.html">打开 Canvas</a>
-            <a class="button primary dark" href="downloads/prompt-vault-latest.zip" download>下载最新版</a>
-            <a class="button secondary dark" href="#contact">了解 Prompt Vault</a>
-          </div>
-        </div>
-        <div class="prompt-board" aria-label="Prompt library preview">
-          <div class="prompt-row">
-            <span>项目</span>
-            <p>按正在做的项目归档提示词，方便在不同片子和场景之间切换</p>
-          </div>
-          <div class="prompt-row">
-            <span>类型 / 标签</span>
-            <p>画面描述、约束模块、负面提示词可以分开保存和筛选</p>
-          </div>
-          <div class="prompt-row">
-            <span>备份</span>
-            <p>支持导入导出 JSON，也可以只导出当前筛选结果</p>
-          </div>
-        </div>
-      </section>
-
     </main>
 
     <footer class="footer" id="contact">

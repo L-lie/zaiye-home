@@ -22,6 +22,17 @@
       localStorage.setItem(storageKey, nextTheme);
       updateButton(button, nextTheme);
     });
-    document.body.append(button);
+
+    const siteHeader = document.querySelector(".site-header");
+    const headerActions = document.querySelector(".header-actions");
+
+    if (siteHeader) {
+      siteHeader.append(button);
+    } else if (headerActions) {
+      headerActions.append(button);
+    } else {
+      button.classList.add("theme-toggle--standalone");
+      document.body.prepend(button);
+    }
   });
 })();

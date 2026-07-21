@@ -8,7 +8,7 @@
       content="再野文化工作室 Canvas - 用来整理提示词、参考图、生成结果和项目备注的无限画布。"
     />
     <title>Canvas | 再野文化工作室</title>
-    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js"></script>
     <link rel="stylesheet" href="canvas.css" />
     <link rel="stylesheet" href="theme.css" />
@@ -16,15 +16,19 @@
   <body>
     <header class="canvas-header">
       <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
-        <span class="brand-mark">再野文化工作室</span>
-        <span class="brand-line">ZAIYE CANVAS</span>
+        <img class="brand-logo" src="assets/site-logo.png" alt="" />
+        <span class="brand-copy">
+          <span class="brand-mark">再野文化工作室</span>
+          <span class="brand-line">ZAIYE CANVAS</span>
+        </span>
       </a>
       <div class="header-actions">
         <button id="saveBoard" type="button">保存</button>
         <button id="exportBoard" type="button">导出</button>
         <button id="importBoard" type="button">导入</button>
         <input id="importFile" type="file" accept="application/json,.json" hidden />
-        <a href="index.html#lab">回到官网</a>
+        <a href="prompt-vault.html">Prompt Vault</a>
+        <a href="index.html">回到官网</a>
       </div>
     </header>
 
