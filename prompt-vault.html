@@ -21,13 +21,13 @@
     <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js"></script>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="prompt-vault.css" />
-    <link rel="stylesheet" href="theme.css" />
+    <link rel="stylesheet" href="prompt-vault.css?v=20260721-2" />
+    <link rel="stylesheet" href="theme.css?v=20260721-2" />
   </head>
   <body class="vault-body">
     <header class="site-header vault-site-header">
       <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
-        <img class="brand-logo" src="assets/site-logo.png" alt="" />
+        <img class="brand-logo" src="assets/site-logo.png" alt="" width="38" height="38" />
         <span class="brand-copy">
           <span class="brand-mark">再野文化工作室</span>
           <span class="brand-line">ZAIYE CULTURE</span>
@@ -46,25 +46,29 @@
     <main class="vault-main">
       <section class="vault-hero" id="top">
         <div class="vault-hero-copy">
-          <p class="eyebrow">浏览器扩展</p>
-          <h1><span>语藏</span> Prompt Vault</h1>
-          <p class="vault-lead">一款面向创作者的 AI Prompt 管理工具</p>
+          <h1>
+            <span class="vault-wordmark-cn">语藏</span>
+            <span class="vault-wordmark-en">Prompt Vault</span>
+          </h1>
+          <p class="vault-lead">让每一个 Prompt，都有自己的位置</p>
           <p class="vault-summary">
-            保存、分类、筛选并快速复用图像创作、角色设计、视频控制、约束模块及任务指令等提示词。
+            收集、分类、预览，并在需要时快速复用。专为创作者打造的提示词管理工具。
           </p>
           <div class="vault-actions">
             <a class="button primary" href="downloads/prompt-vault-latest.zip" download>下载最新版</a>
             <a class="button secondary" href="#features">查看功能</a>
           </div>
-          <p class="vault-platform">适用于 Chrome 与 Edge · 下载后以开发者模式加载</p>
+          <p class="vault-platform">当前版本 1.0.77 · 适用于 Chrome 与 Edge · 下载后以开发者模式加载</p>
         </div>
 
-        <figure class="vault-product-visual">
-          <img
-            src="assets/prompt-vault-product.jpg"
-            alt="Prompt Vault 桌面端和窄屏端界面"
-          />
-        </figure>
+        <div class="vault-product-scene" aria-label="Prompt Vault 桌面端和窄屏端界面">
+          <figure class="vault-window vault-window-desktop">
+            <img src="assets/prompt-vault-desktop.png" alt="Prompt Vault 桌面端界面" />
+          </figure>
+          <figure class="vault-window vault-window-mobile">
+            <img src="assets/prompt-vault-mobile.png" alt="Prompt Vault 窄屏端界面" />
+          </figure>
+        </div>
       </section>
 
       <section class="vault-features" id="features">
@@ -132,7 +136,6 @@
           <p>当前版本通过压缩包提供，解压后可在 Chrome 或 Edge 的扩展管理页加载。</p>
           <div class="vault-actions">
             <a class="button primary" href="downloads/prompt-vault-latest.zip" download>下载最新版</a>
-            <a class="button secondary" href="canvas.html">打开 Canvas</a>
           </div>
           <div class="vault-legal-links">
             <a href="privacy.html">隐私政策</a>
