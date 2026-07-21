@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Blender 学习笔记目录与个人笔记工具" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Blender 学习笔记 | 再野文化工作室</title>
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="blender-notes.css" />
+    <script src="blender-notes.js" defer></script>
+  </head>
+  <body class="notes-body">
+    <header class="site-header notes-site-header">
+      <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
+        <span class="brand-mark">再野文化工作室</span>
+        <span class="brand-line">ZAIYE CULTURE</span>
+      </a>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="index.html#work">作品</a>
+        <a href="canvas.html">Canvas</a>
+        <a href="blender-notes.html" aria-current="page">Blender 笔记</a>
+        <a href="index.html#contact">联系</a>
+      </nav>
+    </header>
+
+    <main class="notes-page">
+      <section class="notes-heading" aria-labelledby="notes-title">
+        <p class="eyebrow">学习记录</p>
+        <h1 id="notes-title">Blender 学习笔记</h1>
+        <p>按目录查找操作方法、功能名称和快捷键</p>
+      </section>
+
+      <section class="access-panel" id="accessPanel" aria-labelledby="access-title">
+        <div>
+          <p class="eyebrow">私人笔记</p>
+          <h2 id="access-title">打开笔记</h2>
+          <p class="access-copy">已有私人笔记可使用本机密钥解锁。其他人的笔记只保存在各自的浏览器中。</p>
+        </div>
+        <form class="unlock-form" id="unlockForm">
+          <label for="unlockKey">私人解锁密钥</label>
+          <div class="unlock-row">
+            <input id="unlockKey" type="password" autocomplete="current-password" />
+            <button class="button primary" type="submit">解锁</button>
+          </div>
+          <p class="form-message" id="unlockMessage" aria-live="polite"></p>
+        </form>
+        <div class="access-divider" aria-hidden="true"><span>或</span></div>
+        <button class="button secondary" id="startLocal" type="button">开始自己的笔记</button>
+      </section>
+
+      <section class="notes-app" id="notesApp" hidden>
+        <div class="notes-toolbar">
+          <div class="search-field">
+            <label for="notesSearch">搜索笔记</label>
+            <input
+              id="notesSearch"
+              type="search"
+              placeholder="搜索标题、正文、功能名称或快捷键"
+              autocomplete="off"
+            />
+          </div>
+          <div class="toolbar-status">
+            <span id="searchStatus" aria-live="polite"></span>
+            <span class="mode-label" id="modeLabel"></span>
+          </div>
+          <div class="local-actions" id="localActions" hidden>
+            <button type="button" id="newNote">新增笔记</button>
+            <button type="button" id="importNotes">导入</button>
+            <button type="button" id="exportNotes">导出</button>
+            <input id="importFile" type="file" accept="application/json,.json" hidden />
+          </div>
+        </div>
+
+        <div class="notes-layout">
+          <aside class="notes-sidebar" aria-label="笔记目录">
+            <div class="sidebar-heading">
+              <span>目录</span>
+              <button type="button" id="closeNotes">退出</button>
+            </div>
+            <nav id="notesNav"></nav>
+          </aside>
+          <article class="notes-content" id="notesContent"></article>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="note-dialog" id="noteDialog">
+      <form method="dialog" id="noteForm">
+        <div class="dialog-heading">
+          <h2>新增笔记</h2>
+          <button class="dialog-close" value="cancel" aria-label="关闭" type="submit">×</button>
+        </div>
+        <label>
+          大分类
+          <select id="editorCategory"></select>
+        </label>
+        <label id="newCategoryField" hidden>
+          新分类名称
+          <input id="editorNewCategory" />
+        </label>
+        <label>
+          小分类标题
+          <input id="editorTitle" required />
+        </label>
+        <label>
+          正文
+          <textarea id="editorBody" rows="9" required></textarea>
+        </label>
+        <label>
+          功能名称或快捷键
+          <input id="editorShortcuts" placeholder="用逗号分隔" />
+        </label>
+        <div class="dialog-actions">
+          <button class="button secondary" value="cancel" type="submit">取消</button>
+          <button class="button primary" value="save" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

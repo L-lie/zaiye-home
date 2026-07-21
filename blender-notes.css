@@ -1,0 +1,508 @@
+.notes-body {
+  min-height: 100dvh;
+}
+
+.notes-body [hidden] {
+  display: none !important;
+}
+
+.notes-site-header {
+  background: rgba(13, 13, 12, 0.94);
+  border-bottom: 1px solid var(--line);
+}
+
+.notes-page {
+  min-height: 100dvh;
+  padding: 132px clamp(20px, 5vw, 64px) 64px;
+}
+
+.notes-heading {
+  max-width: 1440px;
+  margin: 0 auto 34px;
+}
+
+.notes-heading h1 {
+  max-width: none;
+  margin: 4px 0 10px;
+  font-size: clamp(2.8rem, 6vw, 5.4rem);
+  line-height: 1.05;
+}
+
+.notes-heading > p:last-child,
+.access-copy {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.access-panel {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1fr);
+  gap: 30px 54px;
+  max-width: 980px;
+  margin: 76px auto 0;
+  border: 1px solid var(--line);
+  padding: clamp(24px, 4vw, 42px);
+  background: var(--panel);
+}
+
+.access-panel h2 {
+  margin: 8px 0 14px;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.unlock-form,
+.search-field,
+.note-dialog label {
+  display: grid;
+  gap: 9px;
+}
+
+.unlock-form label,
+.search-field label,
+.note-dialog label,
+.sidebar-heading {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.unlock-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.unlock-row input,
+.search-field input,
+.note-dialog input,
+.note-dialog select,
+.note-dialog textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: #111110;
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+}
+
+.unlock-row input,
+.search-field input,
+.note-dialog input,
+.note-dialog select {
+  min-height: 46px;
+  padding: 0 13px;
+}
+
+.note-dialog textarea {
+  resize: vertical;
+  padding: 12px 13px;
+  line-height: 1.65;
+}
+
+.unlock-row input:focus,
+.search-field input:focus,
+.note-dialog :is(input, select, textarea):focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(201, 152, 84, 0.16);
+}
+
+.form-message {
+  min-height: 20px;
+  margin: 0;
+  color: #d99a9f;
+  font-size: 0.78rem;
+}
+
+.access-divider {
+  position: relative;
+  grid-column: 1 / -1;
+  height: 1px;
+  background: var(--line);
+  text-align: center;
+}
+
+.access-divider span {
+  position: relative;
+  top: -11px;
+  padding: 0 12px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.access-panel > .button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.notes-body button,
+.notes-body input,
+.notes-body select,
+.notes-body textarea {
+  font-family: inherit;
+}
+
+.notes-app {
+  max-width: 1440px;
+  margin: 0 auto;
+  border-top: 1px solid var(--line);
+}
+
+.notes-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 620px) minmax(180px, 1fr) auto;
+  gap: 18px;
+  align-items: end;
+  padding: 22px 0;
+}
+
+.search-field input {
+  background: var(--panel);
+}
+
+.toolbar-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+  min-height: 46px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.mode-label {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--ink);
+}
+
+.local-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.local-actions button,
+.sidebar-heading button,
+.notes-nav-button,
+.notes-subnav-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.local-actions button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 12px;
+  color: var(--ink);
+}
+
+.notes-layout {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.28fr) minmax(0, 1fr);
+  min-height: 660px;
+  border: 1px solid var(--line);
+  background: #171715;
+}
+
+.notes-sidebar {
+  border-right: 1px solid var(--line);
+  padding: 22px 18px;
+  background: #121211;
+}
+
+.sidebar-heading {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.sidebar-heading button {
+  color: var(--muted);
+}
+
+#notesNav,
+.notes-nav-group,
+.notes-subnav {
+  display: grid;
+}
+
+#notesNav {
+  position: sticky;
+  top: 116px;
+  gap: 6px;
+}
+
+.notes-nav-group {
+  gap: 3px;
+}
+
+.notes-nav-button,
+.notes-subnav-button {
+  position: relative;
+  width: 100%;
+  border-radius: 3px;
+  padding: 10px 28px 10px 10px;
+  text-align: left;
+}
+
+.notes-nav-button {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.notes-nav-button::after {
+  content: "+";
+  position: absolute;
+  top: 9px;
+  right: 10px;
+  color: var(--amber);
+}
+
+.notes-nav-button[aria-expanded="true"]::after {
+  content: "−";
+}
+
+.notes-nav-button:hover,
+.notes-subnav-button:hover,
+.notes-subnav-button.is-active {
+  background: rgba(246, 241, 232, 0.07);
+}
+
+.notes-subnav {
+  gap: 2px;
+  height: 0;
+  overflow: hidden;
+}
+
+.notes-subnav.is-open {
+  height: auto;
+  margin: 2px 0 7px;
+}
+
+.notes-subnav-button {
+  padding: 8px 10px 8px 22px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.notes-content {
+  min-width: 0;
+  padding: clamp(26px, 5vw, 72px);
+}
+
+.notes-category {
+  margin-bottom: 68px;
+  scroll-margin-top: 120px;
+}
+
+.notes-category:last-child {
+  margin-bottom: 0;
+}
+
+.notes-category > h2 {
+  margin: 0 0 30px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+}
+
+.note-section {
+  max-width: 900px;
+  margin-bottom: 46px;
+  scroll-margin-top: 120px;
+}
+
+.note-section:last-child {
+  margin-bottom: 0;
+}
+
+.note-section h3 {
+  margin: 0 0 18px;
+  color: var(--ink);
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 500;
+}
+
+.note-section p,
+.note-section li {
+  color: rgba(246, 241, 232, 0.78);
+  font-size: 0.98rem;
+  line-height: 1.9;
+}
+
+.note-section ol,
+.note-section ul {
+  margin: 12px 0 20px;
+  padding-left: 24px;
+}
+
+.note-section li {
+  margin: 7px 0;
+  padding-left: 4px;
+}
+
+.note-section strong {
+  color: var(--ink);
+}
+
+.note-section code {
+  border: 1px solid rgba(201, 152, 84, 0.34);
+  border-radius: 3px;
+  padding: 2px 6px;
+  background: rgba(201, 152, 84, 0.1);
+  color: #e5bd85;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.note-tip {
+  border-left: 3px solid var(--amber);
+  padding: 3px 0 3px 16px;
+}
+
+.note-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.note-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: rgba(246, 241, 232, 0.78);
+  font-size: 0.9rem;
+}
+
+.note-table :is(th, td) {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.note-table th {
+  color: var(--ink);
+}
+
+.notes-empty {
+  border: 1px solid var(--line);
+  padding: 28px;
+  color: var(--muted);
+}
+
+.note-dialog {
+  width: min(620px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.note-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.note-dialog form {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.dialog-heading,
+.dialog-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dialog-heading h2 {
+  margin: 0;
+}
+
+.dialog-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.8rem;
+}
+
+.dialog-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .notes-site-header {
+    position: absolute;
+  }
+
+  .access-panel,
+  .notes-toolbar,
+  .notes-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-toolbar {
+    align-items: start;
+  }
+
+  .notes-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #notesNav {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .notes-content {
+    padding: 28px 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .notes-page {
+    padding-top: 108px;
+  }
+
+  .notes-heading h1 {
+    font-size: clamp(2.7rem, 15vw, 4rem);
+  }
+
+  .access-panel {
+    margin-top: 42px;
+  }
+
+  .unlock-row,
+  #notesNav {
+    grid-template-columns: 1fr;
+  }
+
+  .unlock-row .button,
+  .access-panel > .button {
+    width: 100%;
+  }
+
+  .local-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .local-actions button {
+    padding: 0 8px;
+  }
+
+  .notes-category {
+    margin-bottom: 48px;
+  }
+}
