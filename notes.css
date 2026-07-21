@@ -12,7 +12,7 @@
 
 .notes-index-heading {
   max-width: 900px;
-  margin-bottom: 84px;
+  margin-bottom: 64px;
 }
 
 .notes-index-heading h1 {
@@ -26,55 +26,147 @@
   font-size: 1rem;
 }
 
+.notes-gate {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(320px, 1fr);
+  gap: 32px 56px;
+  max-width: 980px;
+  border: 1px solid var(--line);
+  padding: clamp(24px, 4vw, 42px);
+  background: var(--panel);
+}
+
+.notes-gate h2 {
+  margin: 8px 0 12px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.notes-gate p,
+.notebook-card p {
+  color: var(--muted);
+}
+
+.notes-unlock-form {
+  position: relative;
+  display: grid;
+  align-content: center;
+  gap: 9px;
+}
+
+.notes-unlock-form label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.credential-username {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.notes-unlock-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.notes-unlock-row input {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0 13px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  outline: none;
+}
+
+.notes-unlock-row input:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px rgba(201, 152, 84, 0.16);
+}
+
+.notes-form-message {
+  min-height: 20px;
+  margin: 0;
+  color: #b85b5b !important;
+  font-size: 0.78rem;
+}
+
 .notebook-list {
   border-top: 1px solid var(--line);
 }
 
-.notebook-list > h2 {
-  margin: 0;
+.notebook-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 22px 0;
+}
+
+.notebook-list-heading h2 {
+  margin: 0;
   color: var(--muted);
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 700;
 }
 
-.notebook-row {
+.notebook-list-heading button {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+}
+
+.notebook-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 24px;
-  align-items: center;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  padding: clamp(24px, 4vw, 44px) 0;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 18px;
 }
 
-.notebook-row:hover h3 {
+.notebook-card {
+  position: relative;
+  min-height: 260px;
+  border: 1px solid var(--line);
+  padding: 28px;
+  background: var(--panel);
+  transition: border-color 160ms ease, transform 160ms ease;
+}
+
+.notebook-card:hover {
+  border-color: var(--amber);
+  transform: translateY(-2px);
+}
+
+.notebook-card-label {
   color: var(--amber);
+  font-size: 0.76rem;
+  font-weight: 700;
 }
 
-.notebook-row h3 {
-  margin: 0 0 10px;
+.notebook-card h3 {
+  max-width: 380px;
+  margin: 54px 0 12px;
   font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
-  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
   font-weight: 500;
 }
 
-.notebook-row p {
+.notebook-card p {
   margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
 }
 
-.notebook-meta {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.notebook-meta span:last-child {
+.notebook-card-arrow {
+  position: absolute;
+  right: 28px;
+  bottom: 24px;
   color: var(--amber);
   font-size: 1.5rem;
 }
@@ -94,11 +186,15 @@
     margin-bottom: 54px;
   }
 
-  .notebook-row {
+  .notes-gate {
     grid-template-columns: 1fr;
   }
 
-  .notebook-meta {
-    justify-content: space-between;
+  .notes-unlock-row {
+    grid-template-columns: 1fr;
+  }
+
+  .notes-unlock-row .button {
+    width: 100%;
   }
 }

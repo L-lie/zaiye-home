@@ -1,5 +1,6 @@
 const PRIVATE_DATA_URL = "assets/content/blender-notes.enc.json";
 const LOCAL_STORAGE_KEY = "zaiye-blender-notes-local-v1";
+const SESSION_KEY = "zaiye-notes-session-key";
 
 const elements = {
   accessPanel: document.querySelector("#accessPanel"),
@@ -405,6 +406,7 @@ elements.unlockForm.addEventListener("submit", async (event) => {
     const response = await fetch(PRIVATE_DATA_URL, { cache: "no-store" });
     if (!response.ok) throw new Error("暂时没有可读取的私人笔记");
     const data = await decryptNotes(await response.json(), secret);
+    sessionStorage.setItem(SESSION_KEY, secret);
     elements.unlockMessage.textContent = "";
     elements.unlockKey.value = "";
     openNotebook(data, "owner");
@@ -416,11 +418,31 @@ elements.unlockForm.addEventListener("submit", async (event) => {
 elements.startLocal.addEventListener("click", () => openNotebook(loadLocalNotebook(), "local"));
 elements.notesSearch.addEventListener("input", filterNotes);
 elements.closeNotes.addEventListener("click", () => {
+  if (mode === "owner") sessionStorage.removeItem(SESSION_KEY);
   notes = null;
   mode = null;
   elements.notesApp.hidden = true;
   elements.accessPanel.hidden = false;
 });
+
+const sessionSecret = sessionStorage.getItem(SESSION_KEY);
+if (sessionSecret) {
+  elements.unlockMessage.textContent = "正在打开笔记…";
+  fetch(PRIVATE_DATA_URL, { cache: "no-store" })
+    .then((response) => {
+      if (!response.ok) throw new Error();
+      return response.json();
+    })
+    .then((payload) => decryptNotes(payload, sessionSecret))
+    .then((data) => {
+      elements.unlockMessage.textContent = "";
+      openNotebook(data, "owner");
+    })
+    .catch(() => {
+      sessionStorage.removeItem(SESSION_KEY);
+      elements.unlockMessage.textContent = "解锁状态已失效，请重新输入密钥";
+    });
+}
 
 elements.notesNav.addEventListener("click", (event) => {
   const button = event.target.closest(".notes-subnav-button");

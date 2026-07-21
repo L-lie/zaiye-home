@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="notes.css" />
     <link rel="stylesheet" href="theme.css" />
+    <script src="notes.js" defer></script>
   </head>
   <body>
     <header class="site-header notes-index-header">
@@ -29,21 +30,47 @@
     <main class="notes-index">
       <header class="notes-index-heading">
         <h1>学习笔记</h1>
-        <p>按软件和主题整理的个人学习记录</p>
+        <p>私人学习记录</p>
       </header>
 
-      <section class="notebook-list" aria-labelledby="notebook-list-title">
-        <h2 id="notebook-list-title">笔记本</h2>
-        <a class="notebook-row" href="blender-notes.html">
-          <div>
-            <h3>Blender 学习笔记</h3>
-            <p>建模、视图、辅助显示、摄像机与快捷键</p>
+      <section class="notes-gate" id="notesGate" aria-labelledby="notes-gate-title">
+        <div>
+          <p class="eyebrow">私人内容</p>
+          <h2 id="notes-gate-title">打开学习笔记</h2>
+          <p>输入密钥后才能查看笔记本列表</p>
+        </div>
+        <form class="notes-unlock-form" id="notesUnlockForm" autocomplete="on">
+          <input
+            class="credential-username"
+            name="username"
+            type="text"
+            value="zaiye-notes-owner"
+            autocomplete="username"
+            tabindex="-1"
+            aria-hidden="true"
+            readonly
+          />
+          <label for="notesUnlockKey">私人解锁密钥</label>
+          <div class="notes-unlock-row">
+            <input
+              id="notesUnlockKey"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+            <button class="button primary" type="submit">解锁</button>
           </div>
-          <div class="notebook-meta">
-            <span>5 个分类</span>
-            <span aria-hidden="true">→</span>
-          </div>
-        </a>
+          <p class="notes-form-message" id="notesUnlockMessage" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="notebook-list" id="notebookList" aria-labelledby="notebook-list-title" hidden>
+        <div class="notebook-list-heading">
+          <h2 id="notebook-list-title">笔记本</h2>
+          <button type="button" id="lockNotes">锁定</button>
+        </div>
+        <div class="notebook-grid" id="notebookGrid"></div>
       </section>
     </main>
   </body>
