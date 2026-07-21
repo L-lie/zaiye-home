@@ -5,6 +5,7 @@
 - 私人笔记源文件：`.private/blender-notes.json`
 - 私人解锁密钥：`.private/blender-notes.key`
 - 网站加密数据：`assets/content/blender-notes.enc.json`
+- 公开笔记本清单：`assets/content/notes-public.json`
 - 笔记页面：`blender-notes.html`
 
 `.private` 已写入 `.gitignore`，原文和密钥不会上传 GitHub。不要把 `.private` 目录中的内容发给别人。
@@ -123,3 +124,16 @@ powershell -ExecutionPolicy Bypass -File E:\work\3.工作室\llie-studio-site\sc
 
 这会同步生成官网使用的加密笔记。不要读取、显示或发送 .private\blender-notes.key，也不要把 .private 目录提交到 GitHub。修改后告诉我改了哪些分类和笔记；未经我明确授权，不要提交或推送。
 ```
+
+## 控制上一层展示
+
+私人源文件根级的 `publicVisible` 控制这个笔记本是否出现在未解锁页面：
+
+```json
+"publicVisible": false
+```
+
+- `false`：外层不显示这个笔记本；如果没有任何公开笔记本，连公开列表区域也不显示。
+- `true`：外层只显示标题、简介、分类数量和入口，不公开正文与目录。
+
+在私人笔记本库中切换“在上一层展示”后，选择 `.private/blender-notes.json` 保存。之后仍需运行更新脚本并发布网站，线上公开状态才会变化。

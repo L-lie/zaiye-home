@@ -10,6 +10,7 @@ const privateDir = resolve(projectDir, ".private");
 const sourcePath = resolve(privateDir, "blender-notes.json");
 const keyPath = resolve(privateDir, "blender-notes.key");
 const outputPath = resolve(projectDir, "assets", "content", "blender-notes.enc.json");
+const publicOutputPath = resolve(projectDir, "assets", "content", "notes-public.json");
 const iterations = 250000;
 
 function bytesToBase64(bytes) {
@@ -29,7 +30,7 @@ async function loadOrCreateSecret() {
 }
 
 const source = await readFile(sourcePath, "utf8");
-JSON.parse(source);
+const notebook = JSON.parse(source);
 
 const secret = await loadOrCreateSecret();
 const salt = randomBytes(16);
@@ -67,5 +68,22 @@ const payload = {
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify(payload)}\n`, "utf8");
 
+const publicManifest = {
+  version: 1,
+  notebooks: notebook.publicVisible
+    ? [
+        {
+          id: notebook.id,
+          title: notebook.title,
+          summary: notebook.summary,
+          categoryCount: notebook.categories.length,
+          href: "blender-notes.html",
+        },
+      ]
+    : [],
+};
+await writeFile(publicOutputPath, `${JSON.stringify(publicManifest, null, 2)}\n`, "utf8");
+
 console.log(`Encrypted notes updated: ${outputPath}`);
+console.log(`Public notebook manifest updated: ${publicOutputPath}`);
 console.log(`Private unlock key: ${keyPath}`);

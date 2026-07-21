@@ -65,12 +65,24 @@
         </form>
       </section>
 
-      <section class="notebook-list" id="notebookList" aria-labelledby="notebook-list-title" hidden>
+      <section class="notebook-list" id="publicNotebookList" aria-labelledby="public-notebook-list-title" hidden>
         <div class="notebook-list-heading">
-          <h2 id="notebook-list-title">笔记本</h2>
+          <h2 id="public-notebook-list-title">公开笔记本</h2>
+        </div>
+        <div class="notebook-grid" id="publicNotebookGrid"></div>
+      </section>
+
+      <section class="notebook-list private-notebook-list" id="privateNotebookList" aria-labelledby="private-notebook-list-title" hidden>
+        <div class="notebook-list-heading">
+          <div>
+            <p class="eyebrow">私人笔记库</p>
+            <h2 id="private-notebook-list-title">全部笔记本</h2>
+          </div>
           <button type="button" id="lockNotes">锁定</button>
         </div>
-        <div class="notebook-grid" id="notebookGrid"></div>
+        <p class="publish-note">公开状态会在下一次更新并发布笔记时同步到上一层</p>
+        <div class="notebook-grid" id="privateNotebookGrid"></div>
+        <p class="notes-form-message shelf-message" id="shelfMessage" aria-live="polite"></p>
       </section>
     </main>
   </body>

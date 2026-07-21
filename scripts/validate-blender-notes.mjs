@@ -8,6 +8,7 @@ const projectDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = resolve(projectDir, ".private", "blender-notes.json");
 const keyPath = resolve(projectDir, ".private", "blender-notes.key");
 const encryptedPath = resolve(projectDir, "assets", "content", "blender-notes.enc.json");
+const publicPath = resolve(projectDir, "assets", "content", "notes-public.json");
 const allowedBlockTypes = new Set(["paragraph", "ordered-list", "unordered-list", "tip", "shortcuts", "table"]);
 
 function base64ToBytes(value) {
@@ -21,6 +22,8 @@ function assert(condition, message) {
 const sourceText = await readFile(sourcePath, "utf8");
 const source = JSON.parse(sourceText);
 assert(Array.isArray(source.categories), "categories must be an array");
+assert(source.id && source.title, "notebook needs id and title");
+assert(typeof source.publicVisible === "boolean", "publicVisible must be a boolean");
 
 const ids = new Set();
 let sectionCount = 0;
@@ -64,4 +67,18 @@ const plaintext = await subtle.decrypt(
 const decrypted = JSON.parse(new TextDecoder().decode(plaintext));
 assert(JSON.stringify(decrypted) === JSON.stringify(source), "encrypted website data is not up to date with the private source");
 
-console.log(`Blender notes are valid: ${source.categories.length} categories, ${sectionCount} sections.`);
+const publicManifest = JSON.parse(await readFile(publicPath, "utf8"));
+assert(Array.isArray(publicManifest.notebooks), "public notebook manifest must contain a notebooks array");
+const expectedPublicCount = source.publicVisible ? 1 : 0;
+assert(publicManifest.notebooks.length === expectedPublicCount, "public notebook manifest is not up to date");
+if (source.publicVisible) {
+  const [publicNotebook] = publicManifest.notebooks;
+  assert(publicNotebook.id === source.id, "public notebook id is not up to date");
+  assert(publicNotebook.title === source.title, "public notebook title is not up to date");
+  assert(publicNotebook.categoryCount === source.categories.length, "public category count is not up to date");
+  assert(!("categories" in publicNotebook), "private categories must not appear in the public manifest");
+}
+
+console.log(
+  `Blender notes are valid: ${source.categories.length} categories, ${sectionCount} sections, ${expectedPublicCount} public notebook.`,
+);

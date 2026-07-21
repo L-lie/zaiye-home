@@ -99,6 +99,7 @@
 }
 
 .notebook-list {
+  margin-top: 48px;
   border-top: 1px solid var(--line);
 }
 
@@ -115,6 +116,20 @@
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.notebook-list-heading .eyebrow {
+  margin: 0 0 6px;
+}
+
+.private-notebook-list {
+  margin-top: 0;
+}
+
+.publish-note {
+  margin: -8px 0 22px;
+  color: var(--muted);
+  font-size: 0.8rem;
 }
 
 .notebook-list-heading button {
@@ -140,9 +155,36 @@
   transition: border-color 160ms ease, transform 160ms ease;
 }
 
+.notebook-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.visibility-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.visibility-control input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--amber);
+}
+
 .notebook-card:hover {
   border-color: var(--amber);
   transform: translateY(-2px);
+}
+
+.notebook-card-open {
+  display: block;
+  color: inherit;
 }
 
 .notebook-card-label {
@@ -169,6 +211,10 @@
   bottom: 24px;
   color: var(--amber);
   font-size: 1.5rem;
+}
+
+.shelf-message {
+  margin-top: 14px;
 }
 
 @media (max-width: 900px) {
