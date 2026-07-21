@@ -11,7 +11,7 @@ if (-not (Test-Path -LiteralPath $node)) {
   throw "Node.js was not found. Run this command in Codex or install Node.js first."
 }
 
-& $node (Join-Path $PSScriptRoot "validate-blender-notes.mjs")
+& $node (Join-Path $PSScriptRoot "validate-notebook.mjs") "blender"
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE
 }

@@ -1,4 +1,4 @@
-const PRIVATE_DATA_URL = "assets/content/blender-notes.enc.json";
+const PRIVATE_LIBRARY_URL = "assets/content/notes-library.enc.json";
 const PUBLIC_DATA_URL = "assets/content/notes-public.json";
 const SESSION_KEY = "zaiye-notes-session-key";
 
@@ -15,8 +15,8 @@ const elements = {
   lock: document.querySelector("#lockNotes"),
 };
 
-let sourceFileHandle = null;
-let privateNotebook = null;
+const sourceFileHandles = new Map();
+let privateNotebooks = [];
 
 function base64ToBytes(value) {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
@@ -53,7 +53,7 @@ async function decryptNotes(payload, secret) {
 function createNotebookCard(data, isPrivate = false) {
   const card = document.createElement(isPrivate ? "article" : "a");
   card.className = "notebook-card";
-  if (!isPrivate) card.href = data.href || "blender-notes.html";
+  if (!isPrivate) card.href = data.href;
 
   const header = document.createElement("div");
   header.className = "notebook-card-header";
@@ -74,14 +74,14 @@ function createNotebookCard(data, isPrivate = false) {
     visibility.addEventListener("click", (event) => event.stopPropagation());
     toggle.addEventListener("click", (event) => event.stopPropagation());
     toggle.addEventListener("change", async () => {
-      const saved = await savePublicVisibility(toggle.checked);
+      const saved = await savePublicVisibility(data, toggle.checked);
       if (!saved) toggle.checked = !toggle.checked;
     });
     header.append(visibility);
   }
 
   const title = document.createElement("h3");
-  title.textContent = data.title || "Blender 学习笔记";
+  title.textContent = data.title || "未命名笔记";
   const meta = document.createElement("p");
   const categoryCount = data.categoryCount ?? data.categories?.length ?? 0;
   meta.textContent = `${categoryCount} 个分类`;
@@ -93,7 +93,7 @@ function createNotebookCard(data, isPrivate = false) {
   if (isPrivate) {
     const openLink = document.createElement("a");
     openLink.className = "notebook-card-open";
-    openLink.href = data.href || "blender-notes.html";
+    openLink.href = data.href;
     openLink.append(title, meta, arrow);
     card.append(header, openLink);
   } else {
@@ -102,49 +102,55 @@ function createNotebookCard(data, isPrivate = false) {
   return card;
 }
 
-function renderPrivateShelf(data) {
-  privateNotebook = data;
-  elements.privateGrid.replaceChildren(createNotebookCard(data, true));
+function renderPrivateShelf(notebooks) {
+  privateNotebooks = notebooks;
+  elements.privateGrid.replaceChildren(...notebooks.map((notebook) => createNotebookCard(notebook, true)));
 }
 
 function downloadUpdatedSource(data) {
-  const blob = new Blob([`${JSON.stringify(data, null, 2)}\n`], { type: "application/json" });
+  const source = { ...data };
+  delete source.categoryCount;
+  delete source.href;
+  delete source.sourceFile;
+  delete source.encryptedUrl;
+  const blob = new Blob([`${JSON.stringify(source, null, 2)}\n`], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "blender-notes.json";
+  link.download = data.sourceFile;
   link.click();
   URL.revokeObjectURL(link.href);
 }
 
-async function savePublicVisibility(publicVisible) {
-  if (!privateNotebook) return false;
-  const nextNotebook = { ...privateNotebook, publicVisible };
-  elements.shelfMessage.textContent = "请选择私人源文件 blender-notes.json 以保存设置";
+async function savePublicVisibility(notebook, publicVisible) {
+  const nextNotebook = { ...notebook, publicVisible };
+  elements.shelfMessage.textContent = `请选择私人源文件 ${notebook.sourceFile} 以保存设置`;
 
   if (!("showOpenFilePicker" in window)) {
     downloadUpdatedSource(nextNotebook);
-    privateNotebook = nextNotebook;
-    elements.shelfMessage.textContent = "浏览器不支持直接写入，已下载更新后的 blender-notes.json";
+    privateNotebooks = privateNotebooks.map((item) => (item.id === notebook.id ? nextNotebook : item));
+    elements.shelfMessage.textContent = `浏览器不支持直接写入，已下载更新后的 ${notebook.sourceFile}`;
     return true;
   }
 
   try {
+    let sourceFileHandle = sourceFileHandles.get(notebook.id);
     if (!sourceFileHandle) {
       [sourceFileHandle] = await window.showOpenFilePicker({
         multiple: false,
-        types: [{ description: "Blender 私人笔记源文件", accept: { "application/json": [".json"] } }],
+        types: [{ description: "私人笔记源文件", accept: { "application/json": [".json"] } }],
       });
+      sourceFileHandles.set(notebook.id, sourceFileHandle);
     }
     const file = await sourceFileHandle.getFile();
     const source = JSON.parse(await file.text());
-    if (!Array.isArray(source.categories) || source.id !== privateNotebook.id) {
-      throw new Error("请选择 .private/blender-notes.json");
+    if (!Array.isArray(source.categories) || source.id !== notebook.id) {
+      throw new Error(`请选择 .private/${notebook.sourceFile}`);
     }
     source.publicVisible = publicVisible;
     const writable = await sourceFileHandle.createWritable();
     await writable.write(`${JSON.stringify(source, null, 2)}\n`);
     await writable.close();
-    privateNotebook = { ...privateNotebook, publicVisible };
+    privateNotebooks = privateNotebooks.map((item) => (item.id === notebook.id ? nextNotebook : item));
     elements.shelfMessage.textContent = publicVisible
       ? "已保存：下次发布笔记后会在上一层展示"
       : "已保存：下次发布笔记后会从上一层隐藏";
@@ -185,12 +191,12 @@ async function rememberWithBrowser(secret) {
 async function unlock(secret, offerToSave = false) {
   elements.message.textContent = "正在解锁…";
   try {
-    const response = await fetch(PRIVATE_DATA_URL, { cache: "no-store" });
+    const response = await fetch(PRIVATE_LIBRARY_URL, { cache: "no-store" });
     if (!response.ok) throw new Error();
     const data = await decryptNotes(await response.json(), secret);
-    if (!Array.isArray(data.categories)) throw new Error();
+    if (!Array.isArray(data.notebooks)) throw new Error();
     sessionStorage.setItem(SESSION_KEY, secret);
-    renderPrivateShelf(data);
+    renderPrivateShelf(data.notebooks);
     elements.gate.hidden = true;
     elements.publicList.hidden = true;
     elements.privateList.hidden = false;
@@ -213,7 +219,8 @@ elements.form.addEventListener("submit", async (event) => {
 
 elements.lock.addEventListener("click", () => {
   sessionStorage.removeItem(SESSION_KEY);
-  privateNotebook = null;
+  sourceFileHandles.clear();
+  privateNotebooks = [];
   elements.privateGrid.replaceChildren();
   elements.privateList.hidden = true;
   elements.gate.hidden = false;

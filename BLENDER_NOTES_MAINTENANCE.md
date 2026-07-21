@@ -5,6 +5,7 @@
 - 私人笔记源文件：`.private/blender-notes.json`
 - 私人解锁密钥：`.private/blender-notes.key`
 - 网站加密数据：`assets/content/blender-notes.enc.json`
+- 私人笔记本清单：`assets/content/notes-library.enc.json`
 - 公开笔记本清单：`assets/content/notes-public.json`
 - 笔记页面：`blender-notes.html`
 
@@ -20,7 +21,7 @@
    ```
 
 3. 本地预览确认内容。
-4. 提交并推送生成的 `assets/content/blender-notes.enc.json`。GitHub Pages 会自动重新部署。
+4. 提交并推送生成的 `assets/content/blender-notes.enc.json`、`assets/content/notes-library.enc.json` 和 `assets/content/notes-public.json`。网站会自动重新部署。
 
 验证源文件和加密数据是否一致：
 

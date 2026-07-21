@@ -1,5 +1,9 @@
-const PRIVATE_DATA_URL = "assets/content/blender-notes.enc.json";
-const LOCAL_STORAGE_KEY = "zaiye-blender-notes-local-v1";
+const notebookSettings = {
+  privateDataUrl: document.body.dataset.privateDataUrl,
+  localStorageKey: document.body.dataset.localStorageKey,
+  localTitle: document.body.dataset.localTitle || "我的学习笔记",
+  exportFilename: document.body.dataset.exportFilename || "my-notes.json",
+};
 const SESSION_KEY = "zaiye-notes-session-key";
 
 const elements = {
@@ -69,14 +73,14 @@ async function decryptNotes(payload, secret) {
 function createEmptyNotebook() {
   return {
     version: 1,
-    title: "我的 Blender 笔记",
+    title: notebookSettings.localTitle,
     updatedAt: new Date().toISOString().slice(0, 10),
     categories: [],
   };
 }
 
 function loadLocalNotebook() {
-  const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+  const saved = localStorage.getItem(notebookSettings.localStorageKey);
   if (!saved) return createEmptyNotebook();
   try {
     return validateNotes(JSON.parse(saved));
@@ -88,7 +92,7 @@ function loadLocalNotebook() {
 function saveLocalNotebook() {
   if (mode !== "local" || !notes) return;
   notes.updatedAt = new Date().toISOString().slice(0, 10);
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(notes));
+  localStorage.setItem(notebookSettings.localStorageKey, JSON.stringify(notes));
 }
 
 function validateNotes(value) {
@@ -446,7 +450,7 @@ elements.unlockForm.addEventListener("submit", async (event) => {
   if (!secret) return;
   elements.unlockMessage.textContent = "正在解锁…";
   try {
-    const response = await fetch(PRIVATE_DATA_URL, { cache: "no-store" });
+    const response = await fetch(notebookSettings.privateDataUrl, { cache: "no-store" });
     if (!response.ok) throw new Error("暂时没有可读取的私人笔记");
     const data = await decryptNotes(await response.json(), secret);
     sessionStorage.setItem(SESSION_KEY, secret);
@@ -473,7 +477,7 @@ elements.closeNotes.addEventListener("click", () => {
 const sessionSecret = sessionStorage.getItem(SESSION_KEY);
 if (sessionSecret) {
   elements.unlockMessage.textContent = "正在打开笔记…";
-  fetch(PRIVATE_DATA_URL, { cache: "no-store" })
+  fetch(notebookSettings.privateDataUrl, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) throw new Error();
       return response.json();
@@ -512,7 +516,7 @@ elements.exportNotes.addEventListener("click", () => {
   const blob = new Blob([`${JSON.stringify(notes, null, 2)}\n`], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "my-blender-notes.json";
+  link.download = notebookSettings.exportFilename;
   link.click();
   URL.revokeObjectURL(link.href);
 });
