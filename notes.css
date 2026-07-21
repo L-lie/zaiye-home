@@ -1,0 +1,104 @@
+.notes-index-header {
+  background: rgba(13, 13, 12, 0.94);
+  border-bottom: 1px solid var(--line);
+}
+
+.notes-index {
+  min-height: 100dvh;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 150px clamp(20px, 5vw, 64px) 80px;
+}
+
+.notes-index-heading {
+  max-width: 900px;
+  margin-bottom: 84px;
+}
+
+.notes-index-heading h1 {
+  max-width: none;
+  margin: 8px 0 18px;
+  font-size: clamp(3.4rem, 8vw, 7.4rem);
+}
+
+.notes-index-heading > p:last-child {
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.notebook-list {
+  border-top: 1px solid var(--line);
+}
+
+.notebook-list > h2 {
+  margin: 0;
+  padding: 22px 0;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.notebook-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: clamp(24px, 4vw, 44px) 0;
+}
+
+.notebook-row:hover h3 {
+  color: var(--amber);
+}
+
+.notebook-row h3 {
+  margin: 0 0 10px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", serif;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  font-weight: 500;
+}
+
+.notebook-row p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.notebook-meta {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.notebook-meta span:last-child {
+  color: var(--amber);
+  font-size: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .notes-index-header {
+    position: absolute;
+  }
+}
+
+@media (max-width: 560px) {
+  .notes-index {
+    padding-top: 114px;
+  }
+
+  .notes-index-heading {
+    margin-bottom: 54px;
+  }
+
+  .notebook-row {
+    grid-template-columns: 1fr;
+  }
+
+  .notebook-meta {
+    justify-content: space-between;
+  }
+}
