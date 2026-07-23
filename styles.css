@@ -999,9 +999,10 @@ address a:hover {
 }
 
 .archive-grid.is-list {
-  max-width: 1120px;
+  width: 100%;
+  max-width: none;
   grid-template-columns: 1fr;
-  gap: 28px;
+  gap: 44px;
 }
 
 .archive-work-card {
@@ -1012,17 +1013,20 @@ address a:hover {
 
 .archive-browser.is-filtered .archive-work-card {
   display: block;
+  width: 100%;
   border-radius: 0;
+  border: 0;
   background: transparent;
   overflow: visible;
 }
 
 .archive-browser.is-filtered .archive-work-card img {
   display: block;
+  width: 100%;
   height: auto;
   max-height: none;
   object-fit: contain;
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--panel);
 }
 
