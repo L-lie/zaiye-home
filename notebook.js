@@ -559,7 +559,9 @@ elements.closeNotes.addEventListener("click", () => {
 const sharedSecret = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("key");
 if (sharedSecret) sessionStorage.setItem(SESSION_KEY, sharedSecret);
 const sessionSecret = sharedSecret || sessionStorage.getItem(SESSION_KEY);
-if (sessionSecret) {
+if (window.location.hash === "#local") {
+  openNotebook(loadLocalNotebook(), "local");
+} else if (sessionSecret) {
   elements.unlockMessage.textContent = "正在打开笔记…";
   fetch(`${notebookSettings.privateDataUrl}?v=${Date.now()}`, { cache: "no-store" })
     .then((response) => {

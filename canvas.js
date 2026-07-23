@@ -36,6 +36,7 @@ const els = {
   itemBody: document.getElementById("itemBody"),
   saveBoard: document.getElementById("saveBoard"),
   exportBoard: document.getElementById("exportBoard"),
+  shareBoard: document.getElementById("shareBoard"),
   importBoard: document.getElementById("importBoard"),
   importFile: document.getElementById("importFile"),
   addPrompt: document.getElementById("addPrompt"),
@@ -1109,12 +1110,12 @@ els.canvasUnlockForm.addEventListener("submit", async (event) => {
 async function init() {
   const url = new URL(window.location.href);
   const hashKey = new URLSearchParams(url.hash.replace(/^#/, "")).get("key");
-  const sessionSecret = hashKey || sessionStorage.getItem(SESSION_KEY);
-  if (!sessionSecret) {
-    showAccess();
-    return;
-  }
-  await unlockCanvas(sessionSecret);
+  if (hashKey) sessionStorage.setItem(SESSION_KEY, hashKey);
+  await openDatabase();
+  await migrateLegacyBoard();
+  const id = url.searchParams.get("board");
+  if (id) await loadCurrentBoard(id);
+  else showHome();
 }
 
 init().catch(() => {
