@@ -83,6 +83,16 @@ const PROJECTS = [
     slides: [12, 83],
   },
   {
+    id: "ai-qing-gong-yu",
+    project: "feature",
+    title: "《爱情公寓》",
+    image: "assets/portfolio/posters/ai-qing-gong-yu.jpg",
+    poster: "assets/portfolio/posters/ai-qing-gong-yu.jpg",
+    meta: "电影 / 网大",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
+  },
+  {
     id: "da-mao-xian-wang",
     project: "feature",
     title: "《大冒险王》",
@@ -160,6 +170,46 @@ const PROJECTS = [
     slides: [87],
   },
   {
+    id: "hei-shui-ling",
+    project: "feature",
+    title: "《黑水岭》",
+    image: "assets/portfolio/posters/hei-shui-ling.jpg",
+    poster: "assets/portfolio/posters/hei-shui-ling.jpg",
+    meta: "电影 / 网大",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
+  },
+  {
+    id: "jiang-long-zhuo-yao",
+    project: "feature",
+    title: "《降龙大师之捉妖榜》",
+    image: "assets/portfolio/posters/jiang-long-zhuo-yao.webp",
+    poster: "assets/portfolio/posters/jiang-long-zhuo-yao.webp",
+    meta: "电影 / 网大",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
+  },
+  {
+    id: "jiang-long-lie-long",
+    project: "feature",
+    title: "《降龙大师：猎龙队》",
+    image: "assets/portfolio/posters/jiang-long-lie-long.jpg",
+    poster: "assets/portfolio/posters/jiang-long-lie-long.jpg",
+    meta: "电影 / 网大",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
+  },
+  {
+    id: "jiang-long-mo-long",
+    project: "feature",
+    title: "《降龙大师：魔龙咒》",
+    image: "assets/portfolio/posters/jiang-long-mo-long.jpg",
+    poster: "assets/portfolio/posters/jiang-long-mo-long.jpg",
+    meta: "电影 / 网大",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
+  },
+  {
     id: "yi-zhai-jia-zu",
     project: "series",
     title: "《一宅家族》",
@@ -217,6 +267,17 @@ const PROJECTS = [
     meta: "综艺 / 晚会",
     copy: "直播夜揭晓台模型、渲染和现场空间参考。",
     slides: [40],
+  },
+  {
+    id: "qing-chun-zai-da-di",
+    project: "variety",
+    projects: ["stage", "variety"],
+    title: "《青春在大地》",
+    image: "assets/portfolio/posters/jin-ying-jie.jpg",
+    poster: "assets/portfolio/posters/jin-ying-jie.jpg",
+    meta: "舞台剧 / 综艺",
+    copy: "项目海报已归档，项目图后续补充。",
+    slides: [],
   },
   {
     id: "jin-cheng-zha-lan",
@@ -287,6 +348,10 @@ function projectForItem(item) {
   return PROJECTS.find((project) => project.slides.includes(Number(item.slide)));
 }
 
+function projectHasType(project, type) {
+  return project.project === type || project.projects?.includes(type);
+}
+
 function currentLabel() {
   if (activeType === "all") return "全部美术资料";
   if (activeType) return TYPE_LABELS[activeType] || "作品";
@@ -306,7 +371,7 @@ function setActiveLinks() {
 
 function renderFeature() {
   const feature = document.querySelector("[data-feature-card]");
-  const project = activeCase || PROJECTS.find((item) => item.project === activeProject) || PROJECTS[0];
+  const project = activeCase || PROJECTS.find((item) => projectHasType(item, activeProject)) || PROJECTS[0];
   feature.innerHTML = `
     <a class="archive-feature-card" href="gallery.html?case=${project.id}#archive-browser">
       <img src="${project.image}" alt="${project.title}" />
@@ -341,7 +406,7 @@ function renderChips() {
 
 function visibleProjects() {
   if (!activeProject) return PROJECTS;
-  return PROJECTS.filter((item) => item.project === activeProject);
+  return PROJECTS.filter((item) => projectHasType(item, activeProject));
 }
 
 function syncProjectGridState(projects) {
@@ -382,13 +447,14 @@ function renderProjects() {
 
 function itemSearchText(item) {
   const project = projectForItem(item);
+  const projectTypes = project ? [project.project, ...(project.projects || [])] : [];
   return [
     item.title,
     item.slide,
     TYPE_LABELS[typeForItem(item)],
     project?.title,
     project?.meta,
-    project ? PROJECT_LABELS[project.project] : "",
+    ...projectTypes.map((type) => PROJECT_LABELS[type] || ""),
   ].join(" ").toLowerCase();
 }
 
@@ -627,7 +693,8 @@ function applySearch() {
 
   if (showingProjectList) {
     const projects = visibleProjects().filter((project) => {
-      const text = [project.title, project.meta, project.copy, PROJECT_LABELS[project.project]].join(" ").toLowerCase();
+      const projectTypes = [project.project, ...(project.projects || [])];
+      const text = [project.title, project.meta, project.copy, ...projectTypes.map((type) => PROJECT_LABELS[type] || "")].join(" ").toLowerCase();
       return !value || text.includes(value);
     });
     const grid = document.querySelector("[data-case-grid]");
