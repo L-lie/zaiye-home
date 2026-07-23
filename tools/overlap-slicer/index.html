@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>重叠切图 | 再野文化工作室</title>
+    <link rel="stylesheet" href="editor.css" />
+      <link rel="canonical" href="https://zaiye.art/tools/overlap-slicer/" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>重叠切图</h1>
+          <p id="meta">复制图片后按 Ctrl+V，或拖入/选择原图文件</p>
+        </div>
+        <button id="copyNext" disabled>复制下一张</button>
+      </header>
+
+      <section class="controls">
+        <label class="file-button">
+          选择图片
+          <input id="fileInput" type="file" accept="image/*" />
+        </label>
+        <label>
+          列数
+          <input id="cols" type="number" min="1" max="12" value="2" />
+        </label>
+        <label>
+          行数
+          <input id="rows" type="number" min="1" max="12" value="1" />
+        </label>
+        <label>
+          重叠
+          <input id="overlap" type="number" min="0" max="45" value="18" />
+          <span>%</span>
+        </label>
+        <label>
+          比例
+          <select id="cropAspect">
+            <option value="free">自由</option>
+            <option value="21:9">21:9</option>
+            <option value="16:9">16:9</option>
+            <option value="3:2">3:2</option>
+            <option value="4:3">4:3</option>
+            <option value="5:4">5:4</option>
+            <option value="1:1">1:1</option>
+            <option value="4:5">4:5</option>
+            <option value="3:4">3:4</option>
+            <option value="2:3">2:3</option>
+            <option value="9:16">9:16</option>
+            <option value="9:21">9:21</option>
+          </select>
+        </label>
+        <div class="presets">
+          <button data-preset="2x1">两块</button>
+          <button data-preset="2x2">4 格</button>
+          <button data-preset="3x2">6 格</button>
+          <button data-preset="3x3">9 格</button>
+        </div>
+      </section>
+
+      <section class="layout">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>原图</h2>
+            <div class="panel-actions">
+              <button id="applyCrop" disabled>应用裁剪</button>
+              <button id="resetCrop" disabled>重置裁剪</button>
+              <button id="downloadPlan" disabled>下载布局</button>
+            </div>
+          </div>
+          <div id="dropZone" class="drop-zone">
+            <strong>粘贴、拖入或选择原图</strong>
+            <span>优先使用复制得到的图片数据，不按屏幕显示尺寸截图。</span>
+          </div>
+          <canvas id="preview"></canvas>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>切片</h2>
+            <div class="panel-actions">
+              <label class="file-button compact">
+                选择处理后切片
+                <input id="stitchFiles" type="file" accept="image/*" multiple />
+              </label>
+              <button id="stitchTiles" disabled>拼合</button>
+              <button id="autoAlignTiles" disabled>自动对齐</button>
+              <button id="fullscreenStitch" disabled>满屏调整</button>
+              <button id="deleteSelectedTile" disabled>删除选中</button>
+              <button id="clearStitchTiles" disabled>清空</button>
+              <button id="downloadMerged" disabled>下载拼合图</button>
+              <button id="downloadAll" disabled>逐张下载</button>
+            </div>
+          </div>
+          <p id="stitchStatus" class="stitch-status">处理后的切片会在这里回拼，不会覆盖左侧原图。</p>
+          <div class="stitch-result" id="stitchResult" hidden>
+            <div class="stitch-result-head">
+              <h3>拼合结果</h3>
+              <button id="closeFullscreenStitch" type="button">退出满屏</button>
+            </div>
+            <canvas id="stitchPreview" class="stitch-preview"></canvas>
+          </div>
+          <div id="tiles" class="tiles"></div>
+        </div>
+      </section>
+
+      <footer id="brandFooter" class="brand-footer"></footer>
+    </main>
+
+    <script src="image-store.js"></script>
+    <script src="brand.js"></script>
+    <script src="brand-render.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Creative Vault 创意资产库</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand">Creative Vault</div>
+        <nav class="topnav" aria-label="主导航">
+          <button class="topnav-item active" data-view="dashboard">工作台</button>
+          <button class="topnav-item" data-view="canvas">创作画布</button>
+          <button class="topnav-item" data-view="ai">AI 整理</button>
+          <button class="topnav-item" data-view="archive">资产库</button>
+        </nav>
+      </div>
+      <div class="top-actions">
+        <label class="search">
+          <span class="material-symbols-outlined">search</span>
+          <input id="searchInput" type="search" placeholder="搜索项目 / 场景 / 灵感" />
+        </label>
+        <button class="icon-button" title="同步状态"><span class="material-symbols-outlined">cloud_sync</span></button>
+        <button class="icon-button" title="历史记录"><span class="material-symbols-outlined">history</span></button>
+        <button class="primary-button" id="openCapture">
+          <span class="material-symbols-outlined">add</span>
+          新建灵感
+        </button>
+      </div>
+    </header>
+
+    <div class="shell">
+      <aside class="sidebar">
+        <section class="project-head">
+          <div class="eyebrow">当前项目</div>
+          <h1>明日乐园</h1>
+          <p>Previs / 美术开发阶段</p>
+        </section>
+
+        <nav class="tree" aria-label="项目分类">
+          <button class="tree-item active" data-category="all">
+            <span class="material-symbols-outlined">menu_book</span>
+            视觉圣经
+          </button>
+          <button class="tree-item" data-category="场景">
+            <span class="material-symbols-outlined">theaters</span>
+            场景
+            <span class="count">8</span>
+          </button>
+          <button class="tree-item" data-category="角色">
+            <span class="material-symbols-outlined">person_search</span>
+            角色
+            <span class="count">4</span>
+          </button>
+          <button class="tree-item" data-category="道具">
+            <span class="material-symbols-outlined">category</span>
+            道具
+            <span class="count">6</span>
+          </button>
+          <button class="tree-item" data-category="镜头">
+            <span class="material-symbols-outlined">movie_filter</span>
+            镜头
+            <span class="count">5</span>
+          </button>
+          <button class="tree-item" data-category="材质">
+            <span class="material-symbols-outlined">texture</span>
+            材质
+            <span class="count">7</span>
+          </button>
+          <button class="tree-item" data-category="世界观">
+            <span class="material-symbols-outlined">public</span>
+            世界观
+            <span class="count">3</span>
+          </button>
+        </nav>
+
+        <section class="sidebar-section">
+          <div class="eyebrow">项目列表</div>
+          <button class="project-pill selected">明日乐园</button>
+          <button class="project-pill">美猴王</button>
+          <button class="project-pill">高温末日</button>
+        </section>
+
+        <button class="new-project">
+          <span class="material-symbols-outlined">create_new_folder</span>
+          新建项目
+        </button>
+      </aside>
+
+      <main class="workspace">
+        <section class="view active" data-panel="dashboard">
+          <div class="workspace-head">
+            <div>
+              <div class="eyebrow cyan">创意资产库</div>
+              <h2>最近灵感与项目资产</h2>
+              <p>从移动端采集灵感，在大屏上整理为场景、角色、道具、镜头与视觉规则。</p>
+            </div>
+            <div class="head-metrics">
+              <div><strong id="assetCount">0</strong><span>资产</span></div>
+              <div><strong>18</strong><span>标签</span></div>
+              <div><strong>6</strong><span>待整理</span></div>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="segmented">
+              <button class="active" data-sort="recent">最近</button>
+              <button data-sort="ai">AI 已整理</button>
+              <button data-sort="pending">待归档</button>
+            </div>
+            <div class="tag-strip" id="tagStrip"></div>
+          </div>
+
+          <div class="asset-grid" id="assetGrid"></div>
+        </section>
+
+        <section class="view canvas-view" data-panel="canvas">
+          <div class="canvas-stage">
+            <div class="canvas-card">
+              <img id="canvasImage" alt="创作画布参考图" />
+              <div class="ink-layer" aria-hidden="true">
+                <div class="ink-note note-a">强化尺度</div>
+                <div class="ink-note note-b">补充热损伤细节</div>
+                <div class="ink-ring"></div>
+                <div class="ink-line"></div>
+              </div>
+              <button class="floating-ai">
+                <span class="material-symbols-outlined">auto_fix_high</span>
+                AI 优化选区
+              </button>
+            </div>
+          </div>
+          <div class="zoom-bar">
+            <button class="icon-button"><span class="material-symbols-outlined">remove</span></button>
+            <span>125%</span>
+            <button class="icon-button"><span class="material-symbols-outlined">add</span></button>
+            <button class="icon-button"><span class="material-symbols-outlined">pan_tool</span></button>
+          </div>
+        </section>
+
+        <section class="view ai-board" data-panel="ai">
+          <div class="workspace-head compact">
+            <div>
+              <div class="eyebrow cyan">AI 整理</div>
+              <h2>把碎片转成可执行美术方案</h2>
+            </div>
+            <button class="primary-button" id="runAi">
+              <span class="material-symbols-outlined">psychology</span>
+              生成整理结果
+            </button>
+          </div>
+          <div class="ai-layout">
+            <section class="prompt-panel">
+              <label>输入方向</label>
+              <textarea id="aiPrompt">一座长期高温后的末日避难城市，道路融化变形，建筑需要体现能源不足和维护逻辑。</textarea>
+              <div class="ai-actions">
+                <button data-mode="expand" class="mode-button active">扩展</button>
+                <button data-mode="organize" class="mode-button">整理成设定文档</button>
+                <button data-mode="check" class="mode-button">检查漏洞</button>
+              </div>
+            </section>
+            <section class="result-panel" id="aiResult"></section>
+          </div>
+        </section>
+
+        <section class="view" data-panel="archive">
+          <div class="workspace-head compact">
+            <div>
+              <div class="eyebrow cyan">资产库</div>
+              <h2>项目交付与归档</h2>
+            </div>
+            <button class="secondary-button">
+              <span class="material-symbols-outlined">picture_as_pdf</span>
+              生成 PDF 设定集
+            </button>
+          </div>
+          <div class="archive-list" id="archiveList"></div>
+        </section>
+      </main>
+
+      <aside class="inspector">
+        <section class="inspector-head">
+          <div>
+            <div class="eyebrow">检查器</div>
+            <h3 id="detailTitle">选择一条灵感</h3>
+          </div>
+          <span class="status-dot"></span>
+        </section>
+
+        <div id="detailPanel" class="detail-empty">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <p>点击中间资产卡片，查看原始记录、AI 整理结果和关联内容。</p>
+        </div>
+      </aside>
+    </div>
+
+    <dialog id="captureDialog" class="capture-dialog">
+      <form method="dialog" id="captureForm">
+        <div class="dialog-head">
+          <div>
+            <div class="eyebrow cyan">快速记录</div>
+            <h3>新建灵感</h3>
+          </div>
+          <button class="icon-button" type="button" id="closeCapture" aria-label="关闭">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <label>
+          原始记录
+          <textarea id="newIdeaContent" required>高温末日里的城市道路，柏油因为长期高温变形，车辆轮胎留下融化痕迹。</textarea>
+        </label>
+        <div class="form-grid">
+          <label>
+            所属项目
+            <select id="newIdeaProject">
+              <option>明日乐园</option>
+              <option>美猴王</option>
+              <option>高温末日</option>
+            </select>
+          </label>
+          <label>
+            分类
+            <select id="newIdeaCategory">
+              <option>场景</option>
+              <option>角色</option>
+              <option>道具</option>
+              <option>镜头</option>
+              <option>材质</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          标签
+          <input id="newIdeaTags" value="高温, 末日, 城市, 材质" />
+        </label>
+        <div class="upload-slot">
+          <span class="material-symbols-outlined">add_photo_alternate</span>
+          图片上传占位，后续接对象存储
+        </div>
+        <div class="dialog-actions">
+          <button class="secondary-button" type="button" id="cancelCapture">取消</button>
+          <button class="primary-button" id="saveIdea" type="submit">保存并整理</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

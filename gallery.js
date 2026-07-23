@@ -76,6 +76,7 @@ const CASES = [
 const params = new URLSearchParams(window.location.search);
 const activeType = params.get("type");
 const activeProject = params.get("project");
+const hasActiveFilter = Boolean(activeType || activeProject);
 
 let allItems = [];
 let filteredItems = [];
@@ -117,7 +118,7 @@ function setActiveLinks() {
 function createChip(label, href, active) {
   const chip = document.createElement("a");
   chip.className = "archive-chip";
-  chip.href = href;
+  chip.href = active ? href : `${href}#archive-browser`;
   chip.textContent = label;
   chip.classList.toggle("is-active", active);
   return chip;
@@ -186,10 +187,13 @@ function renderItems(items) {
   const empty = document.querySelector("[data-gallery-empty]");
   const count = document.querySelector("[data-gallery-count]");
   const title = document.querySelector("[data-gallery-title]");
+  const browser = document.querySelector("#archive-browser");
 
   title.textContent = currentLabel();
   count.textContent = `共 ${items.length} 张`;
   empty.hidden = items.length > 0;
+  browser.classList.toggle("is-filtered", hasActiveFilter);
+  grid.classList.toggle("is-list", hasActiveFilter);
 
   grid.replaceChildren(...items.map((item) => {
     const type = typeForItem(item);
@@ -226,6 +230,15 @@ function bindMenu() {
   });
 }
 
+function scrollToResults() {
+  if (!hasActiveFilter) return;
+  const target = document.querySelector("#archive-browser");
+  if (!target) return;
+  window.requestAnimationFrame(() => {
+    target.scrollIntoView({ block: "start" });
+  });
+}
+
 async function initGallery() {
   setActiveLinks();
   renderChips();
@@ -237,6 +250,7 @@ async function initGallery() {
   allItems = await response.json();
   filteredItems = baseFilteredItems();
   renderItems(filteredItems);
+  scrollToResults();
 
   document.querySelector("[data-gallery-search]").addEventListener("input", applySearch);
 }

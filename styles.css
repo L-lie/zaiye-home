@@ -994,10 +994,42 @@ address a:hover {
   gap: 16px;
 }
 
+.archive-grid.is-list {
+  max-width: 1120px;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
 .archive-work-card {
   display: grid;
   grid-template-rows: 190px auto auto;
   transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.archive-browser.is-filtered .archive-work-card {
+  display: block;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.archive-browser.is-filtered .archive-work-card img {
+  display: block;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.archive-browser.is-filtered .archive-work-card span {
+  padding: 12px 0 4px;
+}
+
+.archive-browser.is-filtered .archive-work-card strong {
+  min-height: 0;
+  padding: 0 0 4px;
+  font-size: 1.02rem;
 }
 
 .archive-work-card:hover,

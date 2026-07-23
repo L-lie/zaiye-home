@@ -7,9 +7,9 @@
     <title>作品档案 | 再野文化工作室</title>
     <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js?v=20260723d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260723d" />
+    <link rel="stylesheet" href="styles.css?v=20260723e" />
     <link rel="stylesheet" href="theme.css?v=20260723d" />
-    <script src="gallery.js?v=20260723d" defer></script>
+    <script src="gallery.js?v=20260723e" defer></script>
   </head>
   <body class="archive-body">
     <header class="site-header archive-header">
@@ -26,6 +26,8 @@
         <a href="canvas.html">Canvas</a>
         <a href="notes.html">学习笔记</a>
         <a href="prompt-vault.html">Prompt Vault</a>
+        <a href="tools/creative-vault/index.html">Creative Vault / 创意资产库</a>
+        <a href="tools/overlap-slicer/index.html">重叠切图</a>
         <a href="index.html#contact">联系</a>
       </nav>
     </header>
@@ -45,27 +47,27 @@
           <div class="archive-menu-group">
             <button type="button" class="archive-menu-toggle" aria-expanded="true">项目类型</button>
             <div class="archive-submenu">
-              <a href="gallery.html?project=stage" data-filter-link>舞台剧</a>
-              <a href="gallery.html?project=feature" data-filter-link>电影 / 网大</a>
-              <a href="gallery.html?project=series" data-filter-link>剧集 / 短剧</a>
-              <a href="gallery.html?project=variety" data-filter-link>综艺 / 晚会</a>
-              <a href="gallery.html?project=promo" data-filter-link>广告 / 宣传片</a>
-              <a href="gallery.html?project=immersive" data-filter-link>实景 / 沉浸</a>
+              <a href="gallery.html?project=stage#archive-browser" data-filter-link>舞台剧</a>
+              <a href="gallery.html?project=feature#archive-browser" data-filter-link>电影 / 网大</a>
+              <a href="gallery.html?project=series#archive-browser" data-filter-link>剧集 / 短剧</a>
+              <a href="gallery.html?project=variety#archive-browser" data-filter-link>综艺 / 晚会</a>
+              <a href="gallery.html?project=promo#archive-browser" data-filter-link>广告 / 宣传片</a>
+              <a href="gallery.html?project=immersive#archive-browser" data-filter-link>实景 / 沉浸</a>
             </div>
           </div>
           <div class="archive-menu-group">
             <button type="button" class="archive-menu-toggle" aria-expanded="true">美术资料</button>
             <div class="archive-submenu">
-              <a href="gallery.html?type=atmosphere" data-filter-link>气氛图</a>
-              <a href="gallery.html?type=dressing" data-filter-link>陈设图</a>
-              <a href="gallery.html?type=model" data-filter-link>置景模型</a>
-              <a href="gallery.html?type=prop" data-filter-link>道具 / 资产</a>
-              <a href="gallery.html?type=vfx" data-filter-link>特效设计</a>
-              <a href="gallery.html?type=handmade" data-filter-link>手绘戏用</a>
-              <a href="gallery.html?type=graphic" data-filter-link>戏用平面</a>
-              <a href="gallery.html?type=character" data-filter-link>角色三视图</a>
-              <a href="gallery.html?type=storyboard" data-filter-link>分镜</a>
-              <a href="gallery.html?type=lineart" data-filter-link>线稿场景</a>
+              <a href="gallery.html?type=atmosphere#archive-browser" data-filter-link>气氛图</a>
+              <a href="gallery.html?type=dressing#archive-browser" data-filter-link>陈设图</a>
+              <a href="gallery.html?type=model#archive-browser" data-filter-link>置景模型</a>
+              <a href="gallery.html?type=prop#archive-browser" data-filter-link>道具 / 资产</a>
+              <a href="gallery.html?type=vfx#archive-browser" data-filter-link>特效设计</a>
+              <a href="gallery.html?type=handmade#archive-browser" data-filter-link>手绘戏用</a>
+              <a href="gallery.html?type=graphic#archive-browser" data-filter-link>戏用平面</a>
+              <a href="gallery.html?type=character#archive-browser" data-filter-link>角色三视图</a>
+              <a href="gallery.html?type=storyboard#archive-browser" data-filter-link>分镜</a>
+              <a href="gallery.html?type=lineart#archive-browser" data-filter-link>线稿场景</a>
             </div>
           </div>
         </nav>
@@ -99,7 +101,7 @@
           <div class="archive-case-grid" data-case-grid></div>
         </section>
 
-        <section class="archive-browser" aria-labelledby="archive-browser-title">
+        <section id="archive-browser" class="archive-browser" aria-labelledby="archive-browser-title">
           <div class="archive-section-head compact">
             <p class="eyebrow">Materials</p>
             <h2 id="archive-browser-title" data-gallery-title>全部作品</h2>
