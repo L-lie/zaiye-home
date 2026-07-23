@@ -923,7 +923,8 @@ address a:hover {
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  display: block;
+  display: grid;
+  grid-template-rows: 220px auto auto;
 }
 
 .archive-case-grid.is-single {
@@ -937,9 +938,9 @@ address a:hover {
 .archive-case-card img {
   display: block;
   width: 100%;
-  height: auto;
-  object-fit: cover;
-  background: transparent;
+  height: 100%;
+  object-fit: contain;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
 }
 
 .archive-work-card img {
