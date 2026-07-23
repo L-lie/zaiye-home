@@ -21,6 +21,16 @@ body {
   height: 100%;
 }
 
+body.canvas-home-mode {
+  min-height: 100%;
+  height: auto;
+  overflow: auto;
+}
+
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -88,6 +98,8 @@ textarea:focus {
 }
 
 .canvas-header {
+  position: relative;
+  z-index: 20;
   height: 68px;
   display: flex;
   align-items: center;
@@ -100,10 +112,24 @@ textarea:focus {
 
 .brand {
   display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
   min-width: 160px;
   font-weight: 800;
+}
+
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.brand-copy {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .brand-mark {
@@ -131,6 +157,162 @@ textarea:focus {
   padding: 7px 12px;
   background: rgba(246, 241, 232, 0.08);
   font-size: 0.86rem;
+}
+
+.canvas-home {
+  width: min(1440px, calc(100% - 56px));
+  min-height: calc(100vh - 68px);
+  margin: 0 auto;
+  padding: clamp(48px, 7vw, 104px) 0 80px;
+}
+
+.canvas-home-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.canvas-home-heading h1 {
+  margin: 8px 0 10px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: clamp(3rem, 7vw, 6.8rem);
+  font-weight: 400;
+  line-height: 0.98;
+}
+
+.canvas-home-heading p:last-child {
+  max-width: 650px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.5vw, 1.22rem);
+}
+
+.new-board-button,
+.board-empty button {
+  min-height: 46px;
+  padding: 10px 18px;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  white-space: nowrap;
+}
+
+.board-library {
+  padding-top: 34px;
+}
+
+.library-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 18px;
+}
+
+.library-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.library-heading span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.board-card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.board-card-open {
+  width: 100%;
+  display: block;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.board-card-open:hover {
+  background: transparent;
+}
+
+.board-preview {
+  min-height: 170px;
+  display: grid;
+  place-items: center;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    var(--panel-2);
+  background-size: 32px 32px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.board-preview.has-image {
+  background-position: center;
+  background-size: cover;
+}
+
+.board-card-copy {
+  display: grid;
+  gap: 6px;
+  padding: 16px 16px 14px;
+}
+
+.board-card-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1rem;
+}
+
+.board-card-copy small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.board-card-actions {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px 12px;
+}
+
+.board-card-actions button {
+  min-height: 30px;
+  padding: 4px 8px;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.board-empty {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  border: 1px dashed var(--line);
+  text-align: center;
+}
+
+.board-empty p {
+  margin: 0 0 10px;
+  color: var(--muted);
 }
 
 .workspace {
@@ -199,6 +381,75 @@ textarea:focus {
     linear-gradient(145deg, #121412, #191b19);
 }
 
+.ink-toolbar {
+  position: absolute;
+  z-index: 10;
+  top: 14px;
+  left: 14px;
+  max-width: calc(100% - 260px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  box-shadow: 0 10px 30px var(--shadow);
+  backdrop-filter: blur(16px);
+}
+
+.tool-segment,
+.color-swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ink-toolbar button {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
+.ink-tool.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.color-swatch {
+  width: 28px;
+  min-width: 28px;
+  min-height: 28px !important;
+  height: 28px;
+  border-radius: 50%;
+  padding: 0 !important;
+  background: var(--swatch) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+
+.color-swatch.active {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.stroke-size {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stroke-size input {
+  width: 82px;
+  padding: 0;
+  accent-color: var(--amber);
+  box-shadow: none;
+}
+
 .stage-toolbar {
   position: absolute;
   z-index: 5;
@@ -224,6 +475,15 @@ textarea:focus {
   height: 100%;
   overflow: hidden;
   cursor: grab;
+  touch-action: none;
+}
+
+.viewport[data-tool="pen"] {
+  cursor: crosshair;
+}
+
+.viewport[data-tool="eraser"] {
+  cursor: cell;
 }
 
 .viewport.dragging {
@@ -253,6 +513,24 @@ textarea:focus {
 
 .board {
   z-index: 2;
+}
+
+.item-layer,
+.ink-layer {
+  position: absolute;
+  inset: 0;
+  width: 6000px;
+  height: 4200px;
+}
+
+.item-layer {
+  z-index: 2;
+}
+
+.ink-layer {
+  z-index: 3;
+  overflow: visible;
+  pointer-events: none;
 }
 
 .canvas-item {
@@ -337,15 +615,37 @@ textarea:focus {
   color: rgba(246, 241, 232, 0.68);
 }
 
+.inline-editor {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--amber);
+  border-radius: 3px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: none;
+  resize: vertical;
+}
+
+.item-head .inline-editor {
+  padding: 4px 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.item-body > .inline-editor,
+.caption > .inline-editor {
+  min-height: 92px;
+  padding: 8px;
+  line-height: 1.55;
+}
+
 .viewport.drop-ready {
   box-shadow: inset 0 0 0 2px rgba(201, 152, 84, 0.7);
 }
 
 @media (max-width: 900px) {
-  body {
-    overflow: auto;
-  }
-
   .canvas-header {
     position: sticky;
     top: 0;
@@ -362,12 +662,103 @@ textarea:focus {
 
   .workspace {
     height: calc(100vh - 104px);
-    grid-template-columns: 1fr;
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 
   .side-panel {
-    max-height: 42vh;
+    padding: 12px;
+  }
+
+  .ink-toolbar {
+    max-width: calc(100% - 28px);
+    flex-wrap: wrap;
+  }
+
+  .stage-toolbar {
+    top: auto;
+    bottom: 14px;
+  }
+
+  .canvas-home {
+    width: min(100% - 32px, 1440px);
+    padding-top: 48px;
+  }
+
+  .canvas-home-heading {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  body:not(.canvas-home-mode) {
+    overflow: hidden;
+  }
+
+  .canvas-header {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .brand {
+    min-width: 0;
+  }
+
+  .brand-copy {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-actions button,
+  .header-actions a {
+    min-height: 32px;
+    padding: 6px 8px;
+    font-size: 0.76rem;
+  }
+
+  .workspace {
+    height: calc(100dvh - 98px);
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(116px, 28vh) minmax(0, 1fr);
+  }
+
+  .side-panel {
+    max-height: none;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .tool-block {
+    padding: 10px 0 12px;
+  }
+
+  .canvas-home-heading {
+    display: grid;
+  }
+
+  .canvas-home-heading h1 {
+    font-size: 4rem;
+  }
+
+  .board-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ink-toolbar {
+    right: 8px;
+    left: 8px;
+    top: 8px;
+    gap: 7px;
+    padding: 6px;
+  }
+
+  .stroke-size {
+    display: none;
+  }
+
+  .ink-toolbar button {
+    padding-inline: 8px;
   }
 }

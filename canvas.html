@@ -10,7 +10,7 @@
     <title>Canvas | 再野文化工作室</title>
     <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js"></script>
-    <link rel="stylesheet" href="canvas.css" />
+    <link rel="stylesheet" href="canvas.css?v=20260723" />
     <link rel="stylesheet" href="theme.css" />
   </head>
   <body>
@@ -22,7 +22,14 @@
           <span class="brand-line">ZAIYE CANVAS</span>
         </span>
       </a>
-      <div class="header-actions">
+      <div class="header-actions" id="homeActions">
+        <button id="newBoard" type="button">新建画布</button>
+        <button id="importBoardHome" type="button">导入画布</button>
+        <a href="prompt-vault.html">Prompt Vault</a>
+        <a href="index.html">回到官网</a>
+      </div>
+      <div class="header-actions" id="editorActions" hidden>
+        <button id="backToBoards" type="button">全部画布</button>
         <button id="saveBoard" type="button">保存</button>
         <button id="exportBoard" type="button">导出</button>
         <button id="importBoard" type="button">导入</button>
@@ -32,7 +39,31 @@
       </div>
     </header>
 
-    <main class="workspace">
+    <main class="canvas-home" id="canvasHome">
+      <section class="canvas-home-heading">
+        <div>
+          <p class="eyebrow">再野创作空间</p>
+          <h1>画布</h1>
+          <p>整理参考图、Prompt、手写草图和项目判断</p>
+        </div>
+        <button class="new-board-button" id="newBoardHero" type="button">新建画布</button>
+      </section>
+
+      <section class="board-library" aria-labelledby="board-library-title">
+        <div class="library-heading">
+          <h2 id="board-library-title">最近画布</h2>
+          <span id="boardCount"></span>
+        </div>
+        <div class="board-grid" id="boardGrid"></div>
+        <div class="board-empty" id="boardEmpty" hidden>
+          <strong>还没有画布</strong>
+          <p>新建一张画布，把参考图、文字和手绘内容放进去</p>
+          <button id="newBoardEmpty" type="button">新建画布</button>
+        </div>
+      </section>
+    </main>
+
+    <main class="workspace" id="canvasWorkspace" hidden>
       <aside class="side-panel" aria-label="画布工具">
         <section class="tool-block">
           <p class="eyebrow">项目</p>
@@ -81,18 +112,36 @@
             <button id="resetView" type="button">回到中心</button>
             <button id="clearBoard" type="button">清空</button>
           </div>
-          <p class="hint">拖动空白处移动画布，滚轮缩放。图片可以直接拖进画布。</p>
+          <p class="hint">拖动空白处移动画布，滚轮缩放。图片可以拖入或直接粘贴，文字也可直接粘贴成备注。</p>
         </section>
       </aside>
 
       <section class="stage-wrap" aria-label="无限画布">
+        <div class="ink-toolbar" role="toolbar" aria-label="画笔工具">
+          <div class="tool-segment" aria-label="操作模式">
+            <button class="ink-tool active" type="button" data-tool="select" aria-pressed="true">选择</button>
+            <button class="ink-tool" type="button" data-tool="pen" aria-pressed="false">画笔</button>
+            <button class="ink-tool" type="button" data-tool="eraser" aria-pressed="false">橡皮</button>
+          </div>
+          <div class="color-swatches" aria-label="画笔颜色">
+            <button class="color-swatch active" type="button" data-color="#18231f" style="--swatch:#18231f" aria-label="深绿色"></button>
+            <button class="color-swatch" type="button" data-color="#b85b5b" style="--swatch:#b85b5b" aria-label="红色"></button>
+            <button class="color-swatch" type="button" data-color="#2f6f9f" style="--swatch:#2f6f9f" aria-label="蓝色"></button>
+            <button class="color-swatch" type="button" data-color="#f4efe6" style="--swatch:#f4efe6" aria-label="白色"></button>
+          </div>
+          <label class="stroke-size">粗细 <input id="strokeWidth" type="range" min="1" max="24" value="5" /></label>
+          <button id="undoInk" type="button">撤销笔迹</button>
+        </div>
         <div class="stage-toolbar">
           <span id="statusText">已保存到本机</span>
           <span id="zoomText">100%</span>
         </div>
         <div id="viewport" class="viewport">
           <div id="canvasGrid" class="canvas-grid" aria-hidden="true"></div>
-          <div id="board" class="board"></div>
+          <div id="board" class="board">
+            <svg id="inkLayer" class="ink-layer" viewBox="0 0 6000 4200" aria-label="手写与绘画笔迹"></svg>
+            <div id="itemLayer" class="item-layer"></div>
+          </div>
         </div>
       </section>
     </main>
@@ -107,6 +156,24 @@
       </article>
     </template>
 
-    <script src="canvas.js"></script>
+    <template id="boardCardTemplate">
+      <article class="board-card">
+        <button class="board-card-open" type="button">
+          <span class="board-preview"></span>
+          <span class="board-card-copy">
+            <strong></strong>
+            <small></small>
+          </span>
+        </button>
+        <div class="board-card-actions">
+          <button class="rename-board" type="button">重命名</button>
+          <button class="delete-board" type="button">删除</button>
+        </div>
+      </article>
+    </template>
+
+    <input id="sharedImportFile" type="file" accept="application/json,.json" hidden />
+
+    <script src="canvas.js?v=20260723"></script>
   </body>
 </html>
