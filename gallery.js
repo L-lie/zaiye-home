@@ -44,39 +44,73 @@ const PROJECT_RULES = {
 
 const CASES = [
   {
+    id: "monkey-king",
+    project: "stage",
     title: "《美猴王·一念齐天》美术设计",
-    href: "gallery.html?project=stage",
+    href: "gallery.html?case=monkey-king#archive-browser",
     image: "assets/portfolio/slide-04-01.jpeg",
     meta: "舞台剧 / 古装奇幻",
     copy: "悬浮城市、花果山、多屏场景、特效设计和舞台视觉方案。",
+    slides: PROJECT_RULES.stage,
   },
   {
+    id: "feature-projects",
+    project: "feature",
     title: "《爱情公寓》《倩女幽魂》等项目图",
-    href: "gallery.html?project=feature",
+    href: "gallery.html?case=feature-projects#archive-browser",
     image: "assets/portfolio/slide-84-01.jpeg",
     meta: "电影 / 网大",
     copy: "气氛图、线稿场景、道具资产和空间设定资料。",
+    slides: PROJECT_RULES.feature,
   },
   {
+    id: "series-graphics",
+    project: "series",
     title: "现代剧陈设与戏用平面",
-    href: "gallery.html?project=series",
+    href: "gallery.html?case=series-graphics#archive-browser",
     image: "assets/portfolio/slide-80-01.jpeg",
     meta: "剧集 / 短剧",
     copy: "陈设图、应援物、药类平面和生活痕迹资料。",
+    slides: PROJECT_RULES.series,
   },
   {
+    id: "variety-stage",
+    project: "variety",
     title: "综艺、舞台与实景空间",
-    href: "gallery.html?project=variety",
+    href: "gallery.html?case=variety-stage#archive-browser",
     image: "assets/portfolio/slide-40-01.jpeg",
     meta: "综艺 / 晚会 / 实景",
     copy: "置景模型、现场空间、搭建过程和舞台视觉参考。",
+    slides: PROJECT_RULES.variety,
+  },
+  {
+    id: "promo-storyboards",
+    project: "promo",
+    title: "广告与宣传片分镜",
+    href: "gallery.html?case=promo-storyboards#archive-browser",
+    image: "assets/portfolio/slide-70-01.jpeg",
+    meta: "广告 / 宣传片",
+    copy: "宣传片与广告项目中的分镜、镜头调度和画面方案。",
+    slides: PROJECT_RULES.promo,
+  },
+  {
+    id: "immersive-spaces",
+    project: "immersive",
+    title: "实景与沉浸空间",
+    href: "gallery.html?case=immersive-spaces#archive-browser",
+    image: "assets/portfolio/slide-26-01.jpeg",
+    meta: "实景 / 沉浸",
+    copy: "实景搭建、空间推演、模型渲染和现场完成资料。",
+    slides: PROJECT_RULES.immersive,
   },
 ];
 
 const params = new URLSearchParams(window.location.search);
 const activeType = params.get("type");
 const activeProject = params.get("project");
-const hasActiveFilter = Boolean(activeType || activeProject);
+const activeCaseId = params.get("case");
+const activeCase = CASES.find((item) => item.id === activeCaseId);
+const hasActiveFilter = Boolean(activeType || activeCase);
 
 let allItems = [];
 let filteredItems = [];
@@ -102,12 +136,12 @@ function projectForItem(item) {
 
 function currentLabel() {
   if (activeType) return TYPE_LABELS[activeType] || "作品";
-  if (activeProject) return PROJECT_LABELS[activeProject] || "作品";
+  if (activeCase) return "项目";
   return "全部作品";
 }
 
 function setActiveLinks() {
-  const key = activeType ? `type=${activeType}` : activeProject ? `project=${activeProject}` : "";
+  const key = activeType ? `type=${activeType}` : activeProject ? `project=${activeProject}` : activeCase ? `case=${activeCase.id}` : "";
   document.querySelectorAll("[data-filter-link]").forEach((link) => {
     const href = link.getAttribute("href") || "";
     const active = key ? href.includes(key) : href === "gallery.html";
@@ -115,31 +149,9 @@ function setActiveLinks() {
   });
 }
 
-function createChip(label, href, active) {
-  const chip = document.createElement("a");
-  chip.className = "archive-chip";
-  chip.href = active ? href : `${href}#archive-browser`;
-  chip.textContent = label;
-  chip.classList.toggle("is-active", active);
-  return chip;
-}
-
-function renderChips() {
-  const row = document.querySelector("[data-chip-row]");
-  const key = activeType ? `type=${activeType}` : activeProject ? `project=${activeProject}` : "";
-  const chips = [createChip("全部", "gallery.html", !key)];
-  Object.entries(PROJECT_LABELS).forEach(([id, label]) => {
-    chips.push(createChip(label, `gallery.html?project=${id}`, key === `project=${id}`));
-  });
-  Object.entries(TYPE_LABELS).forEach(([id, label]) => {
-    chips.push(createChip(label, `gallery.html?type=${id}`, key === `type=${id}`));
-  });
-  row.replaceChildren(...chips);
-}
-
 function renderFeature() {
   const feature = document.querySelector("[data-feature-card]");
-  const caseData = CASES.find((item) => item.href.includes(activeProject || "")) || CASES[0];
+  const caseData = activeCase || CASES.find((item) => item.project === activeProject) || CASES[0];
   feature.innerHTML = `
     <a class="archive-feature-card" href="${caseData.href}">
       <img src="${caseData.image}" alt="${caseData.title}" />
@@ -152,7 +164,15 @@ function renderFeature() {
 
 function renderCases() {
   const grid = document.querySelector("[data-case-grid]");
-  grid.replaceChildren(...CASES.map((item) => {
+  const title = document.querySelector("[data-case-title]");
+  const eyebrow = document.querySelector("[data-case-eyebrow]");
+  const count = document.querySelector("[data-gallery-count]");
+  const cases = activeProject ? CASES.filter((item) => item.project === activeProject) : CASES;
+
+  eyebrow.textContent = activeProject ? "Project Type" : "Selected Cases";
+  title.textContent = activeProject ? PROJECT_LABELS[activeProject] || "项目入口" : "全部作品";
+  if (!hasActiveFilter && count) count.textContent = `共 ${cases.length} 个项目`;
+  grid.replaceChildren(...cases.map((item) => {
     const card = document.createElement("a");
     card.className = "archive-case-card";
     card.href = item.href;
@@ -179,7 +199,10 @@ function baseFilteredItems() {
   return allItems
     .filter((item) => Number(item.slide) > 1)
     .filter((item) => matchesRule(item, TYPE_RULES, activeType, "types"))
-    .filter((item) => matchesRule(item, PROJECT_RULES, activeProject, "projects"));
+    .filter((item) => {
+      if (!activeCase) return true;
+      return activeCase.slides.includes(Number(item.slide));
+    });
 }
 
 function renderItems(items) {
@@ -190,8 +213,9 @@ function renderItems(items) {
   const browser = document.querySelector("#archive-browser");
 
   title.textContent = currentLabel();
-  count.textContent = `共 ${items.length} 张`;
+  if (hasActiveFilter) count.textContent = `共 ${items.length} 张`;
   empty.hidden = items.length > 0;
+  browser.hidden = !hasActiveFilter;
   browser.classList.toggle("is-filtered", hasActiveFilter);
   grid.classList.toggle("is-list", hasActiveFilter);
 
@@ -231,8 +255,8 @@ function bindMenu() {
 }
 
 function scrollToResults() {
-  if (!hasActiveFilter) return;
-  const target = document.querySelector("#archive-browser");
+  if (!(hasActiveFilter || activeProject)) return;
+  const target = document.querySelector(activeProject && !activeCase ? "#archive-selected" : "#archive-browser");
   if (!target) return;
   window.requestAnimationFrame(() => {
     target.scrollIntoView({ block: "start" });
@@ -241,7 +265,6 @@ function scrollToResults() {
 
 async function initGallery() {
   setActiveLinks();
-  renderChips();
   renderFeature();
   renderCases();
   bindMenu();

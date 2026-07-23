@@ -909,8 +909,8 @@ address a:hover {
 
 .archive-case-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
 }
 
 .archive-case-card,
@@ -922,9 +922,9 @@ address a:hover {
 }
 
 .archive-case-card {
-  min-height: 320px;
+  min-height: 390px;
   display: grid;
-  grid-template-rows: 165px auto;
+  grid-template-rows: 245px auto;
 }
 
 .archive-case-card img,
@@ -951,6 +951,10 @@ address a:hover {
   padding: 0 18px;
   font-size: 1.08rem;
   line-height: 1.35;
+}
+
+.archive-case-card strong {
+  font-size: 1.2rem;
 }
 
 .archive-case-card p {

@@ -7,9 +7,9 @@
     <title>作品档案 | 再野文化工作室</title>
     <link rel="icon" href="assets/site-logo.png" type="image/png" />
     <script src="theme.js?v=20260723d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260723e" />
+    <link rel="stylesheet" href="styles.css?v=20260723f" />
     <link rel="stylesheet" href="theme.css?v=20260723d" />
-    <script src="gallery.js?v=20260723e" defer></script>
+    <script src="gallery.js?v=20260723f" defer></script>
   </head>
   <body class="archive-body">
     <header class="site-header archive-header">
@@ -47,12 +47,12 @@
           <div class="archive-menu-group">
             <button type="button" class="archive-menu-toggle" aria-expanded="true">项目类型</button>
             <div class="archive-submenu">
-              <a href="gallery.html?project=stage#archive-browser" data-filter-link>舞台剧</a>
-              <a href="gallery.html?project=feature#archive-browser" data-filter-link>电影 / 网大</a>
-              <a href="gallery.html?project=series#archive-browser" data-filter-link>剧集 / 短剧</a>
-              <a href="gallery.html?project=variety#archive-browser" data-filter-link>综艺 / 晚会</a>
-              <a href="gallery.html?project=promo#archive-browser" data-filter-link>广告 / 宣传片</a>
-              <a href="gallery.html?project=immersive#archive-browser" data-filter-link>实景 / 沉浸</a>
+              <a href="gallery.html?project=stage#archive-selected" data-filter-link>舞台剧</a>
+              <a href="gallery.html?project=feature#archive-selected" data-filter-link>电影 / 网大</a>
+              <a href="gallery.html?project=series#archive-selected" data-filter-link>剧集 / 短剧</a>
+              <a href="gallery.html?project=variety#archive-selected" data-filter-link>综艺 / 晚会</a>
+              <a href="gallery.html?project=promo#archive-selected" data-filter-link>广告 / 宣传片</a>
+              <a href="gallery.html?project=immersive#archive-selected" data-filter-link>实景 / 沉浸</a>
             </div>
           </div>
           <div class="archive-menu-group">
@@ -93,10 +93,10 @@
           <div class="archive-feature" data-feature-card></div>
         </section>
 
-        <section class="archive-selected" aria-labelledby="archive-selected-title">
+        <section id="archive-selected" class="archive-selected" aria-labelledby="archive-selected-title">
           <div class="archive-section-head">
-            <p class="eyebrow">Selected Cases</p>
-            <h2 id="archive-selected-title">项目入口</h2>
+            <p class="eyebrow" data-case-eyebrow>Selected Cases</p>
+            <h2 id="archive-selected-title" data-case-title>全部作品</h2>
           </div>
           <div class="archive-case-grid" data-case-grid></div>
         </section>
@@ -106,7 +106,6 @@
             <p class="eyebrow">Materials</p>
             <h2 id="archive-browser-title" data-gallery-title>全部作品</h2>
           </div>
-          <div class="archive-chip-row" data-chip-row></div>
           <div class="archive-grid" data-gallery-grid></div>
           <p class="empty-state" data-gallery-empty hidden>这个分类下暂时没有展示项</p>
         </section>
