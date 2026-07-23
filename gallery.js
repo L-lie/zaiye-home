@@ -641,8 +641,8 @@ function renderItems(items) {
     card.innerHTML = `
       <div class="archive-work-carousel" data-inline-carousel data-index="0">
         <div class="archive-work-track" data-inline-track>
-          ${group.items.map((entry) => `
-            <img src="${entry.file}" alt="${cleanTitle(entry.title)}" loading="lazy" draggable="false" />
+          ${group.items.map((entry, imageIndex) => `
+            <img data-group-image-index="${imageIndex}" src="${entry.file}" alt="${cleanTitle(entry.title)}" loading="lazy" draggable="false" />
           `).join("")}
         </div>
         ${hasStack ? `
@@ -797,7 +797,15 @@ function bindLightbox() {
     }
     const trigger = event.target.closest("[data-group-index]");
     if (!trigger) return;
-    openLightbox(renderedGroups[Number(trigger.dataset.groupIndex)] || { primary: {}, items: [] });
+    const clickedImage = event.target.closest("[data-group-image-index]");
+    const carousel = trigger.querySelector("[data-inline-carousel]");
+    const startIndex = clickedImage
+      ? Number(clickedImage.dataset.groupImageIndex)
+      : Number(carousel?.dataset.index || 0);
+    openLightbox(
+      renderedGroups[Number(trigger.dataset.groupIndex)] || { primary: {}, items: [] },
+      Number.isFinite(startIndex) ? startIndex : 0,
+    );
   });
   document.addEventListener("contextmenu", (event) => {
     if (event.target.closest("[data-group-index]")) event.preventDefault();
