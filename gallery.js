@@ -166,6 +166,7 @@ const PROJECTS = [
     project: "feature",
     title: "《魔王别黑化》",
     image: "assets/portfolio/slide-87-01.jpeg",
+    poster: "assets/portfolio/posters/mo-wang-bie-hei-hua.jpg",
     meta: "电影 / 网大",
     copy: "医院病房场景气氛图。",
     slides: [87],
@@ -304,6 +305,7 @@ const PROJECTS = [
   {
     id: "hai-zhi-sheng",
     project: "promo",
+    showInProjectEntry: false,
     title: "《海之声》",
     image: "assets/portfolio/slide-75-01.jpeg",
     meta: "广告 / 宣传片",
@@ -320,6 +322,15 @@ const PROJECTS = [
     copy: "百乐门、证券交易所等沉浸式空间模型和实景资料。",
     slides: [26, 27, 28],
   },
+];
+
+const PROJECT_ENTRY_ORDER = [
+  "ai-qing-gong-yu",
+  "cheng-feng-po-lang",
+  "jin-ying-jie",
+  "yi-zhai-jia-zu",
+  "monkey-king",
+  "su-ji-guan-cai-pu",
 ];
 
 const params = new URLSearchParams(window.location.search);
@@ -463,7 +474,14 @@ function renderSubChips() {
 }
 
 function visibleProjects() {
-  const entries = PROJECTS.filter((item) => item.showInProjectEntry !== false);
+  const order = new Map(PROJECT_ENTRY_ORDER.map((id, index) => [id, index]));
+  const entries = PROJECTS
+    .filter((item) => item.showInProjectEntry !== false)
+    .sort((a, b) => {
+      const aOrder = order.has(a.id) ? order.get(a.id) : Number.MAX_SAFE_INTEGER;
+      const bOrder = order.has(b.id) ? order.get(b.id) : Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
   if (!activeProject) return entries;
   return entries.filter((item) => projectHasType(item, activeProject));
 }
@@ -480,7 +498,7 @@ function renderProjects() {
   const eyebrow = document.querySelector("[data-case-eyebrow]");
   const count = document.querySelector("[data-gallery-count]");
   const projects = visibleProjects();
-  const browsingWorks = Boolean(activeCase);
+  const browsingWorks = Boolean(activeCase || activeType);
 
   selected.hidden = browsingWorks;
   grid.hidden = browsingWorks;
