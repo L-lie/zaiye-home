@@ -909,7 +909,7 @@ address a:hover {
 
 .archive-case-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -925,6 +925,14 @@ address a:hover {
   min-height: 430px;
   display: grid;
   grid-template-rows: 250px auto;
+}
+
+.archive-case-grid.is-single {
+  grid-template-columns: minmax(360px, 820px);
+}
+
+.archive-case-grid.is-single .archive-case-card {
+  grid-template-rows: 330px auto;
 }
 
 .archive-case-card img,
@@ -1012,6 +1020,7 @@ address a:hover {
 .archive-work-card {
   display: grid;
   grid-template-rows: 190px auto auto;
+  position: relative;
   width: 100%;
   padding: 0;
   text-align: left;
@@ -1020,6 +1029,19 @@ address a:hover {
   appearance: none;
   cursor: zoom-in;
   transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.archive-work-count {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 800;
 }
 
 .archive-browser.is-filtered .archive-work-card {
@@ -1107,6 +1129,45 @@ body.is-lightbox-open {
 
 .archive-lightbox-close:hover {
   background: rgba(255, 255, 255, 0.14);
+}
+
+.archive-lightbox-nav {
+  position: fixed;
+  top: 50%;
+  z-index: 2;
+  width: 58px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.48);
+  color: #fff;
+  font-size: 3.2rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.archive-lightbox-nav.prev {
+  left: 24px;
+}
+
+.archive-lightbox-nav.next {
+  right: 24px;
+}
+
+.archive-lightbox-nav:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.archive-lightbox-count {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 2;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 800;
 }
 
 .archive-work-card:hover,

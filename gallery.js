@@ -38,7 +38,7 @@ const PROJECTS = [
     id: "monkey-king",
     project: "stage",
     title: "《美猴王·一念齐天》美术设计",
-    image: "assets/portfolio/slide-04-01.jpeg",
+    image: "assets/portfolio/posters/monkey-king.jpg",
     meta: "舞台剧 / 古装奇幻",
     copy: "悬浮城市、花果山、多屏场景、特效设计和角色视觉方案。",
     slides: [4, 5, 6, 7, 8, 9, 10, 31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 58, 59, 67, 68, 71],
@@ -47,7 +47,7 @@ const PROJECTS = [
     id: "di-xin-wei-ji",
     project: "feature",
     title: "《地心危机》",
-    image: "assets/portfolio/slide-11-01.jpeg",
+    image: "assets/portfolio/posters/di-xin-wei-ji.jpg",
     meta: "电影 / 网大",
     copy: "科幻空间气氛图、道具资产、实验设备和戏用文字资料。",
     slides: [11, 16, 44, 45, 46, 48, 65],
@@ -65,7 +65,7 @@ const PROJECTS = [
     id: "mi-hang-kun-lun-xu",
     project: "feature",
     title: "《迷航昆仑墟》",
-    image: "assets/portfolio/slide-24-01.jpeg",
+    image: "assets/portfolio/posters/mi-hang-kun-lun-xu.jpg",
     meta: "电影 / 网大",
     copy: "船舱、实验室、改造人舱、顶灯和昆仑瓶道具资料。",
     slides: [24, 25, 29, 47, 50, 56],
@@ -83,7 +83,7 @@ const PROJECTS = [
     id: "da-mao-xian-wang",
     project: "feature",
     title: "《大冒险王》",
-    image: "assets/portfolio/slide-17-01.jpeg",
+    image: "assets/portfolio/posters/da-mao-xian-wang.jpg",
     meta: "电影 / 网大",
     copy: "基地空间、吧台、休闲区和仓库谈判场景。",
     slides: [17, 85, 86],
@@ -92,7 +92,7 @@ const PROJECTS = [
     id: "chao-shen-bao-biao",
     project: "feature",
     title: "《超神保镖》",
-    image: "assets/portfolio/slide-21-01.jpeg",
+    image: "assets/portfolio/posters/chao-shen-bao-biao.jpg",
     meta: "电影 / 网大",
     copy: "警察局空间模型与渲染方案。",
     slides: [21],
@@ -128,7 +128,7 @@ const PROJECTS = [
     id: "da-she-3",
     project: "feature",
     title: "《大蛇3》",
-    image: "assets/portfolio/slide-61-04.jpeg",
+    image: "assets/portfolio/posters/da-she-3.png",
     meta: "电影 / 网大",
     copy: "动物札记与道具画资料。",
     slides: [61],
@@ -137,7 +137,7 @@ const PROJECTS = [
     id: "da-mo-shen-long",
     project: "feature",
     title: "《大漠神龙》",
-    image: "assets/portfolio/slide-72-01.png",
+    image: "assets/portfolio/posters/da-mo-shen-long.webp",
     meta: "电影 / 网大",
     copy: "沙漠、磐石镇等分镜和线稿场景。",
     slides: [72, 74],
@@ -155,7 +155,7 @@ const PROJECTS = [
     id: "yi-zhai-jia-zu",
     project: "series",
     title: "《一宅家族》",
-    image: "assets/portfolio/slide-20-01.png",
+    image: "assets/portfolio/posters/yi-zhai-jia-zu.png",
     meta: "剧集 / 情景剧",
     copy: "客厅、卧室等空间模型、渲染图和实景陈设资料。",
     slides: [18, 19, 20],
@@ -200,7 +200,7 @@ const PROJECTS = [
     id: "cheng-feng-po-lang",
     project: "variety",
     title: "《乘风破浪的姐姐第一季》",
-    image: "assets/portfolio/slide-40-01.jpeg",
+    image: "assets/portfolio/posters/cheng-feng-po-lang.jpg",
     meta: "综艺 / 晚会",
     copy: "直播夜揭晓台模型、渲染和现场空间参考。",
     slides: [40],
@@ -227,7 +227,7 @@ const PROJECTS = [
     id: "ming-guo-immersive",
     project: "immersive",
     title: "民国剧本杀",
-    image: "assets/portfolio/slide-27-02.png",
+    image: "assets/portfolio/posters/ming-guo-immersive.jpg",
     meta: "实景 / 沉浸",
     copy: "百乐门、证券交易所等沉浸式空间模型和实景资料。",
     slides: [26, 27, 28],
@@ -243,6 +243,7 @@ const showingProjectList = !activeType && !activeCase;
 
 let allItems = [];
 let filteredItems = [];
+let renderedGroups = [];
 let lightboxState = {
   scale: 1,
   x: 0,
@@ -272,10 +273,11 @@ function projectForItem(item) {
 }
 
 function currentLabel() {
+  if (activeType === "all") return "全部美术资料";
   if (activeType) return TYPE_LABELS[activeType] || "作品";
   if (activeCase) return activeCase.title;
   if (activeProject) return PROJECT_LABELS[activeProject] || "项目入口";
-  return "全部作品";
+  return "项目入口";
 }
 
 function setActiveLinks() {
@@ -303,8 +305,8 @@ function renderFeature() {
 function renderChips() {
   const wrap = document.querySelector("[data-archive-chips]");
   const chips = [
-    { label: "全部", href: "gallery.html", active: !activeType && !activeProject && !activeCase },
-    { label: "项目", href: "gallery.html#archive-selected", active: showingProjectList },
+    { label: "全部", href: "gallery.html?type=all#archive-browser", active: activeType === "all" },
+    { label: activeCase ? cleanTitle(activeCase.title) : "项目", href: activeCase ? window.location.href : "gallery.html#archive-selected", active: showingProjectList || Boolean(activeCase) },
     ...Object.entries(TYPE_LABELS).map(([key, label]) => ({
       label,
       href: `gallery.html?type=${key}#archive-browser`,
@@ -327,20 +329,28 @@ function visibleProjects() {
   return PROJECTS.filter((item) => item.project === activeProject);
 }
 
+function syncProjectGridState(projects) {
+  const grid = document.querySelector("[data-case-grid]");
+  grid.classList.toggle("is-single", projects.length === 1);
+}
+
 function renderProjects() {
+  const selected = document.querySelector("#archive-selected");
   const grid = document.querySelector("[data-case-grid]");
   const title = document.querySelector("[data-case-title]");
   const eyebrow = document.querySelector("[data-case-eyebrow]");
   const count = document.querySelector("[data-gallery-count]");
   const projects = visibleProjects();
-  const browsingWorks = Boolean(activeType || activeCase);
+  const browsingWorks = Boolean(activeCase);
 
+  selected.hidden = browsingWorks;
   grid.hidden = browsingWorks;
-  eyebrow.textContent = browsingWorks ? "Materials" : activeProject ? "Project Type" : "Selected Cases";
-  title.textContent = browsingWorks ? "全部作品" : currentLabel();
+  eyebrow.textContent = activeProject ? "Project Type" : "Selected Cases";
+  title.textContent = activeProject ? currentLabel() : "项目入口";
   if (browsingWorks) return;
 
   count.textContent = `共 ${projects.length} 个项目`;
+  syncProjectGridState(projects);
   grid.replaceChildren(...projects.map((item) => {
     const card = document.createElement("a");
     card.className = "archive-case-card";
@@ -367,6 +377,26 @@ function itemSearchText(item) {
   ].join(" ").toLowerCase();
 }
 
+function groupKeyForItem(item) {
+  const project = projectForItem(item);
+  return `${project?.id || "unknown"}::${cleanTitle(item.title).toLowerCase()}`;
+}
+
+function groupItems(items) {
+  const groups = new Map();
+  items.forEach((item) => {
+    const key = groupKeyForItem(item);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        primary: item,
+        items: [],
+      });
+    }
+    groups.get(key).items.push(item);
+  });
+  return Array.from(groups.values());
+}
+
 function baseFilteredItems() {
   return allItems
     .filter((item) => Number(item.slide) > 1)
@@ -385,25 +415,28 @@ function renderItems(items) {
   const browser = document.querySelector("#archive-browser");
 
   title.textContent = currentLabel();
-  count.textContent = showingProjectList ? count.textContent : `共 ${items.length} 张`;
+  renderedGroups = groupItems(items);
+  count.textContent = showingProjectList ? count.textContent : `共 ${renderedGroups.length} 项`;
   empty.hidden = items.length > 0;
   browser.hidden = showingProjectList;
   browser.classList.toggle("is-filtered", !showingProjectList);
   grid.classList.toggle("is-list", !showingProjectList);
 
-  grid.replaceChildren(...items.map((item) => {
+  grid.replaceChildren(...renderedGroups.map((group, index) => {
+    const item = group.primary;
     const type = typeForItem(item);
     const project = projectForItem(item);
     const card = document.createElement("button");
     card.className = "archive-work-card";
     card.type = "button";
-    card.dataset.image = item.file;
+    card.dataset.groupIndex = String(index);
     card.dataset.title = cleanTitle(item.title);
     card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
     card.innerHTML = `
       <img src="${item.file}" alt="${cleanTitle(item.title)}" loading="lazy" draggable="false" />
       <span>${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
       <strong>${cleanTitle(item.title)}</strong>
+      ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
     `;
     return card;
   }));
@@ -414,32 +447,71 @@ function updateLightboxImage(viewer) {
   image.style.transform = `translate3d(${lightboxState.x}px, ${lightboxState.y}px, 0) scale(${lightboxState.scale})`;
 }
 
+function resetLightboxTransform(viewer) {
+  lightboxState.scale = 1;
+  lightboxState.x = 0;
+  lightboxState.y = 0;
+  updateLightboxImage(viewer);
+}
+
+function showLightboxImage(viewer, nextIndex) {
+  const images = JSON.parse(viewer.dataset.images || "[]");
+  if (!images.length) return;
+  const index = (nextIndex + images.length) % images.length;
+  viewer.dataset.index = String(index);
+  const image = viewer.querySelector("[data-lightbox-image]");
+  const count = viewer.querySelector("[data-lightbox-count]");
+  image.src = images[index].file;
+  image.alt = images[index].title || "";
+  if (count) count.textContent = images.length > 1 ? `${index + 1} / ${images.length}` : "";
+  resetLightboxTransform(viewer);
+}
+
 function closeLightbox() {
   document.querySelector("[data-lightbox]")?.remove();
   document.body.classList.remove("is-lightbox-open");
 }
 
-function openLightbox(src, title) {
+function openLightbox(group, startIndex = 0) {
   closeLightbox();
   lightboxState = { scale: 1, x: 0, y: 0, dragging: false, pointerX: 0, pointerY: 0 };
+  const images = group.items.map((item) => ({
+    file: item.file,
+    title: cleanTitle(item.title),
+  }));
+  const title = cleanTitle(group.primary.title);
+  const hasMultiple = images.length > 1;
 
   const viewer = document.createElement("div");
   viewer.className = "archive-lightbox";
   viewer.dataset.lightbox = "";
+  viewer.dataset.images = JSON.stringify(images);
+  viewer.dataset.index = String(startIndex);
   viewer.setAttribute("role", "dialog");
   viewer.setAttribute("aria-modal", "true");
   viewer.setAttribute("aria-label", title || "作品查看");
   viewer.innerHTML = `
     <button class="archive-lightbox-close" type="button" aria-label="关闭">×</button>
+    ${hasMultiple ? `<button class="archive-lightbox-nav prev" type="button" aria-label="上一张">‹</button>` : ""}
     <div class="archive-lightbox-stage" data-lightbox-stage>
-      <img data-lightbox-image src="${src}" alt="${title || ""}" draggable="false" />
+      <img data-lightbox-image src="" alt="${title || ""}" draggable="false" />
     </div>
+    ${hasMultiple ? `<button class="archive-lightbox-nav next" type="button" aria-label="下一张">›</button>` : ""}
+    <div class="archive-lightbox-count" data-lightbox-count></div>
   `;
 
   const stage = viewer.querySelector("[data-lightbox-stage]");
   const image = viewer.querySelector("[data-lightbox-image]");
 
   viewer.querySelector(".archive-lightbox-close").addEventListener("click", closeLightbox);
+  viewer.querySelector(".archive-lightbox-nav.prev")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showLightboxImage(viewer, Number(viewer.dataset.index) - 1);
+  });
+  viewer.querySelector(".archive-lightbox-nav.next")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    showLightboxImage(viewer, Number(viewer.dataset.index) + 1);
+  });
   viewer.addEventListener("click", (event) => {
     if (event.target === viewer || event.target === stage) closeLightbox();
   });
@@ -474,20 +546,24 @@ function openLightbox(src, title) {
 
   document.body.appendChild(viewer);
   document.body.classList.add("is-lightbox-open");
-  updateLightboxImage(viewer);
+  showLightboxImage(viewer, startIndex);
 }
 
 function bindLightbox() {
   document.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-image]");
+    const trigger = event.target.closest("[data-group-index]");
     if (!trigger) return;
-    openLightbox(trigger.dataset.image, trigger.dataset.title);
+    openLightbox(renderedGroups[Number(trigger.dataset.groupIndex)] || { primary: {}, items: [] });
   });
   document.addEventListener("contextmenu", (event) => {
-    if (event.target.closest("[data-image]")) event.preventDefault();
+    if (event.target.closest("[data-group-index]")) event.preventDefault();
   });
   document.addEventListener("keydown", (event) => {
+    const viewer = document.querySelector("[data-lightbox]");
     if (event.key === "Escape") closeLightbox();
+    if (!viewer) return;
+    if (event.key === "ArrowLeft") showLightboxImage(viewer, Number(viewer.dataset.index) - 1);
+    if (event.key === "ArrowRight") showLightboxImage(viewer, Number(viewer.dataset.index) + 1);
   });
 }
 
@@ -501,6 +577,7 @@ function applySearch() {
     });
     const grid = document.querySelector("[data-case-grid]");
     document.querySelector("[data-gallery-count]").textContent = `共 ${projects.length} 个项目`;
+    syncProjectGridState(projects);
     grid.replaceChildren(...projects.map((item) => {
       const card = document.createElement("a");
       card.className = "archive-case-card";
