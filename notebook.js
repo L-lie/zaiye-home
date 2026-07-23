@@ -35,6 +35,7 @@ const elements = {
 let notes = null;
 let scrollSyncFrame = null;
 let mode = null;
+let editingTarget = null;
 
 function base64ToBytes(value) {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
@@ -260,7 +261,24 @@ function createContent() {
       sectionElement.dataset.searchText = buildSearchText(category, section);
       const title = document.createElement("h3");
       title.textContent = section.title;
-      sectionElement.append(title);
+      const titleRow = document.createElement("div");
+      titleRow.className = "note-section-heading";
+      titleRow.append(title);
+      if (mode === "local") {
+        const actions = document.createElement("div");
+        actions.className = "note-section-actions";
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.textContent = "编辑";
+        editButton.addEventListener("click", () => openEditor(categoryIndex, sectionIndex));
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "删除";
+        deleteButton.addEventListener("click", () => deleteNote(categoryIndex, sectionIndex));
+        actions.append(editButton, deleteButton);
+        titleRow.append(actions);
+      }
+      sectionElement.append(titleRow);
       section.blocks.forEach((block) => sectionElement.append(renderBlock(block)));
       categoryElement.append(sectionElement);
     });
@@ -380,7 +398,53 @@ function makeId(label) {
   return `${base || "note"}-${Date.now().toString(36)}`;
 }
 
-function openEditor() {
+function normalizeSection(section) {
+  return {
+    id: section.id || makeId(section.title || "note"),
+    title: section.title || "未命名笔记",
+    functionNames: Array.isArray(section.functionNames) ? section.functionNames : [],
+    shortcuts: Array.isArray(section.shortcuts) ? section.shortcuts : [],
+    blocks: Array.isArray(section.blocks) ? section.blocks : [],
+  };
+}
+
+function sectionToPlainText(section) {
+  return normalizeSection(section).blocks
+    .map((block) => {
+      if (block.type === "paragraph" || block.type === "tip") return block.text || "";
+      if (block.type === "ordered-list" || block.type === "unordered-list") return (block.items || []).join("\n");
+      if (block.type === "shortcuts") return (block.items || []).map((item) => `${item.keys} ${item.action}`).join("\n");
+      if (block.type === "table") {
+        const columns = (block.columns || []).join(" | ");
+        const rows = (block.rows || []).map((row) => row.join(" | ")).join("\n");
+        return [columns, rows].filter(Boolean).join("\n");
+      }
+      return "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function sectionShortcutText(section) {
+  const normalized = normalizeSection(section);
+  return [...normalized.functionNames, ...normalized.shortcuts]
+    .filter(Boolean)
+    .filter((item, index, array) => array.indexOf(item) === index)
+    .join(", ");
+}
+
+function blocksFromPlainText(body) {
+  return body
+    .split(/\n\s*\n/)
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text) => ({ type: "paragraph", text: text.replace(/\n/g, " ") }));
+}
+
+function openEditor(categoryIndex = null, sectionIndex = null) {
+  editingTarget = Number.isInteger(categoryIndex) && Number.isInteger(sectionIndex)
+    ? { categoryIndex, sectionIndex }
+    : null;
   elements.editorCategory.replaceChildren();
   notes.categories.forEach((category, index) => {
     const option = document.createElement("option");
@@ -392,11 +456,20 @@ function openEditor() {
   newOption.value = "new";
   newOption.textContent = "新建大分类";
   elements.editorCategory.append(newOption);
-  if (!notes.categories.length) elements.editorCategory.value = "new";
-  elements.newCategoryField.hidden = elements.editorCategory.value !== "new";
   elements.noteForm.reset();
-  if (!notes.categories.length) elements.editorCategory.value = "new";
+
+  if (editingTarget) {
+    const section = normalizeSection(notes.categories[categoryIndex].sections[sectionIndex]);
+    elements.editorCategory.value = String(categoryIndex);
+    elements.editorTitle.value = section.title;
+    elements.editorBody.value = sectionToPlainText(section);
+    elements.editorShortcuts.value = sectionShortcutText(section);
+  } else if (!notes.categories.length) {
+    elements.editorCategory.value = "new";
+  }
+
   elements.newCategoryField.hidden = elements.editorCategory.value !== "new";
+  elements.noteDialog.querySelector(".dialog-heading h2").textContent = editingTarget ? "编辑笔记" : "新增笔记";
   elements.noteDialog.showModal();
 }
 
@@ -424,22 +497,48 @@ function saveEditorNote() {
   }
 
   const tags = elements.editorShortcuts.value
-    .split(/[,，]/)
+    .split(/[,，\n]/)
     .map((item) => item.trim())
     .filter(Boolean);
-  const blocks = body
-    .split(/\n\s*\n/)
-    .map((text) => ({ type: "paragraph", text: text.replace(/\n/g, " ") }));
-  category.sections.push({
-    id: makeId(title),
+  const nextSection = {
+    id: editingTarget
+      ? notes.categories[editingTarget.categoryIndex].sections[editingTarget.sectionIndex].id
+      : makeId(title),
     title,
     functionNames: tags,
     shortcuts: tags,
-    blocks,
-  });
+    blocks: blocksFromPlainText(body),
+  };
+
+  if (editingTarget) {
+    const oldCategory = notes.categories[editingTarget.categoryIndex];
+    if (oldCategory === category) {
+      category.sections[editingTarget.sectionIndex] = nextSection;
+    } else {
+      oldCategory.sections.splice(editingTarget.sectionIndex, 1);
+      category.sections.push(nextSection);
+    }
+    editingTarget = null;
+  } else {
+    category.sections.push(nextSection);
+  }
+
   saveLocalNotebook();
   renderNotebook();
   return true;
+}
+
+function deleteNote(categoryIndex, sectionIndex) {
+  const category = notes.categories[categoryIndex];
+  const section = category?.sections?.[sectionIndex];
+  if (!section) return;
+  if (!window.confirm(`删除“${section.title || "这条笔记"}”？`)) return;
+  category.sections.splice(sectionIndex, 1);
+  if (category.sections.length === 0 && window.confirm(`“${category.title}”已经没有笔记，是否同时删除这个大分类？`)) {
+    notes.categories.splice(categoryIndex, 1);
+  }
+  saveLocalNotebook();
+  renderNotebook();
 }
 
 elements.startLocal.addEventListener("click", () => openNotebook(loadLocalNotebook(), "local"));
