@@ -923,8 +923,8 @@ address a:hover {
 
 .archive-case-card {
   min-height: 430px;
-  display: grid;
-  grid-template-rows: 250px auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .archive-case-grid.is-single {
@@ -932,19 +932,22 @@ address a:hover {
 }
 
 .archive-case-grid.is-single .archive-case-card {
-  grid-template-rows: 330px auto;
-}
-
-.archive-case-card img,
-.archive-work-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  max-width: 820px;
 }
 
 .archive-case-card img {
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.archive-work-card img {
+  width: 100%;
+  height: 100%;
+  flex: 0 0 100%;
+  object-fit: cover;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 .archive-case-card span,
@@ -1042,6 +1045,51 @@ address a:hover {
   font-size: 0.82rem;
   font-style: normal;
   font-weight: 800;
+}
+
+.archive-work-carousel {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.archive-work-track {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  height: 100%;
+  transition: transform 260ms ease;
+  will-change: transform;
+}
+
+.archive-work-slide {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  width: 38px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-size: 2rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.archive-work-slide.prev {
+  left: 10px;
+}
+
+.archive-work-slide.next {
+  right: 10px;
+}
+
+.archive-work-slide:hover {
+  background: #fff;
 }
 
 .archive-browser.is-filtered .archive-work-card {

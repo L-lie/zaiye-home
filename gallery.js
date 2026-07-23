@@ -38,7 +38,8 @@ const PROJECTS = [
     id: "monkey-king",
     project: "stage",
     title: "《美猴王·一念齐天》美术设计",
-    image: "assets/portfolio/posters/monkey-king.jpg",
+    image: "assets/portfolio/slide-04-01.jpeg",
+    poster: "assets/portfolio/posters/monkey-king.jpg",
     meta: "舞台剧 / 古装奇幻",
     copy: "悬浮城市、花果山、多屏场景、特效设计和角色视觉方案。",
     slides: [4, 5, 6, 7, 8, 9, 10, 31, 32, 33, 34, 35, 36, 37, 38, 41, 42, 58, 59, 67, 68, 71],
@@ -47,7 +48,8 @@ const PROJECTS = [
     id: "di-xin-wei-ji",
     project: "feature",
     title: "《地心危机》",
-    image: "assets/portfolio/posters/di-xin-wei-ji.jpg",
+    image: "assets/portfolio/slide-11-01.jpeg",
+    poster: "assets/portfolio/posters/di-xin-wei-ji.jpg",
     meta: "电影 / 网大",
     copy: "科幻空间气氛图、道具资产、实验设备和戏用文字资料。",
     slides: [11, 16, 44, 45, 46, 48, 65],
@@ -65,7 +67,8 @@ const PROJECTS = [
     id: "mi-hang-kun-lun-xu",
     project: "feature",
     title: "《迷航昆仑墟》",
-    image: "assets/portfolio/posters/mi-hang-kun-lun-xu.jpg",
+    image: "assets/portfolio/slide-24-01.jpeg",
+    poster: "assets/portfolio/posters/mi-hang-kun-lun-xu.jpg",
     meta: "电影 / 网大",
     copy: "船舱、实验室、改造人舱、顶灯和昆仑瓶道具资料。",
     slides: [24, 25, 29, 47, 50, 56],
@@ -83,7 +86,8 @@ const PROJECTS = [
     id: "da-mao-xian-wang",
     project: "feature",
     title: "《大冒险王》",
-    image: "assets/portfolio/posters/da-mao-xian-wang.jpg",
+    image: "assets/portfolio/slide-17-01.jpeg",
+    poster: "assets/portfolio/posters/da-mao-xian-wang.jpg",
     meta: "电影 / 网大",
     copy: "基地空间、吧台、休闲区和仓库谈判场景。",
     slides: [17, 85, 86],
@@ -92,7 +96,8 @@ const PROJECTS = [
     id: "chao-shen-bao-biao",
     project: "feature",
     title: "《超神保镖》",
-    image: "assets/portfolio/posters/chao-shen-bao-biao.jpg",
+    image: "assets/portfolio/slide-21-01.jpeg",
+    poster: "assets/portfolio/posters/chao-shen-bao-biao.jpg",
     meta: "电影 / 网大",
     copy: "警察局空间模型与渲染方案。",
     slides: [21],
@@ -128,7 +133,8 @@ const PROJECTS = [
     id: "da-she-3",
     project: "feature",
     title: "《大蛇3》",
-    image: "assets/portfolio/posters/da-she-3.png",
+    image: "assets/portfolio/slide-61-04.jpeg",
+    poster: "assets/portfolio/posters/da-she-3.png",
     meta: "电影 / 网大",
     copy: "动物札记与道具画资料。",
     slides: [61],
@@ -137,7 +143,8 @@ const PROJECTS = [
     id: "da-mo-shen-long",
     project: "feature",
     title: "《大漠神龙》",
-    image: "assets/portfolio/posters/da-mo-shen-long.webp",
+    image: "assets/portfolio/slide-72-01.png",
+    poster: "assets/portfolio/posters/da-mo-shen-long.webp",
     meta: "电影 / 网大",
     copy: "沙漠、磐石镇等分镜和线稿场景。",
     slides: [72, 74],
@@ -155,7 +162,8 @@ const PROJECTS = [
     id: "yi-zhai-jia-zu",
     project: "series",
     title: "《一宅家族》",
-    image: "assets/portfolio/posters/yi-zhai-jia-zu.png",
+    image: "assets/portfolio/slide-20-01.png",
+    poster: "assets/portfolio/posters/yi-zhai-jia-zu.png",
     meta: "剧集 / 情景剧",
     copy: "客厅、卧室等空间模型、渲染图和实景陈设资料。",
     slides: [18, 19, 20],
@@ -200,7 +208,8 @@ const PROJECTS = [
     id: "cheng-feng-po-lang",
     project: "variety",
     title: "《乘风破浪的姐姐第一季》",
-    image: "assets/portfolio/posters/cheng-feng-po-lang.jpg",
+    image: "assets/portfolio/slide-40-01.jpeg",
+    poster: "assets/portfolio/posters/cheng-feng-po-lang.jpg",
     meta: "综艺 / 晚会",
     copy: "直播夜揭晓台模型、渲染和现场空间参考。",
     slides: [40],
@@ -227,7 +236,8 @@ const PROJECTS = [
     id: "ming-guo-immersive",
     project: "immersive",
     title: "民国剧本杀",
-    image: "assets/portfolio/posters/ming-guo-immersive.jpg",
+    image: "assets/portfolio/slide-27-02.png",
+    poster: "assets/portfolio/posters/ming-guo-immersive.jpg",
     meta: "实景 / 沉浸",
     copy: "百乐门、证券交易所等沉浸式空间模型和实景资料。",
     slides: [26, 27, 28],
@@ -356,7 +366,7 @@ function renderProjects() {
     card.className = "archive-case-card";
     card.href = `gallery.html?case=${item.id}#archive-browser`;
     card.innerHTML = `
-      <img src="${item.image}" alt="${item.title}" loading="lazy" />
+      <img src="${item.poster || item.image}" alt="${item.title}" loading="lazy" />
       <span>${item.meta}</span>
       <strong>${item.title}</strong>
       <p>${item.copy}</p>
@@ -426,20 +436,43 @@ function renderItems(items) {
     const item = group.primary;
     const type = typeForItem(item);
     const project = projectForItem(item);
-    const card = document.createElement("button");
+    const hasMultiple = group.items.length > 1;
+    const card = document.createElement("article");
     card.className = "archive-work-card";
-    card.type = "button";
     card.dataset.groupIndex = String(index);
     card.dataset.title = cleanTitle(item.title);
+    card.tabIndex = 0;
+    card.setAttribute("role", "button");
     card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
     card.innerHTML = `
-      <img src="${item.file}" alt="${cleanTitle(item.title)}" loading="lazy" draggable="false" />
+      <div class="archive-work-carousel" data-inline-carousel data-index="0">
+        <div class="archive-work-track" data-inline-track>
+          ${group.items.map((entry) => `
+            <img src="${entry.file}" alt="${cleanTitle(entry.title)}" loading="lazy" draggable="false" />
+          `).join("")}
+        </div>
+        ${hasMultiple ? `
+          <button class="archive-work-slide prev" type="button" data-inline-control data-inline-step="-1" aria-label="Previous image">‹</button>
+          <button class="archive-work-slide next" type="button" data-inline-control data-inline-step="1" aria-label="Next image">›</button>
+        ` : ""}
+      </div>
       <span>${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
       <strong>${cleanTitle(item.title)}</strong>
       ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
     `;
     return card;
   }));
+}
+
+function setInlineSlide(card, nextIndex) {
+  const group = renderedGroups[Number(card.dataset.groupIndex)];
+  const carousel = card.querySelector("[data-inline-carousel]");
+  const track = card.querySelector("[data-inline-track]");
+  if (!group || !carousel || !track) return;
+  const total = group.items.length;
+  const index = (nextIndex + total) % total;
+  carousel.dataset.index = String(index);
+  track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
 }
 
 function updateLightboxImage(viewer) {
@@ -551,6 +584,17 @@ function openLightbox(group, startIndex = 0) {
 
 function bindLightbox() {
   document.addEventListener("click", (event) => {
+    const inlineControl = event.target.closest("[data-inline-control]");
+    if (inlineControl) {
+      event.preventDefault();
+      event.stopPropagation();
+      const card = inlineControl.closest("[data-group-index]");
+      const carousel = card?.querySelector("[data-inline-carousel]");
+      if (card && carousel) {
+        setInlineSlide(card, Number(carousel.dataset.index || 0) + Number(inlineControl.dataset.inlineStep || 0));
+      }
+      return;
+    }
     const trigger = event.target.closest("[data-group-index]");
     if (!trigger) return;
     openLightbox(renderedGroups[Number(trigger.dataset.groupIndex)] || { primary: {}, items: [] });
@@ -560,6 +604,12 @@ function bindLightbox() {
   });
   document.addEventListener("keydown", (event) => {
     const viewer = document.querySelector("[data-lightbox]");
+    const inlineCard = event.target.closest?.("[data-group-index]");
+    if (!viewer && inlineCard && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      openLightbox(renderedGroups[Number(inlineCard.dataset.groupIndex)] || { primary: {}, items: [] });
+      return;
+    }
     if (event.key === "Escape") closeLightbox();
     if (!viewer) return;
     if (event.key === "ArrowLeft") showLightboxImage(viewer, Number(viewer.dataset.index) - 1);
@@ -583,7 +633,7 @@ function applySearch() {
       card.className = "archive-case-card";
       card.href = `gallery.html?case=${item.id}#archive-browser`;
       card.innerHTML = `
-        <img src="${item.image}" alt="${item.title}" loading="lazy" />
+        <img src="${item.poster || item.image}" alt="${item.title}" loading="lazy" />
         <span>${item.meta}</span>
         <strong>${item.title}</strong>
         <p>${item.copy}</p>
