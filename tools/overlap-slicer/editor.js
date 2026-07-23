@@ -57,11 +57,15 @@ const SUPPORTED_ASPECTS = [
 
 const hasChromeStorage = typeof chrome !== "undefined" && chrome.storage?.local;
 const hasSourceStore = typeof OverlapImageStore !== "undefined";
+const SITE_PENDING_SOURCE_KEY = "overlapSlicerPendingSource";
 
 init();
 
 async function init() {
   wireImageImport();
+  wireExternalSourceImport();
+
+  if (await loadPendingSiteSource()) return;
 
   const params = new URLSearchParams(location.search);
   const sourceId = params.get("sourceId");
@@ -390,6 +394,31 @@ function wireImageImport() {
   });
 }
 
+function wireExternalSourceImport() {
+  window.addEventListener("message", async (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (event.data?.type !== "overlap-slicer:source") return;
+    if (!event.data.source?.dataUrl) return;
+    localStorage.removeItem(SITE_PENDING_SOURCE_KEY);
+    await loadSourceData(event.data.source);
+  });
+}
+
+async function loadPendingSiteSource() {
+  const raw = localStorage.getItem(SITE_PENDING_SOURCE_KEY);
+  if (!raw) return false;
+
+  localStorage.removeItem(SITE_PENDING_SOURCE_KEY);
+  try {
+    const source = JSON.parse(raw);
+    if (!source?.dataUrl) return false;
+    await loadSourceData(source);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 async function loadSourceFile(file) {
   const image = await loadImage(URL.createObjectURL(file));
   const canvas = document.createElement("canvas");
@@ -428,6 +457,7 @@ async function setSourceCanvas(canvas, name) {
   originalImage = canvas;
   capturedImage = canvas;
   tileSourceImage = canvas;
+  preview.hidden = false;
   baseName = cleanBaseName(name || "ai-image");
   meta.textContent = `${capturedImage.width} x ${capturedImage.height}`;
   dropZone.classList.add("is-hidden");
@@ -531,6 +561,7 @@ function makeTiles() {
 }
 
 function clearPreview() {
+  preview.hidden = true;
   const rect = preview.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   preview.width = Math.max(1, Math.round(rect.width * dpr));

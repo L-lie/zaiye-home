@@ -909,8 +909,8 @@ address a:hover {
 
 .archive-case-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 18px;
 }
 
 .archive-case-card,
@@ -922,9 +922,9 @@ address a:hover {
 }
 
 .archive-case-card {
-  min-height: 390px;
+  min-height: 430px;
   display: grid;
-  grid-template-rows: 245px auto;
+  grid-template-rows: 250px auto;
 }
 
 .archive-case-card img,
@@ -933,6 +933,10 @@ address a:hover {
   height: 100%;
   object-fit: cover;
   background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.archive-case-card img {
+  aspect-ratio: 4 / 3;
 }
 
 .archive-case-card span,
@@ -1008,6 +1012,13 @@ address a:hover {
 .archive-work-card {
   display: grid;
   grid-template-rows: 190px auto auto;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  appearance: none;
+  cursor: zoom-in;
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
@@ -1038,6 +1049,64 @@ address a:hover {
   min-height: 0;
   padding: 0 0 4px;
   font-size: 1.02rem;
+}
+
+body.is-lightbox-open {
+  overflow: hidden;
+}
+
+.archive-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.archive-lightbox-stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.archive-lightbox-stage:active {
+  cursor: grabbing;
+}
+
+.archive-lightbox img {
+  max-width: 96vw;
+  max-height: 94vh;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.archive-lightbox-close {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 2;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.archive-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .archive-work-card:hover,
