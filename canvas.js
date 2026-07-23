@@ -25,6 +25,7 @@ const els = {
   importBoardHome: document.getElementById("importBoardHome"),
   sharedImportFile: document.getElementById("sharedImportFile"),
   viewport: document.getElementById("viewport"),
+  brushCursor: document.getElementById("brushCursor"),
   grid: document.getElementById("canvasGrid"),
   board: document.getElementById("board"),
   itemLayer: document.getElementById("itemLayer"),
@@ -68,7 +69,9 @@ let activeTool = "select";
 let activeColor = "#18231f";
 let backgroundColor = "#f4efe6";
 let lastBoardPointer = null;
+let lastPointerClient = null;
 let spacePan = false;
+let temporaryZoomTool = null;
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
@@ -316,6 +319,7 @@ function applyView() {
   els.board.style.transform = transform;
   els.grid.style.transform = transform;
   els.zoomText.textContent = `${Math.round(view.scale * 100)}%`;
+  updateBrushCursor();
 }
 
 function boardPointFromClient(clientX, clientY) {
@@ -329,6 +333,28 @@ function boardPointFromClient(clientX, clientY) {
 function centerBoardPoint() {
   const rect = els.viewport.getBoundingClientRect();
   return boardPointFromClient(rect.left + rect.width / 2, rect.top + rect.height / 2);
+}
+
+function updateBrushCursor(event) {
+  if (event) lastPointerClient = { x: event.clientX, y: event.clientY };
+  const drawableTools = ["pen", "eraser", "heal", "smudge"];
+  if (!state || !drawableTools.includes(activeTool) || !lastPointerClient || spacePan) {
+    els.brushCursor.hidden = true;
+    return;
+  }
+  const rect = els.viewport.getBoundingClientRect();
+  const x = lastPointerClient.x - rect.left;
+  const y = lastPointerClient.y - rect.top;
+  if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+    els.brushCursor.hidden = true;
+    return;
+  }
+  const size = Math.max(4, Number(els.strokeWidth.value) * view.scale);
+  els.brushCursor.hidden = false;
+  els.brushCursor.dataset.tool = activeTool;
+  els.brushCursor.style.width = `${size}px`;
+  els.brushCursor.style.height = `${size}px`;
+  els.brushCursor.style.transform = `translate(${x - size / 2}px, ${y - size / 2}px)`;
 }
 
 function typeLabel(type) {
@@ -614,7 +640,15 @@ function startViewportAction(event) {
   const pencilTool = spacePan ? "pan" : (event.pointerType === "pen" ? (activeTool === "eraser" ? "eraser" : activeTool === "select" ? "pen" : activeTool) : activeTool);
   if (pencilTool === "zoom") {
     event.preventDefault();
-    zoomAt(event.clientX, event.clientY, view.scale * (event.shiftKey || event.altKey ? 0.88 : 1.12));
+    dragState = {
+      type: "zoom",
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      anchorX: event.clientX,
+      anchorY: event.clientY,
+      startScale: view.scale,
+    };
+    els.viewport.setPointerCapture(event.pointerId);
     return;
   }
   if (pencilTool === "pen") {
@@ -670,8 +704,14 @@ function startViewportAction(event) {
 }
 
 function movePointer(event) {
+  updateBrushCursor(event);
   if (state) lastBoardPointer = boardPointFromClient(event.clientX, event.clientY);
   if (!dragState || event.pointerId !== dragState.pointerId) return;
+  if (dragState.type === "zoom") {
+    const delta = event.clientX - dragState.startX;
+    zoomAt(dragState.anchorX, dragState.anchorY, dragState.startScale * Math.exp(delta * 0.004));
+    return;
+  }
   if (dragState.type === "pan") {
     view.x = dragState.viewX + event.clientX - dragState.startX;
     view.y = dragState.viewY + event.clientY - dragState.startY;
@@ -839,12 +879,14 @@ function setTool(tool) {
     button.setAttribute("aria-pressed", String(active));
   });
   els.viewport.dataset.tool = tool;
+  updateBrushCursor();
 }
 
 function setStrokeWidth(width) {
   const nextWidth = Math.min(Number(els.strokeWidth.max), Math.max(Number(els.strokeWidth.min), width));
   els.strokeWidth.value = String(nextWidth);
   els.statusText.textContent = `画笔粗细 ${nextWidth}`;
+  updateBrushCursor();
 }
 
 function swapActiveColors() {
@@ -912,6 +954,12 @@ function handleCanvasShortcut(event) {
     els.viewport.classList.add("dragging");
     return;
   }
+  if (key === "z") {
+    event.preventDefault();
+    if (!event.repeat && temporaryZoomTool === null) temporaryZoomTool = activeTool;
+    setTool("zoom");
+    return;
+  }
   if (toolKeys[key]) {
     event.preventDefault();
     setTool(toolKeys[key]);
@@ -934,8 +982,14 @@ function handleCanvasShortcut(event) {
 }
 
 function endCanvasShortcut(event) {
+  if (event.key.toLowerCase() === "z" && temporaryZoomTool !== null) {
+    setTool(temporaryZoomTool);
+    temporaryZoomTool = null;
+    return;
+  }
   if (event.code !== "Space") return;
   spacePan = false;
+  updateBrushCursor();
   if (!dragState) els.viewport.classList.remove("dragging");
 }
 
@@ -1086,6 +1140,10 @@ els.toolMenu.addEventListener("click", (event) => {
 
 els.viewport.addEventListener("pointerdown", startViewportAction);
 els.viewport.addEventListener("pointermove", movePointer);
+els.viewport.addEventListener("pointerleave", () => {
+  lastPointerClient = null;
+  updateBrushCursor();
+});
 els.viewport.addEventListener("pointerup", endPointer);
 els.viewport.addEventListener("pointercancel", endPointer);
 window.addEventListener("pointermove", movePointer);

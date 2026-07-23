@@ -540,7 +540,7 @@ textarea:focus {
 }
 
 .viewport[data-tool="pen"] {
-  cursor: crosshair;
+  cursor: none;
 }
 
 .viewport[data-tool="zoom"] {
@@ -548,7 +548,7 @@ textarea:focus {
 }
 
 .viewport[data-tool="eraser"] {
-  cursor: cell;
+  cursor: none;
 }
 
 .viewport[data-tool="lasso"],
@@ -558,11 +558,38 @@ textarea:focus {
 
 .viewport[data-tool="heal"],
 .viewport[data-tool="smudge"] {
-  cursor: crosshair;
+  cursor: none;
 }
 
 .viewport.dragging {
   cursor: grabbing;
+}
+
+.brush-cursor {
+  position: absolute;
+  z-index: 9;
+  left: 0;
+  top: 0;
+  border: 1.5px solid var(--amber);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.brush-cursor[data-tool="eraser"] {
+  border-style: dashed;
+  background: rgba(246, 241, 232, 0.32);
+}
+
+.brush-cursor[data-tool="heal"] {
+  border-color: #b85b5b;
+  background: rgba(184, 91, 91, 0.12);
+}
+
+.brush-cursor[data-tool="smudge"] {
+  border-color: #2f6f9f;
+  background: rgba(47, 111, 159, 0.12);
 }
 
 .tool-menu {
