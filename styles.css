@@ -905,8 +905,10 @@ address a:hover {
 }
 
 .archive-case-grid {
-  column-width: 280px;
-  column-gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 18px;
+  align-items: start;
 }
 
 .archive-case-card,
@@ -921,13 +923,11 @@ address a:hover {
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  display: inline-block;
-  margin: 0 0 18px;
-  break-inside: avoid;
+  display: block;
 }
 
 .archive-case-grid.is-single {
-  column-width: auto;
+  grid-template-columns: minmax(220px, 320px);
 }
 
 .archive-case-grid.is-single .archive-case-card {

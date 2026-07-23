@@ -540,6 +540,21 @@ function groupKeyForItem(item) {
   return `${project?.id || "unknown"}::${cleanTitle(item.title).toLowerCase()}`;
 }
 
+const ITEM_ORDER = {
+  "assets/portfolio/slide-18-02.jpeg": 0,
+  "assets/portfolio/slide-18-03.jpeg": 1,
+  "assets/portfolio/slide-18-04.jpeg": 2,
+  "assets/portfolio/slide-18-01.jpeg": 3,
+  "assets/portfolio/slide-19-03.jpeg": 0,
+  "assets/portfolio/slide-19-04.jpeg": 1,
+  "assets/portfolio/slide-19-01.jpeg": 2,
+  "assets/portfolio/slide-19-02.jpeg": 3,
+  "assets/portfolio/slide-20-01.png": 0,
+  "assets/portfolio/slide-20-03.png": 1,
+  "assets/portfolio/slide-20-04.png": 2,
+  "assets/portfolio/slide-20-02.jpeg": 3,
+};
+
 function groupItems(items) {
   const groups = new Map();
   items.forEach((item) => {
@@ -552,7 +567,15 @@ function groupItems(items) {
     }
     groups.get(key).items.push(item);
   });
-  return Array.from(groups.values());
+  return Array.from(groups.values()).map((group) => {
+    group.items.sort((a, b) => {
+      const aOrder = ITEM_ORDER[a.file] ?? Number.MAX_SAFE_INTEGER;
+      const bOrder = ITEM_ORDER[b.file] ?? Number.MAX_SAFE_INTEGER;
+      return aOrder - bOrder;
+    });
+    group.primary = group.items[0] || group.primary;
+    return group;
+  });
 }
 
 function baseFilteredItems() {
