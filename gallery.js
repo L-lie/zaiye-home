@@ -253,6 +253,7 @@ const PROJECTS = [
   {
     id: "miss",
     project: "series",
+    showInProjectEntry: false,
     title: "《Miss》",
     image: "assets/portfolio/slide-73-01.png",
     meta: "短片 / 分镜",
@@ -416,8 +417,9 @@ function renderChips() {
 }
 
 function visibleProjects() {
-  if (!activeProject) return PROJECTS;
-  return PROJECTS.filter((item) => projectHasType(item, activeProject));
+  const entries = PROJECTS.filter((item) => item.showInProjectEntry !== false);
+  if (!activeProject) return entries;
+  return entries.filter((item) => projectHasType(item, activeProject));
 }
 
 function syncProjectGridState(projects) {
