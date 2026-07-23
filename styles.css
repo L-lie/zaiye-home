@@ -905,10 +905,8 @@ address a:hover {
 }
 
 .archive-case-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 18px;
-  align-items: start;
+  column-width: 280px;
+  column-gap: 18px;
 }
 
 .archive-case-card,
@@ -923,12 +921,14 @@ address a:hover {
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  display: grid;
-  grid-template-rows: 220px auto auto;
+  display: inline-block;
+  margin: 0 0 18px;
+  break-inside: avoid;
+  vertical-align: top;
 }
 
 .archive-case-grid.is-single {
-  grid-template-columns: minmax(220px, 320px);
+  column-width: 320px;
 }
 
 .archive-case-grid.is-single .archive-case-card {
@@ -938,9 +938,7 @@ address a:hover {
 .archive-case-card img {
   display: block;
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  height: auto;
 }
 
 .archive-work-card img {
@@ -1346,7 +1344,6 @@ body.is-lightbox-open {
     grid-template-columns: 1fr;
   }
 
-  .archive-case-grid,
   .archive-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1377,7 +1374,6 @@ body.is-lightbox-open {
     border-radius: 16px;
   }
 
-  .archive-case-grid,
   .archive-grid {
     grid-template-columns: 1fr;
   }
