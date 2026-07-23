@@ -42,6 +42,7 @@ function base64ToBytes(value) {
 }
 
 async function decryptNotes(payload, secret) {
+  if (!crypto.subtle) throw new Error("当前页面需要 HTTPS 才能解锁私人内容");
   const passwordKey = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),

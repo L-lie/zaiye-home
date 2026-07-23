@@ -1,4 +1,12 @@
 (() => {
+  if (
+    window.location.protocol === "http:" &&
+    !["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ) {
+    window.location.replace(window.location.href.replace(/^http:/, "https:"));
+    return;
+  }
+
   const storageKey = "zaiye-site-theme";
   const savedTheme = localStorage.getItem(storageKey);
   const initialTheme = savedTheme === "dark" ? "dark" : "light";

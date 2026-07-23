@@ -81,7 +81,24 @@ function base64ToBytes(value) {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
 
+function makeUuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
 async function decryptPrivateLibrary(payload, secret) {
+  if (!crypto.subtle) throw new Error("当前页面需要 HTTPS 才能解锁私人内容");
   const passwordKey = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -148,7 +165,7 @@ async function removeBoard(id) {
 function normalizedBoard(value = {}) {
   const now = new Date().toISOString();
   return {
-    id: value.id || crypto.randomUUID(),
+    id: value.id || makeUuid(),
     title: value.title || "未命名画布",
     note: value.note || "",
     createdAt: value.createdAt || now,
@@ -500,7 +517,7 @@ function addItem(type, payload = {}) {
   if (!state) return;
   const center = payload.point || centerBoardPoint();
   const item = {
-    id: crypto.randomUUID(),
+    id: makeUuid(),
     type,
     title: payload.title || defaultTitle(type),
     body: payload.body || defaultBody(type),
@@ -603,7 +620,7 @@ function startViewportAction(event) {
   if (pencilTool === "pen") {
     event.preventDefault();
     currentStroke = {
-      id: crypto.randomUUID(),
+      id: makeUuid(),
       color: activeColor,
       width: Number(els.strokeWidth.value),
       points: [],
@@ -617,7 +634,7 @@ function startViewportAction(event) {
   if (pencilTool === "heal" || pencilTool === "smudge") {
     event.preventDefault();
     currentStroke = {
-      id: crypto.randomUUID(),
+      id: makeUuid(),
       color: pencilTool === "heal" ? "#d7c7a8" : activeColor,
       width: Number(els.strokeWidth.value),
       points: [],
@@ -798,7 +815,7 @@ function readBoardFile(file) {
 async function importAsNewBoard(file) {
   try {
     const board = await readBoardFile(file);
-    board.id = crypto.randomUUID();
+    board.id = makeUuid();
     board.title = board.title || "导入的画布";
     board.createdAt = new Date().toISOString();
     board.updatedAt = board.createdAt;
@@ -992,7 +1009,7 @@ els.imageFile.addEventListener("change", async () => {
 els.duplicateItem.addEventListener("click", () => {
   const item = selectedItem();
   if (!item) return;
-  const copy = { ...item, id: crypto.randomUUID(), title: `${item.title} 副本`, x: item.x + 30, y: item.y + 30 };
+  const copy = { ...item, id: makeUuid(), title: `${item.title} 副本`, x: item.x + 30, y: item.y + 30 };
   state.items.push(copy);
   selectedId = copy.id;
   renderBoard();

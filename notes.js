@@ -38,6 +38,7 @@ function base64ToBytes(value) {
 }
 
 async function decryptNotes(payload, secret) {
+  if (!crypto.subtle) throw new Error("当前页面需要 HTTPS 才能解锁私人内容");
   const passwordKey = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -233,9 +234,9 @@ async function unlock(secret, offerToSave = false) {
     if (offerToSave) await rememberWithBrowser(secret);
     elements.key.value = "";
     return true;
-  } catch {
+  } catch (error) {
     sessionStorage.removeItem(SESSION_KEY);
-    elements.message.textContent = "密钥不正确，请重新输入";
+    elements.message.textContent = error.message || "密钥不正确，请重新输入";
     return false;
   }
 }
