@@ -416,6 +416,52 @@ function renderChips() {
   }));
 }
 
+function projectsForActiveType() {
+  if (!activeType || activeType === "all" || !allItems.length) return [];
+  const projects = new Map();
+  allItems
+    .filter((item) => Number(item.slide) > 1)
+    .filter((item) => matchesRule(item, TYPE_RULES, activeType, "types"))
+    .forEach((item) => {
+      const project = projectForItem(item);
+      if (project && !projects.has(project.id)) projects.set(project.id, project);
+    });
+  return Array.from(projects.values());
+}
+
+function renderSubChips() {
+  const wrap = document.querySelector("[data-archive-subchips]");
+  if (!wrap) return;
+  const projects = projectsForActiveType();
+  wrap.hidden = projects.length === 0;
+  if (!projects.length) {
+    wrap.replaceChildren();
+    return;
+  }
+
+  const chips = [
+    {
+      label: "全部项目",
+      href: `gallery.html?type=${activeType}#archive-browser`,
+      active: !activeCase,
+    },
+    ...projects.map((project) => ({
+      label: cleanTitle(project.title),
+      href: `gallery.html?type=${activeType}&case=${project.id}#archive-browser`,
+      active: activeCase?.id === project.id,
+    })),
+  ];
+
+  wrap.replaceChildren(...chips.map((chip) => {
+    const link = document.createElement("a");
+    link.className = "archive-chip archive-subchip";
+    link.href = chip.href;
+    link.textContent = chip.label;
+    link.classList.toggle("is-active", chip.active);
+    return link;
+  }));
+}
+
 function visibleProjects() {
   const entries = PROJECTS.filter((item) => item.showInProjectEntry !== false);
   if (!activeProject) return entries;
@@ -501,6 +547,26 @@ function baseFilteredItems() {
     });
 }
 
+function classifyPairImages(card) {
+  const images = Array.from(card.querySelectorAll(".archive-work-track img"));
+  if (images.length !== 2) return;
+
+  const apply = () => {
+    if (!images.every((image) => image.naturalWidth && image.naturalHeight)) return;
+    const orientations = images.map((image) => (
+      image.naturalWidth >= image.naturalHeight ? "landscape" : "portrait"
+    ));
+    card.classList.toggle("is-landscape-pair", orientations.every((item) => item === "landscape"));
+    card.classList.toggle("is-portrait-pair", orientations.every((item) => item === "portrait"));
+    card.classList.toggle("is-mixed-pair", new Set(orientations).size > 1);
+  };
+
+  images.forEach((image) => {
+    if (!image.complete) image.addEventListener("load", apply, { once: true });
+  });
+  apply();
+}
+
 function renderItems(items) {
   const grid = document.querySelector("[data-gallery-grid]");
   const empty = document.querySelector("[data-gallery-empty]");
@@ -520,9 +586,12 @@ function renderItems(items) {
     const item = group.primary;
     const type = typeForItem(item);
     const project = projectForItem(item);
-    const hasMultiple = group.items.length > 1;
+    const hasStack = group.items.length > 3;
     const card = document.createElement("article");
     card.className = "archive-work-card";
+    if (group.items.length === 2) card.classList.add("is-pair");
+    if (group.items.length === 3) card.classList.add("is-trio");
+    if (hasStack) card.classList.add("is-stack");
     card.dataset.groupIndex = String(index);
     card.dataset.title = cleanTitle(item.title);
     card.tabIndex = 0;
@@ -535,15 +604,17 @@ function renderItems(items) {
             <img src="${entry.file}" alt="${cleanTitle(entry.title)}" loading="lazy" draggable="false" />
           `).join("")}
         </div>
-        ${hasMultiple ? `
-          <button class="archive-work-slide prev" type="button" data-inline-control data-inline-step="-1" aria-label="Previous image">‹</button>
-          <button class="archive-work-slide next" type="button" data-inline-control data-inline-step="1" aria-label="Next image">›</button>
+        ${hasStack ? `
+          <button class="archive-work-slide prev" type="button" data-inline-control data-inline-step="-1" aria-label="上一张">‹</button>
+          <button class="archive-work-slide next" type="button" data-inline-control data-inline-step="1" aria-label="下一张">›</button>
         ` : ""}
       </div>
       <span>${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
       <strong>${cleanTitle(item.title)}</strong>
       ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
     `;
+    classifyPairImages(card);
+    if (hasStack) setInlineSlide(card, 0);
     return card;
   }));
 }
@@ -556,7 +627,11 @@ function setInlineSlide(card, nextIndex) {
   const total = group.items.length;
   const index = (nextIndex + total) % total;
   carousel.dataset.index = String(index);
-  track.style.transform = `translate3d(${-index * 100}%, 0, 0)`;
+  carousel.style.setProperty("--slide-index", index);
+  track.querySelectorAll("img").forEach((image, imageIndex) => {
+    image.classList.toggle("is-current", imageIndex === index);
+  });
+  track.style.transform = "";
 }
 
 function updateLightboxImage(viewer) {
@@ -764,6 +839,7 @@ async function initGallery() {
   const response = await fetch("assets/portfolio/portfolio-index.json", { cache: "no-store" });
   allItems = await response.json();
   filteredItems = baseFilteredItems();
+  renderSubChips();
   renderItems(filteredItems);
   scrollToResults();
 

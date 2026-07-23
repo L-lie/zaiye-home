@@ -746,16 +746,13 @@ address a:hover {
 }
 
 .archive-topbar {
-  position: sticky;
-  z-index: 6;
-  top: 82px;
+  position: static;
   display: grid;
-  grid-template-columns: minmax(260px, 720px) auto;
-  gap: 18px;
-  align-items: center;
-  padding: 16px 0 22px;
-  background: color-mix(in srgb, var(--paper) 92%, transparent);
-  backdrop-filter: blur(16px);
+  gap: 10px;
+  margin: 22px 0 26px;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
 }
 
 .archive-search {
@@ -771,14 +768,15 @@ address a:hover {
 
 .archive-search input {
   width: 100%;
-  min-height: 54px;
+  min-height: 46px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 0 18px;
+  border-radius: 12px;
+  padding: 0 12px;
   background: var(--panel);
   color: var(--ink);
   font: inherit;
-  box-shadow: 0 12px 36px var(--shadow);
+  font-size: 0.9rem;
+  box-shadow: none;
 }
 
 .archive-search input::placeholder {
@@ -786,10 +784,9 @@ address a:hover {
 }
 
 .archive-count {
-  margin: 22px 0 0;
+  margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
-  white-space: nowrap;
 }
 
 .archive-hero {
@@ -908,9 +905,8 @@ address a:hover {
 }
 
 .archive-case-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
-  gap: 18px;
+  column-width: 280px;
+  column-gap: 18px;
 }
 
 .archive-case-card,
@@ -922,24 +918,28 @@ address a:hover {
 }
 
 .archive-case-card {
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: inline-block;
+  margin: 0 0 18px;
+  break-inside: avoid;
 }
 
 .archive-case-grid.is-single {
-  grid-template-columns: minmax(360px, 820px);
+  column-width: auto;
 }
 
 .archive-case-grid.is-single .archive-case-card {
-  max-width: 820px;
+  max-width: 320px;
 }
 
 .archive-case-card img {
+  display: block;
   width: 100%;
-  height: clamp(220px, 28vw, 360px);
-  object-fit: contain;
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  height: auto;
+  object-fit: cover;
+  background: transparent;
 }
 
 .archive-work-card img {
@@ -976,15 +976,20 @@ address a:hover {
   margin: 10px 0 0;
   padding: 0 18px 20px;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   line-height: 1.6;
 }
 
-.archive-chip-row {
+.archive-chip-row,
+.archive-subchip-row {
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
   margin-bottom: 22px;
+}
+
+.archive-subchip-row {
+  margin-top: -8px;
 }
 
 .archive-chip {
@@ -1066,26 +1071,26 @@ address a:hover {
   position: absolute;
   top: 50%;
   z-index: 2;
-  width: 38px;
-  height: 54px;
+  width: 30px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.38);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--ink);
-  font-size: 2rem;
+  font-size: 1.45rem;
   line-height: 1;
   transform: translateY(-50%);
   cursor: pointer;
 }
 
 .archive-work-slide.prev {
-  left: 10px;
+  left: 6px;
 }
 
 .archive-work-slide.next {
-  right: 10px;
+  right: 6px;
 }
 
 .archive-work-slide:hover {
@@ -1101,6 +1106,19 @@ address a:hover {
   overflow: visible;
 }
 
+.archive-browser.is-filtered .archive-work-carousel {
+  background: transparent;
+  overflow: visible;
+}
+
+.archive-browser.is-filtered .archive-work-track {
+  height: auto;
+}
+
+.archive-browser.is-filtered .archive-work-card:not(.is-pair):not(.is-trio):not(.is-stack) .archive-work-track {
+  display: block;
+}
+
 .archive-browser.is-filtered .archive-work-card img {
   display: block;
   width: 100%;
@@ -1108,7 +1126,71 @@ address a:hover {
   max-height: none;
   object-fit: contain;
   border: 0;
-  background: var(--panel);
+  background: transparent;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-pair .archive-work-track,
+.archive-browser.is-filtered .archive-work-card.is-trio .archive-work-track {
+  display: grid;
+  gap: 10px;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-pair .archive-work-track {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.archive-browser.is-filtered .archive-work-card.is-landscape-pair .archive-work-track {
+  grid-template-columns: 1fr;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-trio .archive-work-track {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.archive-browser.is-filtered .archive-work-card.is-pair img,
+.archive-browser.is-filtered .archive-work-card.is-trio img {
+  height: 100%;
+  object-fit: cover;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-portrait-pair img,
+.archive-browser.is-filtered .archive-work-card.is-trio img {
+  max-height: 520px;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-landscape-pair img {
+  max-height: none;
+  object-fit: contain;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-stack .archive-work-carousel {
+  overflow: hidden;
+  padding: 0 7.5%;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-stack .archive-work-track {
+  display: flex;
+  gap: 10px;
+  transform: translate3d(calc(var(--slide-index, 0) * -1 * (85% + 10px)), 0, 0);
+}
+
+.archive-browser.is-filtered .archive-work-card.is-stack img {
+  flex: 0 0 85%;
+  width: 85%;
+  max-height: 68vh;
+  object-fit: contain;
+  opacity: 0.42;
+  filter: grayscale(0.35);
+}
+
+.archive-browser.is-filtered .archive-work-card.is-stack img.is-current {
+  opacity: 1;
+  filter: none;
+}
+
+.archive-browser.is-filtered .archive-work-card.is-stack .archive-work-slide {
+  top: 50%;
+  opacity: 0.78;
 }
 
 .archive-browser.is-filtered .archive-work-card span {

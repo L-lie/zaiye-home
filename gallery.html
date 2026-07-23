@@ -26,7 +26,7 @@
         <a href="canvas.html">Canvas</a>
         <a href="notes.html">学习笔记</a>
         <a href="prompt-vault.html">Prompt Vault</a>
-        <a href="tools/creative-vault/index.html">Creative Vault / 创意资产库</a>
+        <a href="tools/creative-vault/index.html">Creative Vault</a>
         <a href="tools/overlap-slicer/index.html">重叠切图</a>
         <a href="index.html#contact">联系</a>
       </nav>
@@ -41,6 +41,14 @@
             <small>WORK ARCHIVE</small>
           </span>
         </a>
+
+        <div class="archive-topbar">
+          <label class="archive-search">
+            <span>搜索</span>
+            <input data-gallery-search type="search" placeholder="搜索项目、图纸类型、关键词" />
+          </label>
+          <p class="archive-count" data-gallery-count>载入作品中</p>
+        </div>
 
         <nav class="archive-menu">
           <a class="archive-menu-item is-active" href="gallery.html" data-filter-link>全部作品</a>
@@ -74,14 +82,6 @@
       </aside>
 
       <section class="archive-main" aria-label="作品档案">
-        <div class="archive-topbar">
-          <label class="archive-search">
-            <span>搜索</span>
-            <input data-gallery-search type="search" placeholder="搜索项目、图纸类型、关键词" />
-          </label>
-          <p class="archive-count" data-gallery-count>载入作品中</p>
-        </div>
-
         <section class="archive-hero">
           <div class="archive-hero-copy">
             <p class="eyebrow">Work Archive</p>
@@ -107,6 +107,7 @@
             <h2 id="archive-browser-title" data-gallery-title>全部作品</h2>
           </div>
           <div class="archive-chip-row" data-archive-chips></div>
+          <div class="archive-subchip-row" data-archive-subchips hidden></div>
           <div class="archive-grid" data-gallery-grid></div>
           <p class="empty-state" data-gallery-empty hidden>这个分类下暂时没有展示项</p>
         </section>
