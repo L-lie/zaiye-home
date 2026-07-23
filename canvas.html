@@ -22,7 +22,7 @@
           <span class="brand-line">ZAIYE CANVAS</span>
         </span>
       </a>
-      <div class="header-actions" id="homeActions">
+      <div class="header-actions" id="homeActions" hidden>
         <button id="newBoard" type="button">新建画布</button>
         <button id="importBoardHome" type="button">导入画布</button>
         <a href="prompt-vault.html">Prompt Vault</a>
@@ -32,6 +32,7 @@
         <button id="backToBoards" type="button">全部画布</button>
         <button id="saveBoard" type="button">保存</button>
         <button id="exportBoard" type="button">导出</button>
+        <button id="shareBoard" type="button">分享</button>
         <button id="importBoard" type="button">导入</button>
         <input id="importFile" type="file" accept="application/json,.json" hidden />
         <a href="prompt-vault.html">Prompt Vault</a>
@@ -39,7 +40,35 @@
       </div>
     </header>
 
-    <main class="canvas-home" id="canvasHome">
+    <main class="canvas-access" id="canvasAccess">
+      <section class="canvas-access-card">
+        <div>
+          <p class="eyebrow">私人内容</p>
+          <h1>打开 Canvas</h1>
+          <p>输入密钥后才能查看和编辑你的画布库</p>
+        </div>
+        <form class="canvas-unlock-form" id="canvasUnlockForm" autocomplete="on">
+          <input
+            class="credential-username"
+            name="username"
+            type="text"
+            value="zaiye-canvas-owner"
+            autocomplete="username"
+            tabindex="-1"
+            aria-hidden="true"
+            readonly
+          />
+          <label for="canvasUnlockKey">私人解锁密钥</label>
+          <div class="canvas-unlock-row">
+            <input id="canvasUnlockKey" name="password" type="password" autocomplete="current-password" required />
+            <button type="submit">解锁</button>
+          </div>
+          <p class="canvas-form-message" id="canvasUnlockMessage" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <main class="canvas-home" id="canvasHome" hidden>
       <section class="canvas-home-heading">
         <div>
           <p class="eyebrow">再野创作空间</p>
@@ -120,8 +149,13 @@
         <div class="ink-toolbar" role="toolbar" aria-label="画笔工具">
           <div class="tool-segment" aria-label="操作模式">
             <button class="ink-tool active" type="button" data-tool="select" aria-pressed="true">选择</button>
+            <button class="ink-tool" type="button" data-tool="zoom" aria-pressed="false">缩放</button>
             <button class="ink-tool" type="button" data-tool="pen" aria-pressed="false">画笔</button>
             <button class="ink-tool" type="button" data-tool="eraser" aria-pressed="false">橡皮</button>
+            <button class="ink-tool" type="button" data-tool="lasso" aria-pressed="false">套索</button>
+            <button class="ink-tool" type="button" data-tool="rect-lasso" aria-pressed="false">方选</button>
+            <button class="ink-tool" type="button" data-tool="heal" aria-pressed="false">修复</button>
+            <button class="ink-tool" type="button" data-tool="smudge" aria-pressed="false">涂抹</button>
           </div>
           <div class="color-swatches" aria-label="画笔颜色">
             <button class="color-swatch active" type="button" data-color="#18231f" style="--swatch:#18231f" aria-label="深绿色"></button>
@@ -142,6 +176,18 @@
             <svg id="inkLayer" class="ink-layer" viewBox="0 0 6000 4200" aria-label="手写与绘画笔迹"></svg>
             <div id="itemLayer" class="item-layer"></div>
           </div>
+        </div>
+        <div class="tool-menu" id="toolMenu" hidden>
+          <button type="button" data-menu-tool="pen">画笔</button>
+          <button type="button" data-menu-tool="eraser">橡皮</button>
+          <button type="button" data-menu-tool="lasso">套索</button>
+          <button type="button" data-menu-tool="rect-lasso">方形套索</button>
+          <button type="button" data-menu-tool="heal">污点修复</button>
+          <button type="button" data-menu-tool="smudge">涂抹</button>
+          <hr />
+          <button type="button" data-width="2">细笔</button>
+          <button type="button" data-width="6">中笔</button>
+          <button type="button" data-width="14">粗笔</button>
         </div>
       </section>
     </main>

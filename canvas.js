@@ -1,9 +1,15 @@
 const DB_NAME = "zaiye-canvas-db";
 const STORE_NAME = "boards";
 const LEGACY_STORAGE_KEY = "zaiye-canvas-v1";
+const PRIVATE_LIBRARY_URL = "assets/content/notes-library.enc.json";
+const SESSION_KEY = "zaiye-notes-session-key";
 const DEFAULT_VIEW = { x: -520, y: -320, scale: 0.9 };
 
 const els = {
+  canvasAccess: document.getElementById("canvasAccess"),
+  canvasUnlockForm: document.getElementById("canvasUnlockForm"),
+  canvasUnlockKey: document.getElementById("canvasUnlockKey"),
+  canvasUnlockMessage: document.getElementById("canvasUnlockMessage"),
   canvasHome: document.getElementById("canvasHome"),
   canvasWorkspace: document.getElementById("canvasWorkspace"),
   homeActions: document.getElementById("homeActions"),
@@ -47,6 +53,7 @@ const els = {
   zoomText: document.getElementById("zoomText"),
   strokeWidth: document.getElementById("strokeWidth"),
   undoInk: document.getElementById("undoInk"),
+  toolMenu: document.getElementById("toolMenu"),
 };
 
 let db;
@@ -58,13 +65,53 @@ let dragState = null;
 let currentStroke = null;
 let activeTool = "select";
 let activeColor = "#18231f";
+let backgroundColor = "#f4efe6";
 let lastBoardPointer = null;
+let spacePan = false;
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
+}
+
+function base64ToBytes(value) {
+  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+}
+
+async function decryptPrivateLibrary(payload, secret) {
+  const passwordKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    "PBKDF2",
+    false,
+    ["deriveKey"],
+  );
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      hash: "SHA-256",
+      salt: base64ToBytes(payload.salt),
+      iterations: payload.iterations,
+    },
+    passwordKey,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"],
+  );
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToBytes(payload.iv) },
+    key,
+    base64ToBytes(payload.ciphertext),
+  );
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+async function verifyCanvasSecret(secret) {
+  const response = await fetch(`${PRIVATE_LIBRARY_URL}?v=${Date.now()}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("无法读取私人密钥校验文件");
+  await decryptPrivateLibrary(await response.json(), secret);
 }
 
 async function openDatabase() {
@@ -174,6 +221,7 @@ async function renderBoardLibrary() {
 
 function showHome() {
   document.body.classList.add("canvas-home-mode");
+  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = false;
   els.canvasWorkspace.hidden = true;
   els.homeActions.hidden = false;
@@ -185,10 +233,23 @@ function showHome() {
 
 function showEditor() {
   document.body.classList.remove("canvas-home-mode");
+  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = true;
   els.canvasWorkspace.hidden = false;
   els.homeActions.hidden = true;
   els.editorActions.hidden = false;
+}
+
+function showAccess() {
+  document.body.classList.add("canvas-home-mode");
+  els.canvasAccess.hidden = false;
+  els.canvasHome.hidden = true;
+  els.canvasWorkspace.hidden = true;
+  els.homeActions.hidden = true;
+  els.editorActions.hidden = true;
+  state = null;
+  selectedId = null;
+  els.canvasUnlockKey.focus();
 }
 
 function openBoard(id) {
@@ -495,9 +556,49 @@ function eraseAt(point) {
   }
 }
 
+function startSelection(event, shape) {
+  event.preventDefault();
+  const rect = els.viewport.getBoundingClientRect();
+  const selection = document.createElement("div");
+  selection.className = `selection-box ${shape}`;
+  els.viewport.append(selection);
+  dragState = {
+    type: "selection",
+    shape,
+    pointerId: event.pointerId,
+    startX: event.clientX - rect.left,
+    startY: event.clientY - rect.top,
+    selection,
+  };
+  updateSelectionBox(event);
+  els.viewport.setPointerCapture(event.pointerId);
+}
+
+function updateSelectionBox(event) {
+  if (dragState?.type !== "selection") return;
+  const rect = els.viewport.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const left = Math.min(dragState.startX, x);
+  const top = Math.min(dragState.startY, y);
+  const width = Math.abs(x - dragState.startX);
+  const height = Math.abs(y - dragState.startY);
+  Object.assign(dragState.selection.style, {
+    left: `${left}px`,
+    top: `${top}px`,
+    width: `${width}px`,
+    height: `${height}px`,
+  });
+}
+
 function startViewportAction(event) {
   if (event.button !== 0) return;
-  const pencilTool = event.pointerType === "pen" ? (activeTool === "eraser" ? "eraser" : "pen") : activeTool;
+  const pencilTool = spacePan ? "pan" : (event.pointerType === "pen" ? (activeTool === "eraser" ? "eraser" : activeTool === "select" ? "pen" : activeTool) : activeTool);
+  if (pencilTool === "zoom") {
+    event.preventDefault();
+    zoomAt(event.clientX, event.clientY, view.scale * (event.shiftKey || event.altKey ? 0.88 : 1.12));
+    return;
+  }
   if (pencilTool === "pen") {
     event.preventDefault();
     currentStroke = {
@@ -512,11 +613,29 @@ function startViewportAction(event) {
     els.viewport.setPointerCapture(event.pointerId);
     return;
   }
+  if (pencilTool === "heal" || pencilTool === "smudge") {
+    event.preventDefault();
+    currentStroke = {
+      id: crypto.randomUUID(),
+      color: pencilTool === "heal" ? "#d7c7a8" : activeColor,
+      width: Number(els.strokeWidth.value),
+      points: [],
+    };
+    appendStrokePoint(event);
+    renderInk();
+    dragState = { type: "ink", pointerId: event.pointerId };
+    els.viewport.setPointerCapture(event.pointerId);
+    return;
+  }
   if (pencilTool === "eraser") {
     event.preventDefault();
     eraseAt(boardPointFromClient(event.clientX, event.clientY));
     dragState = { type: "eraser", pointerId: event.pointerId };
     els.viewport.setPointerCapture(event.pointerId);
+    return;
+  }
+  if (pencilTool === "lasso" || pencilTool === "rect-lasso") {
+    startSelection(event, pencilTool === "lasso" ? "lasso" : "rect");
     return;
   }
   if (closestElement(event.target, ".canvas-item")) return;
@@ -552,6 +671,10 @@ function movePointer(event) {
     eraseAt(boardPointFromClient(event.clientX, event.clientY));
     return;
   }
+  if (dragState.type === "selection") {
+    updateSelectionBox(event);
+    return;
+  }
   const item = state.items.find((entry) => entry.id === dragState.id);
   if (!item) return;
   item.x = dragState.itemX + (event.clientX - dragState.startX) / view.scale;
@@ -571,6 +694,10 @@ function endPointer(event) {
     currentStroke = null;
     renderInk();
     scheduleSave("已保存笔迹");
+  }
+  if (dragState.type === "selection") {
+    dragState.selection.remove();
+    els.statusText.textContent = "已框选区域";
   }
   dragState = null;
   els.viewport.classList.remove("dragging");
@@ -696,6 +823,125 @@ function setTool(tool) {
   els.viewport.dataset.tool = tool;
 }
 
+function setStrokeWidth(width) {
+  const nextWidth = Math.min(Number(els.strokeWidth.max), Math.max(Number(els.strokeWidth.min), width));
+  els.strokeWidth.value = String(nextWidth);
+  els.statusText.textContent = `画笔粗细 ${nextWidth}`;
+}
+
+function swapActiveColors() {
+  [activeColor, backgroundColor] = [backgroundColor, activeColor];
+  document.querySelectorAll(".color-swatch").forEach((swatch) => {
+    swatch.classList.toggle("active", swatch.dataset.color === activeColor);
+  });
+  setTool("pen");
+}
+
+function hideToolMenu() {
+  els.toolMenu.hidden = true;
+}
+
+function showToolMenu(event) {
+  if (!state) return;
+  event.preventDefault();
+  els.toolMenu.style.left = `${event.clientX}px`;
+  els.toolMenu.style.top = `${event.clientY}px`;
+  els.toolMenu.hidden = false;
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+async function shareCurrentBoard() {
+  if (!state) return;
+  await saveBoard("已保存，正在生成分享链接");
+  const secret = sessionStorage.getItem(SESSION_KEY) || "";
+  const url = new URL(window.location.href);
+  url.searchParams.set("board", state.id);
+  if (secret) url.hash = `key=${encodeURIComponent(secret)}`;
+  await copyText(url.href);
+  els.statusText.textContent = secret ? "已复制分享链接" : "已复制链接，请另行发送密钥";
+}
+
+function handleCanvasShortcut(event) {
+  if (!state || isTypingTarget(event.target) || event.ctrlKey || event.metaKey) return;
+  const key = event.key.toLowerCase();
+  const toolKeys = {
+    z: "zoom",
+    b: "pen",
+    e: "eraser",
+    d: "lasso",
+    v: "rect-lasso",
+    s: "heal",
+    w: "smudge",
+  };
+
+  if (event.code === "Space") {
+    event.preventDefault();
+    spacePan = true;
+    els.viewport.classList.add("dragging");
+    return;
+  }
+  if (toolKeys[key]) {
+    event.preventDefault();
+    setTool(toolKeys[key]);
+    return;
+  }
+  if (key === "q") {
+    event.preventDefault();
+    setStrokeWidth(Number(els.strokeWidth.value) + 1);
+    return;
+  }
+  if (key === "a") {
+    event.preventDefault();
+    setStrokeWidth(Number(els.strokeWidth.value) - 1);
+    return;
+  }
+  if (key === "x") {
+    event.preventDefault();
+    swapActiveColors();
+  }
+}
+
+function endCanvasShortcut(event) {
+  if (event.code !== "Space") return;
+  spacePan = false;
+  if (!dragState) els.viewport.classList.remove("dragging");
+}
+
+async function unlockCanvas(secret) {
+  els.canvasUnlockMessage.textContent = "正在解锁…";
+  try {
+    await verifyCanvasSecret(secret);
+    sessionStorage.setItem(SESSION_KEY, secret);
+    els.canvasUnlockKey.value = "";
+    els.canvasUnlockMessage.textContent = "";
+    await openDatabase();
+    await migrateLegacyBoard();
+    const id = new URL(window.location.href).searchParams.get("board");
+    if (id) await loadCurrentBoard(id);
+    else showHome();
+    return true;
+  } catch {
+    sessionStorage.removeItem(SESSION_KEY);
+    showAccess();
+    els.canvasUnlockMessage.textContent = "密钥不正确，请重新输入";
+    return false;
+  }
+}
+
 els.newBoard.addEventListener("click", createBoard);
 els.newBoardHero.addEventListener("click", createBoard);
 els.newBoardEmpty.addEventListener("click", createBoard);
@@ -789,6 +1035,7 @@ els.importFile.addEventListener("change", async () => {
   }
   els.importFile.value = "";
 });
+els.shareBoard.addEventListener("click", shareCurrentBoard);
 
 els.zoomIn.addEventListener("click", () => zoomAt(els.viewport.getBoundingClientRect().left + els.viewport.clientWidth / 2, els.viewport.getBoundingClientRect().top + els.viewport.clientHeight / 2, view.scale * 1.12));
 els.zoomOut.addEventListener("click", () => zoomAt(els.viewport.getBoundingClientRect().left + els.viewport.clientWidth / 2, els.viewport.getBoundingClientRect().top + els.viewport.clientHeight / 2, view.scale / 1.12));
@@ -804,11 +1051,19 @@ document.querySelectorAll(".color-swatch").forEach((button) => button.addEventLi
   document.querySelectorAll(".color-swatch").forEach((swatch) => swatch.classList.toggle("active", swatch === button));
   setTool("pen");
 }));
+els.strokeWidth.addEventListener("input", () => setStrokeWidth(Number(els.strokeWidth.value)));
 els.undoInk.addEventListener("click", () => {
   if (!state?.strokes.length) return;
   state.strokes.pop();
   renderInk();
   scheduleSave("已撤销笔迹");
+});
+els.toolMenu.addEventListener("click", (event) => {
+  const button = closestElement(event.target, "button");
+  if (!button) return;
+  if (button.dataset.menuTool) setTool(button.dataset.menuTool);
+  if (button.dataset.width) setStrokeWidth(Number(button.dataset.width));
+  hideToolMenu();
 });
 
 els.viewport.addEventListener("pointerdown", startViewportAction);
@@ -828,6 +1083,10 @@ els.viewport.addEventListener("wheel", (event) => {
   event.preventDefault();
   zoomAt(event.clientX, event.clientY, view.scale * (event.deltaY > 0 ? 0.92 : 1.08));
 }, { passive: false });
+els.viewport.addEventListener("contextmenu", showToolMenu);
+window.addEventListener("click", hideToolMenu);
+window.addEventListener("keydown", handleCanvasShortcut);
+window.addEventListener("keyup", endCanvasShortcut);
 
 els.viewport.addEventListener("dragover", (event) => {
   event.preventDefault();
@@ -841,16 +1100,26 @@ els.viewport.addEventListener("drop", async (event) => {
 });
 window.addEventListener("paste", handlePaste);
 
+els.canvasUnlockForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const secret = els.canvasUnlockKey.value.trim();
+  if (secret) await unlockCanvas(secret);
+});
+
 async function init() {
-  await openDatabase();
-  await migrateLegacyBoard();
-  const id = new URL(window.location.href).searchParams.get("board");
-  if (id) await loadCurrentBoard(id);
-  else showHome();
+  const url = new URL(window.location.href);
+  const hashKey = new URLSearchParams(url.hash.replace(/^#/, "")).get("key");
+  const sessionSecret = hashKey || sessionStorage.getItem(SESSION_KEY);
+  if (!sessionSecret) {
+    showAccess();
+    return;
+  }
+  await unlockCanvas(sessionSecret);
 }
 
 init().catch(() => {
   document.body.classList.add("canvas-home-mode");
+  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = false;
   els.canvasWorkspace.hidden = true;
   els.boardEmpty.hidden = false;

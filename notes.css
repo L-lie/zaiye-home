@@ -177,6 +177,23 @@
   accent-color: var(--amber);
 }
 
+.notebook-share-button {
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 9px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.notebook-share-button:hover {
+  border-color: var(--amber);
+  color: var(--ink);
+}
+
 .notebook-card:hover {
   border-color: var(--amber);
   transform: translateY(-2px);

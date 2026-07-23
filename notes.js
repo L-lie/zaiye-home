@@ -18,6 +18,21 @@ const elements = {
 const sourceFileHandles = new Map();
 let privateNotebooks = [];
 
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
 function base64ToBytes(value) {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
 }
@@ -63,6 +78,20 @@ function createNotebookCard(data, isPrivate = false) {
   header.append(label);
 
   if (isPrivate) {
+    const shareButton = document.createElement("button");
+    shareButton.className = "notebook-share-button";
+    shareButton.type = "button";
+    shareButton.textContent = "分享";
+    shareButton.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const secret = sessionStorage.getItem(SESSION_KEY) || "";
+      const url = new URL(data.href, window.location.href);
+      if (secret) url.hash = `key=${encodeURIComponent(secret)}`;
+      await copyText(url.href);
+      elements.shelfMessage.textContent = secret ? "已复制分享链接" : "已复制链接，请另行发送密钥";
+    });
+
     const visibility = document.createElement("label");
     visibility.className = "visibility-control";
     const toggle = document.createElement("input");
@@ -77,7 +106,7 @@ function createNotebookCard(data, isPrivate = false) {
       const saved = await savePublicVisibility(data, toggle.checked);
       if (!saved) toggle.checked = !toggle.checked;
     });
-    header.append(visibility);
+    header.append(shareButton, visibility);
   }
 
   const title = document.createElement("h3");

@@ -166,6 +166,67 @@ textarea:focus {
   padding: clamp(48px, 7vw, 104px) 0 80px;
 }
 
+.canvas-access {
+  width: min(1440px, calc(100% - 56px));
+  min-height: calc(100vh - 68px);
+  margin: 0 auto;
+  padding: clamp(48px, 7vw, 104px) 0 80px;
+}
+
+.canvas-access-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(300px, 1.1fr);
+  gap: 56px;
+  align-items: center;
+  border: 1px solid var(--line);
+  padding: clamp(28px, 5vw, 64px);
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+}
+
+.canvas-access-card h1 {
+  margin: 8px 0 14px;
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif;
+  font-size: clamp(4rem, 10vw, 9rem);
+  font-weight: 400;
+  line-height: 0.95;
+}
+
+.canvas-access-card p:not(.eyebrow) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.canvas-unlock-form {
+  display: grid;
+  gap: 10px;
+}
+
+.credential-username {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.canvas-unlock-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.canvas-unlock-row button {
+  min-width: 92px;
+}
+
+.canvas-form-message {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--amber);
+}
+
 .canvas-home-heading {
   display: flex;
   align-items: flex-end;
@@ -482,12 +543,77 @@ textarea:focus {
   cursor: crosshair;
 }
 
+.viewport[data-tool="zoom"] {
+  cursor: zoom-in;
+}
+
 .viewport[data-tool="eraser"] {
   cursor: cell;
 }
 
+.viewport[data-tool="lasso"],
+.viewport[data-tool="rect-lasso"] {
+  cursor: copy;
+}
+
+.viewport[data-tool="heal"],
+.viewport[data-tool="smudge"] {
+  cursor: crosshair;
+}
+
 .viewport.dragging {
   cursor: grabbing;
+}
+
+.tool-menu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 132px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 18px 42px var(--shadow);
+}
+
+.tool-menu[hidden] {
+  display: none;
+}
+
+.tool-menu button {
+  min-height: 30px;
+  border: 0;
+  border-radius: 4px;
+  padding: 5px 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tool-menu button:hover {
+  background: rgba(201, 152, 84, 0.18);
+}
+
+.tool-menu hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 5px 0;
+}
+
+.selection-box {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid rgba(201, 152, 84, 0.86);
+  background: rgba(201, 152, 84, 0.14);
+  pointer-events: none;
+}
+
+.selection-box.lasso {
+  border-style: dashed;
+  border-radius: 999px;
 }
 
 .canvas-grid,
@@ -684,6 +810,16 @@ textarea:focus {
     padding-top: 48px;
   }
 
+  .canvas-access {
+    width: min(100% - 32px, 1440px);
+    padding-top: 48px;
+  }
+
+  .canvas-access-card {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
   .canvas-home-heading {
     align-items: flex-start;
   }
@@ -736,6 +872,10 @@ textarea:focus {
 
   .canvas-home-heading {
     display: grid;
+  }
+
+  .canvas-unlock-row {
+    grid-template-columns: 1fr;
   }
 
   .canvas-home-heading h1 {
