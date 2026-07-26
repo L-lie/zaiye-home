@@ -12,6 +12,8 @@ const downloadAllButton = document.querySelector("#downloadAll");
 const downloadPlanButton = document.querySelector("#downloadPlan");
 const applyCropButton = document.querySelector("#applyCrop");
 const resetCropButton = document.querySelector("#resetCrop");
+const clearSourceButton = document.querySelector("#clearSource");
+const sourceHistoryInput = document.querySelector("#sourceHistory");
 const dropZone = document.querySelector("#dropZone");
 const stitchFilesInput = document.querySelector("#stitchFiles");
 const stitchTilesButton = document.querySelector("#stitchTiles");
@@ -31,6 +33,9 @@ let capturedImage = null;
 let tileSourceImage = null;
 let baseName = "ai-image";
 let tiles = [];
+let manualCropTiles = [];
+let manualCropCount = 0;
+let sourceHistory = [];
 let nextCopyIndex = 0;
 let cropRect = null;
 let cropInteraction = null;
@@ -58,6 +63,8 @@ const SUPPORTED_ASPECTS = [
 const hasChromeStorage = typeof chrome !== "undefined" && chrome.storage?.local;
 const hasSourceStore = typeof OverlapImageStore !== "undefined";
 const SITE_PENDING_SOURCE_KEY = "overlapSlicerPendingSource";
+
+window.OverlapSlicerLoadSource = loadSourceData;
 
 init();
 
@@ -186,12 +193,10 @@ applyCropButton.addEventListener("click", async () => {
     cropRect.width,
     cropRect.height,
   );
-  tileSourceImage = canvas;
-  baseName = `${baseName}_crop`;
-  meta.textContent = `${capturedImage.width} x ${capturedImage.height} · 输出 ${tileSourceImage.width} x ${tileSourceImage.height}`;
-  applyCropButton.disabled = true;
+  addManualCropTile(canvas);
+  applyCropButton.disabled = false;
   resetCropButton.disabled = !originalImage;
-  makeTiles();
+  renderTiles();
 });
 
 resetCropButton.addEventListener("click", () => {
@@ -204,6 +209,17 @@ resetCropButton.addEventListener("click", () => {
   applyCropButton.disabled = true;
   resetCropButton.disabled = true;
   makeTiles();
+});
+
+clearSourceButton.addEventListener("click", () => {
+  clearSource();
+});
+
+sourceHistoryInput.addEventListener("change", async () => {
+  const index = Number(sourceHistoryInput.value);
+  if (!Number.isInteger(index) || !sourceHistory[index]) return;
+  const [record] = sourceHistory.splice(index, 1);
+  await setSourceCanvas(cloneCanvas(record.canvas), record.name);
 });
 
 stitchFilesInput.addEventListener("change", async () => {
@@ -377,21 +393,51 @@ function wireImageImport() {
     if (file) await loadSourceFile(file);
   });
 
-  dropZone.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    dropZone.classList.add("is-over");
-  });
+  [dropZone, preview].forEach((target) => {
+    target.addEventListener("dragover", (event) => {
+      if (!hasImageFile(event.dataTransfer)) return;
+      event.preventDefault();
+      dropZone.classList.add("is-over");
+    });
 
-  dropZone.addEventListener("dragleave", () => {
-    dropZone.classList.remove("is-over");
-  });
+    target.addEventListener("dragleave", () => {
+      dropZone.classList.remove("is-over");
+    });
 
-  dropZone.addEventListener("drop", async (event) => {
-    event.preventDefault();
-    dropZone.classList.remove("is-over");
-    const file = [...event.dataTransfer.files].find((item) => item.type.startsWith("image/"));
-    if (file) await loadSourceFile(file);
+    target.addEventListener("drop", async (event) => {
+      if (!hasImageFile(event.dataTransfer)) return;
+      event.preventDefault();
+      dropZone.classList.remove("is-over");
+      const file = [...event.dataTransfer.files].find((item) => item.type.startsWith("image/"));
+      if (file) await loadSourceFile(file);
+    });
   });
+}
+
+function hasImageFile(dataTransfer) {
+  return [...(dataTransfer?.items || [])].some((item) => item.kind === "file" && item.type.startsWith("image/"));
+}
+
+async function loadSourceFile(file) {
+  const image = await loadImage(URL.createObjectURL(file));
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  canvas.getContext("2d").drawImage(image, 0, 0);
+  URL.revokeObjectURL(image.src);
+  const nextBaseName = cleanBaseName(file.name || "ai-image");
+  if (hasChromeStorage) await chrome.storage.local.remove("overlapSlicerCapture");
+  await setSourceCanvas(canvas, nextBaseName);
+}
+
+async function loadSourceData(source) {
+  const image = await loadImage(source.dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  canvas.getContext("2d").drawImage(image, 0, 0);
+  const nextBaseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
+  await setSourceCanvas(canvas, nextBaseName);
 }
 
 function wireExternalSourceImport() {
@@ -419,28 +465,6 @@ async function loadPendingSiteSource() {
   }
 }
 
-async function loadSourceFile(file) {
-  const image = await loadImage(URL.createObjectURL(file));
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  canvas.getContext("2d").drawImage(image, 0, 0);
-  URL.revokeObjectURL(image.src);
-  baseName = cleanBaseName(file.name || "ai-image");
-  if (hasChromeStorage) await chrome.storage.local.remove("overlapSlicerCapture");
-  await setSourceCanvas(canvas, baseName);
-}
-
-async function loadSourceData(source) {
-  const image = await loadImage(source.dataUrl);
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  canvas.getContext("2d").drawImage(image, 0, 0);
-  baseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
-  await setSourceCanvas(canvas, baseName);
-}
-
 async function loadSourceRecord(source) {
   const src = source.blob ? URL.createObjectURL(source.blob) : source.dataUrl;
   const image = await loadImage(src);
@@ -449,33 +473,38 @@ async function loadSourceRecord(source) {
   canvas.height = image.naturalHeight;
   canvas.getContext("2d").drawImage(image, 0, 0);
   if (source.blob) URL.revokeObjectURL(src);
-  baseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
-  await setSourceCanvas(canvas, baseName);
+  const nextBaseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
+  await setSourceCanvas(canvas, nextBaseName);
 }
 
 async function setSourceCanvas(canvas, name) {
+  rememberCurrentSource();
   originalImage = canvas;
   capturedImage = canvas;
   tileSourceImage = canvas;
   preview.hidden = false;
   baseName = cleanBaseName(name || "ai-image");
+  manualCropTiles = [];
+  manualCropCount = 0;
   meta.textContent = `${capturedImage.width} x ${capturedImage.height}`;
   dropZone.classList.add("is-hidden");
   cropRect = null;
   applyCropButton.disabled = true;
   resetCropButton.disabled = true;
+  clearSourceButton.disabled = false;
   makeTiles();
 }
 
 copyNextButton.addEventListener("click", async () => {
-  if (!tiles.length) return;
-  await copyTile(tiles[nextCopyIndex]);
-  nextCopyIndex = (nextCopyIndex + 1) % tiles.length;
-  copyNextButton.textContent = `复制下一张 R${tiles[nextCopyIndex].row + 1} C${tiles[nextCopyIndex].col + 1}`;
+  const visibleTiles = getVisibleTiles();
+  if (!visibleTiles.length) return;
+  await copyTile(visibleTiles[nextCopyIndex]);
+  nextCopyIndex = (nextCopyIndex + 1) % visibleTiles.length;
+  copyNextButton.textContent = getCopyNextLabel();
 });
 
 downloadAllButton.addEventListener("click", async () => {
-  for (const tile of tiles) {
+  for (const tile of getVisibleTiles()) {
     downloadCanvas(tile.canvas, tile.name);
     await wait(120);
   }
@@ -546,8 +575,9 @@ function makeTiles() {
   });
 
   nextCopyIndex = 0;
-  copyNextButton.disabled = !tiles.length;
-  downloadAllButton.disabled = !tiles.length;
+  const visibleTiles = getVisibleTiles();
+  copyNextButton.disabled = !visibleTiles.length;
+  downloadAllButton.disabled = !visibleTiles.length;
   downloadPlanButton.disabled = !tiles.length;
   stitchTilesButton.disabled = !stitchFiles.length;
   autoAlignButton.disabled = true;
@@ -555,7 +585,7 @@ function makeTiles() {
   deleteSelectedTileButton.disabled = true;
   clearStitchTilesButton.disabled = true;
   stitchStatus.textContent = getStitchReadyText();
-  copyNextButton.textContent = tiles.length ? `复制下一张 R1 C1` : "复制下一张";
+  copyNextButton.textContent = getCopyNextLabel();
   renderPreview();
   renderTiles();
 }
@@ -572,7 +602,85 @@ function clearPreview() {
   cropInteraction = null;
   applyCropButton.disabled = true;
   resetCropButton.disabled = true;
+  clearSourceButton.disabled = true;
+  copyNextButton.disabled = true;
+  downloadAllButton.disabled = true;
+  downloadPlanButton.disabled = true;
   tilesNode.innerHTML = "";
+}
+
+function clearSource() {
+  rememberCurrentSource();
+  originalImage = null;
+  capturedImage = null;
+  tileSourceImage = null;
+  tiles = [];
+  manualCropTiles = [];
+  manualCropCount = 0;
+  baseName = "ai-image";
+  meta.textContent = "复制图片后按 Ctrl+V，或拖入/选择原图文件";
+  dropZone.classList.remove("is-hidden");
+  clearPreview();
+}
+
+function rememberCurrentSource() {
+  if (!originalImage) return;
+  sourceHistory.unshift({
+    name: baseName,
+    canvas: cloneCanvas(originalImage),
+  });
+  sourceHistory = sourceHistory.slice(0, 8);
+  renderSourceHistory();
+}
+
+function renderSourceHistory() {
+  sourceHistoryInput.innerHTML = '<option value="">历史原图</option>';
+  sourceHistory.forEach((record, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${record.name}`;
+    sourceHistoryInput.append(option);
+  });
+  sourceHistoryInput.hidden = !sourceHistory.length;
+  sourceHistoryInput.value = "";
+}
+
+function addManualCropTile(canvas) {
+  manualCropCount += 1;
+  const tile = {
+    row: 0,
+    col: manualCropCount - 1,
+    x: cropRect.x,
+    y: cropRect.y,
+    width: canvas.width,
+    height: canvas.height,
+    aspect: "自由裁剪",
+    aspectMatched: true,
+    canvas,
+    name: `${baseName}_crop-${manualCropCount}.png`,
+    title: `裁剪 ${manualCropCount}`,
+  };
+  manualCropTiles.push(tile);
+  nextCopyIndex = 0;
+  updateTileActions();
+}
+
+function getVisibleTiles() {
+  return [...manualCropTiles, ...tiles];
+}
+
+function updateTileActions() {
+  const visibleTiles = getVisibleTiles();
+  copyNextButton.disabled = !visibleTiles.length;
+  downloadAllButton.disabled = !visibleTiles.length;
+  copyNextButton.textContent = getCopyNextLabel();
+}
+
+function getCopyNextLabel() {
+  const visibleTiles = getVisibleTiles();
+  if (!visibleTiles.length) return "复制下一张";
+  const tile = visibleTiles[nextCopyIndex] || visibleTiles[0];
+  return `复制下一张 ${tile.title || `R${tile.row + 1} C${tile.col + 1}`}`;
 }
 
 function calculateTiles() {
@@ -757,7 +865,7 @@ function renderPreview() {
 
 function renderTiles() {
   tilesNode.innerHTML = "";
-  for (const tile of tiles) {
+  for (const tile of getVisibleTiles()) {
     const card = document.createElement("article");
     card.className = "tile";
     const visibleCanvas = tile.canvas.cloneNode();
@@ -765,7 +873,7 @@ function renderTiles() {
 
     const footer = document.createElement("footer");
     const title = document.createElement("strong");
-    title.textContent = `R${tile.row + 1} C${tile.col + 1}`;
+    title.textContent = tile.title || `R${tile.row + 1} C${tile.col + 1}`;
     const size = document.createElement("small");
     size.textContent = `${tile.width} x ${tile.height}px · ${tile.aspect}${tile.aspectMatched ? "" : " 接近"}`;
     const actions = document.createElement("div");
@@ -1381,6 +1489,14 @@ function loadImage(src) {
 
 function canvasToBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+}
+
+function cloneCanvas(source) {
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+  canvas.getContext("2d").drawImage(source, 0, 0);
+  return canvas;
 }
 
 function downloadCanvas(canvas, name) {

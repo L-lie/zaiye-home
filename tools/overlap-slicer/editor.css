@@ -158,12 +158,13 @@ label:has(span) span {
 }
 
 .presets {
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(5, auto);
   justify-content: end;
 }
 
 .layout {
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  align-items: start;
   margin-top: 14px;
 }
 
@@ -188,6 +189,10 @@ label:has(span) span {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: end;
+}
+
+.source-history {
+  width: 132px;
 }
 
 canvas {
@@ -243,6 +248,10 @@ canvas[hidden] {
   max-height: calc(100vh - 210px);
   overflow: auto;
   padding: 14px;
+}
+
+.tiles:empty {
+  display: none;
 }
 
 .stitch-status {

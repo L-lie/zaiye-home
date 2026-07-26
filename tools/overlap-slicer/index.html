@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>重叠切图 | 再野文化工作室</title>
-    <link rel="stylesheet" href="editor.css" />
+    <link rel="stylesheet" href="editor.css?v=1785098879944" />
       <link rel="canonical" href="https://zaiye.art/tools/overlap-slicer/" />
   </head>
   <body>
@@ -53,6 +53,7 @@
           </select>
         </label>
         <div class="presets">
+          <button data-preset="1x1">1 格</button>
           <button data-preset="2x1">两块</button>
           <button data-preset="2x2">4 格</button>
           <button data-preset="3x2">6 格</button>
@@ -65,8 +66,12 @@
           <div class="panel-head">
             <h2>原图</h2>
             <div class="panel-actions">
+              <select id="sourceHistory" class="source-history" hidden>
+                <option value="">历史原图</option>
+              </select>
               <button id="applyCrop" disabled>应用裁剪</button>
               <button id="resetCrop" disabled>重置裁剪</button>
+              <button id="clearSource" disabled>清图</button>
               <button id="downloadPlan" disabled>下载布局</button>
             </div>
           </div>
@@ -109,9 +114,9 @@
       <footer id="brandFooter" class="brand-footer"></footer>
     </main>
 
-    <script src="image-store.js"></script>
-    <script src="brand.js"></script>
-    <script src="brand-render.js"></script>
-    <script src="editor.js"></script>
+    <script src="image-store.js?v=1785098879944"></script>
+    <script src="brand.js?v=1785098879944"></script>
+    <script src="brand-render.js?v=1785098879944"></script>
+    <script src="editor.js?v=1785098879944"></script>
   </body>
 </html>
