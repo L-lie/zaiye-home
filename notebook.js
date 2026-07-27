@@ -5,6 +5,16 @@ const notebookSettings = {
   exportFilename: document.body.dataset.exportFilename || "my-notes.json",
 };
 const SESSION_KEY = "zaiye-notes-session-key";
+const SESSION_CHANNEL = "zaiye-notes-session";
+const SESSION_LOCK_EVENT = "zaiye-notes-lock-event";
+const ASSET_MAGIC = "ZNB1";
+const imageRoleLabels = {
+  shot: "原始镜头",
+  revision: "修改示意",
+  final: "最终效果",
+  reference: "视觉参考",
+  comparison: "对比图",
+};
 
 const elements = {
   accessPanel: document.querySelector("#accessPanel"),
@@ -36,6 +46,12 @@ let notes = null;
 let scrollSyncFrame = null;
 let mode = null;
 let editingTarget = null;
+let ownerSecret = "";
+let assetKeyPromise = null;
+let mediaObserver = null;
+let sessionChannel = null;
+const assetUrlCache = new Map();
+const activeAssetUrls = new Set();
 
 function base64ToBytes(value) {
   return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
@@ -68,6 +84,149 @@ async function decryptNotes(payload, secret) {
     base64ToBytes(payload.ciphertext),
   );
   return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+function deriveAssetKey() {
+  if (assetKeyPromise) return assetKeyPromise;
+  const bundle = notes?.assetBundle;
+  if (!ownerSecret || !bundle?.salt || !bundle?.iterations) {
+    return Promise.reject(new Error("图片密钥不可用"));
+  }
+  assetKeyPromise = crypto.subtle
+    .importKey("raw", new TextEncoder().encode(ownerSecret), "PBKDF2", false, ["deriveKey"])
+    .then((passwordKey) =>
+      crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          hash: "SHA-256",
+          salt: base64ToBytes(bundle.salt),
+          iterations: bundle.iterations,
+        },
+        passwordKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"],
+      ),
+    );
+  return assetKeyPromise;
+}
+
+async function decryptAssetVariant(assetId, variantName) {
+  const cacheKey = `${assetId}:${variantName}`;
+  if (assetUrlCache.has(cacheKey)) return assetUrlCache.get(cacheKey);
+  const variant = notes?.assetBundle?.assets?.[assetId]?.[variantName];
+  if (!variant?.url || variant.mime !== "image/webp") throw new Error("图片资料不可用");
+
+  const response = await fetch(variant.url, { cache: "no-store" });
+  if (!response.ok) throw new Error("图片资料不可用");
+  const encrypted = new Uint8Array(await response.arrayBuffer());
+  if (encrypted.length <= 32 || new TextDecoder("ascii").decode(encrypted.subarray(0, 4)) !== ASSET_MAGIC) {
+    throw new Error("图片资料不可用");
+  }
+  const key = await deriveAssetKey();
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: encrypted.subarray(4, 16) },
+    key,
+    encrypted.subarray(16),
+  );
+  const url = URL.createObjectURL(new Blob([plaintext], { type: variant.mime }));
+  assetUrlCache.set(cacheKey, url);
+  activeAssetUrls.add(url);
+  return url;
+}
+
+function revokeAssetUrls() {
+  mediaObserver?.disconnect();
+  mediaObserver = null;
+  document.querySelector("#noteImageViewer")?.close();
+  document.querySelectorAll(".note-media-image").forEach((image) => image.removeAttribute("src"));
+  activeAssetUrls.forEach((url) => URL.revokeObjectURL(url));
+  activeAssetUrls.clear();
+  assetUrlCache.clear();
+  assetKeyPromise = null;
+  ownerSecret = "";
+}
+
+function showMediaFailure(figure) {
+  const placeholder = figure.querySelector(".note-media-placeholder");
+  if (placeholder) {
+    placeholder.textContent = "图片暂时无法显示";
+    placeholder.classList.add("is-error");
+  }
+}
+
+async function loadMediaFigure(figure) {
+  if (figure.dataset.loaded === "true") return;
+  figure.dataset.loaded = "true";
+  try {
+    const image = figure.querySelector(".note-media-image");
+    image.addEventListener("load", () => figure.classList.add("is-loaded"), { once: true });
+    image.addEventListener("error", () => showMediaFailure(figure), { once: true });
+    image.src = await decryptAssetVariant(figure.dataset.assetId, "thumbnail");
+  } catch {
+    showMediaFailure(figure);
+  }
+}
+
+function observeMediaFigure(figure) {
+  if (!("IntersectionObserver" in window)) {
+    loadMediaFigure(figure);
+    return;
+  }
+  if (!mediaObserver) {
+    mediaObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          mediaObserver.unobserve(entry.target);
+          loadMediaFigure(entry.target);
+        });
+      },
+      { rootMargin: "320px 0px" },
+    );
+  }
+  mediaObserver.observe(figure);
+}
+
+function getImageViewer() {
+  let viewer = document.querySelector("#noteImageViewer");
+  if (viewer) return viewer;
+  viewer = document.createElement("dialog");
+  viewer.id = "noteImageViewer";
+  viewer.className = "note-image-viewer";
+  viewer.innerHTML = `
+    <button type="button" class="note-image-viewer-close" aria-label="关闭大图">×</button>
+    <div class="note-image-viewer-stage">
+      <p class="note-image-viewer-status" aria-live="polite">正在解密图片…</p>
+      <img alt="" />
+    </div>
+    <div class="note-image-viewer-caption"></div>
+  `;
+  viewer.querySelector(".note-image-viewer-close").addEventListener("click", () => viewer.close());
+  viewer.addEventListener("click", (event) => {
+    if (event.target === viewer) viewer.close();
+  });
+  document.body.append(viewer);
+  return viewer;
+}
+
+async function openImageViewer(item) {
+  const viewer = getImageViewer();
+  const image = viewer.querySelector("img");
+  const status = viewer.querySelector(".note-image-viewer-status");
+  const caption = viewer.querySelector(".note-image-viewer-caption");
+  image.removeAttribute("src");
+  image.alt = item.alt;
+  status.hidden = false;
+  status.textContent = "正在解密图片…";
+  caption.textContent = [item.caption, item.sourceLabel, item.credit].filter(Boolean).join(" · ");
+  viewer.showModal();
+  try {
+    image.src = await decryptAssetVariant(item.assetId, "display");
+    status.hidden = true;
+  } catch {
+    status.textContent = "图片暂时无法显示";
+  }
 }
 
 function createEmptyNotebook() {
@@ -179,11 +338,80 @@ function renderTable(block) {
   return wrapper;
 }
 
+function renderImageFigure(item, compact = false) {
+  const variant = notes?.assetBundle?.assets?.[item.assetId]?.thumbnail;
+  const figure = document.createElement("figure");
+  figure.className = `note-media note-media-role-${item.role}${compact ? " is-gallery-item" : ""}`;
+  figure.dataset.assetId = item.assetId;
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "note-media-open";
+  button.setAttribute("aria-label", `${item.alt}，点击查看大图`);
+
+  const frame = document.createElement("span");
+  frame.className = "note-media-frame";
+  const width = Number(variant?.width) || 16;
+  const height = Number(variant?.height) || 9;
+  frame.style.setProperty("--media-ratio", `${width} / ${height}`);
+
+  const placeholder = document.createElement("span");
+  placeholder.className = "note-media-placeholder";
+  placeholder.textContent = "正在准备图片…";
+  const image = document.createElement("img");
+  image.className = "note-media-image";
+  image.alt = item.alt;
+  image.decoding = "async";
+
+  const role = document.createElement("span");
+  role.className = "note-media-role";
+  role.textContent = imageRoleLabels[item.role] || "笔记图片";
+  frame.append(placeholder, image, role);
+  button.append(frame);
+  button.addEventListener("click", () => openImageViewer(item));
+  figure.append(button);
+
+  if (item.caption || item.sourceLabel || item.credit) {
+    const caption = document.createElement("figcaption");
+    if (item.caption) {
+      const text = document.createElement("span");
+      text.className = "note-media-caption-text";
+      text.textContent = item.caption;
+      caption.append(text);
+    }
+    if (item.sourceLabel) {
+      const source = document.createElement("span");
+      source.className = "note-media-source";
+      source.textContent = item.sourceLabel;
+      caption.append(source);
+    }
+    if (item.credit) {
+      const credit = document.createElement("span");
+      credit.className = "note-media-credit";
+      credit.textContent = item.credit;
+      caption.append(credit);
+    }
+    figure.append(caption);
+  }
+
+  observeMediaFigure(figure);
+  return figure;
+}
+
+function renderGallery(block) {
+  const gallery = document.createElement("div");
+  gallery.className = `note-gallery note-gallery-${block.layout}`;
+  block.items.forEach((item) => gallery.append(renderImageFigure(item, true)));
+  return gallery;
+}
+
 function renderBlock(block) {
   if (block.type === "paragraph") return renderTextBlock("p", block.text);
   if (block.type === "tip") return renderTextBlock("p", block.text, "note-tip");
   if (block.type === "ordered-list" || block.type === "unordered-list") return renderList(block);
   if (block.type === "table") return renderTable(block);
+  if (block.type === "image") return renderImageFigure(block);
+  if (block.type === "gallery") return renderGallery(block);
   if (block.type === "shortcuts") {
     return renderList({
       type: "unordered-list",
@@ -420,6 +648,15 @@ function sectionToPlainText(section) {
         const rows = (block.rows || []).map((row) => row.join(" | ")).join("\n");
         return [columns, rows].filter(Boolean).join("\n");
       }
+      if (block.type === "image") {
+        return [block.caption, block.sourceLabel, block.credit, block.alt].filter(Boolean).join(" ");
+      }
+      if (block.type === "gallery") {
+        return (block.items || [])
+          .map((item) => [item.caption, item.sourceLabel, item.credit, item.alt].filter(Boolean).join(" "))
+          .filter(Boolean)
+          .join("\n");
+      }
       return "";
     })
     .filter(Boolean)
@@ -548,6 +785,7 @@ window.addEventListener("scroll", requestNavigationSync, { passive: true });
 window.addEventListener("resize", requestNavigationSync);
 elements.closeNotes.addEventListener("click", () => {
   if (mode === "owner") {
+    revokeAssetUrls();
     window.location.href = "notes.html";
     return;
   }
@@ -563,6 +801,7 @@ const sessionSecret = sharedSecret || sessionStorage.getItem(SESSION_KEY);
 if (window.location.hash === "#local") {
   openNotebook(loadLocalNotebook(), "local");
 } else if (sessionSecret) {
+  ownerSecret = sessionSecret;
   elements.unlockMessage.textContent = "正在打开笔记…";
   fetch(`${notebookSettings.privateDataUrl}?v=${Date.now()}`, { cache: "no-store" })
     .then((response) => {
@@ -575,10 +814,45 @@ if (window.location.hash === "#local") {
       openNotebook(data, "owner");
     })
     .catch(() => {
+      revokeAssetUrls();
       sessionStorage.removeItem(SESSION_KEY);
       window.location.replace("notes.html");
     });
 }
+
+function lockOwnerNotebook() {
+  if (mode !== "owner" && !ownerSecret) return;
+  sessionStorage.removeItem(SESSION_KEY);
+  revokeAssetUrls();
+  notes = null;
+  mode = null;
+  window.location.replace("notes.html");
+}
+
+if ("BroadcastChannel" in window) {
+  sessionChannel = new BroadcastChannel(SESSION_CHANNEL);
+  sessionChannel.addEventListener("message", (event) => {
+    if (event.data?.type === "lock") lockOwnerNotebook();
+  });
+}
+window.addEventListener("storage", (event) => {
+  if (event.key === SESSION_LOCK_EVENT && event.newValue) lockOwnerNotebook();
+});
+window.addEventListener("pagehide", revokeAssetUrls);
+window.addEventListener("pageshow", (event) => {
+  if (!event.persisted || mode !== "owner") return;
+  ownerSecret = sessionStorage.getItem(SESSION_KEY) || "";
+  if (!ownerSecret) {
+    lockOwnerNotebook();
+    return;
+  }
+  renderNotebook();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && mode === "owner" && !sessionStorage.getItem(SESSION_KEY)) {
+    lockOwnerNotebook();
+  }
+});
 
 elements.notesNav.addEventListener("click", (event) => {
   const button = event.target.closest(".notes-subnav-button");

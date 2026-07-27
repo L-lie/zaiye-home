@@ -12,6 +12,7 @@ export const notebooks = [
   {
     id: "mingri-park-heat-world",
     sourceFile: "mingri-park-heat-world.json",
+    assetDir: "mingri-park-heat-world-assets",
     outputFile: "mingri-park-heat-world.enc.json",
     href: "mingri-park-notes.html",
   },

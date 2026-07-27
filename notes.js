@@ -1,6 +1,8 @@
 const PRIVATE_LIBRARY_URL = "assets/content/notes-library.enc.json";
 const PUBLIC_DATA_URL = "assets/content/notes-public.json";
 const SESSION_KEY = "zaiye-notes-session-key";
+const SESSION_CHANNEL = "zaiye-notes-session";
+const SESSION_LOCK_EVENT = "zaiye-notes-lock-event";
 
 const elements = {
   gate: document.querySelector("#notesGate"),
@@ -249,6 +251,13 @@ elements.form.addEventListener("submit", async (event) => {
 
 elements.lock.addEventListener("click", () => {
   sessionStorage.removeItem(SESSION_KEY);
+  if ("BroadcastChannel" in window) {
+    const channel = new BroadcastChannel(SESSION_CHANNEL);
+    channel.postMessage({ type: "lock" });
+    channel.close();
+  }
+  localStorage.setItem(SESSION_LOCK_EVENT, String(Date.now()));
+  localStorage.removeItem(SESSION_LOCK_EVENT);
   sourceFileHandles.clear();
   privateNotebooks = [];
   elements.privateGrid.replaceChildren();

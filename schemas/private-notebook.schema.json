@@ -1,0 +1,297 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zaiye.art/schemas/private-notebook.schema.json",
+  "title": "再野私人笔记源文件",
+  "type": "object",
+  "required": ["id", "title", "categories"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "summary": {
+      "type": "string"
+    },
+    "publicVisible": {
+      "type": "boolean",
+      "default": false
+    },
+    "assets": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/assetSource"
+      }
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/category"
+      }
+    }
+  },
+  "$defs": {
+    "assetSource": {
+      "type": "object",
+      "required": ["assetId", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "imageRole": {
+      "enum": ["shot", "revision", "final", "reference", "comparison"]
+    },
+    "imageReference": {
+      "type": "object",
+      "required": ["assetId", "alt", "role"],
+      "additionalProperties": true,
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "alt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caption": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/imageRole"
+        },
+        "sourceLabel": {
+          "type": "string"
+        },
+        "credit": {
+          "type": "string"
+        }
+      }
+    },
+    "paragraphBlock": {
+      "type": "object",
+      "required": ["type", "text"],
+      "properties": {
+        "type": {
+          "const": "paragraph"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "tipBlock": {
+      "type": "object",
+      "required": ["type", "text"],
+      "properties": {
+        "type": {
+          "const": "tip"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    "listBlock": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": {
+          "enum": ["ordered-list", "unordered-list"]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "shortcutsBlock": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": {
+          "const": "shortcuts"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["keys", "action"],
+            "properties": {
+              "keys": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "tableBlock": {
+      "type": "object",
+      "required": ["type", "columns", "rows"],
+      "properties": {
+        "type": {
+          "const": "table"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "imageBlock": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/imageReference"
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "image"
+            }
+          }
+        }
+      ]
+    },
+    "galleryBlock": {
+      "type": "object",
+      "required": ["type", "layout", "items"],
+      "properties": {
+        "type": {
+          "const": "gallery"
+        },
+        "layout": {
+          "enum": ["grid", "comparison", "before-after"]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/imageReference"
+          }
+        }
+      }
+    },
+    "block": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/paragraphBlock"
+        },
+        {
+          "$ref": "#/$defs/tipBlock"
+        },
+        {
+          "$ref": "#/$defs/listBlock"
+        },
+        {
+          "$ref": "#/$defs/shortcutsBlock"
+        },
+        {
+          "$ref": "#/$defs/tableBlock"
+        },
+        {
+          "$ref": "#/$defs/imageBlock"
+        },
+        {
+          "$ref": "#/$defs/galleryBlock"
+        }
+      ]
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "title", "blocks"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "functionNames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "shortcuts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        }
+      }
+    },
+    "category": {
+      "type": "object",
+      "required": ["id", "title", "sections"],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/section"
+          }
+        }
+      }
+    }
+  }
+}

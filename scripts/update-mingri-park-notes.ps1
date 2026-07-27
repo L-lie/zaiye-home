@@ -11,6 +11,11 @@ if (-not (Test-Path -LiteralPath $node)) {
   throw "Node.js was not found. Run this command in Codex or install Node.js first."
 }
 
+& $node (Join-Path $PSScriptRoot "test-notebook-images.mjs")
+if ($LASTEXITCODE -ne 0) {
+  exit $LASTEXITCODE
+}
+
 & $node (Join-Path $PSScriptRoot "encrypt-notebook.mjs") "mingri-park-heat-world"
 if ($LASTEXITCODE -ne 0) {
   exit $LASTEXITCODE

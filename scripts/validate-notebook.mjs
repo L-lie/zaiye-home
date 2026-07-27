@@ -9,6 +9,11 @@ import {
   sharedKeyFile,
 } from "./notebooks.config.mjs";
 import { assert, decryptPayload, validateNotebook } from "./notebook-crypto.mjs";
+import {
+  comparableNotebook,
+  findOrphanedAssets,
+  validateCompiledAssets,
+} from "./notebook-assets.mjs";
 
 const projectDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const privateDir = resolve(projectDir, ".private");
@@ -24,8 +29,19 @@ const sourceText = await readFile(resolve(privateDir, target.sourceFile), "utf8"
 const source = JSON.parse(sourceText);
 const sectionCount = validateNotebook(source, target.id);
 const payload = JSON.parse(await readFile(resolve(contentDir, target.outputFile), "utf8"));
-const decrypted = await decryptPayload(payload, secret);
-assert(decrypted === sourceText, "encrypted website data is not up to date with the private source");
+const compiled = JSON.parse(await decryptPayload(payload, secret));
+assert(
+  JSON.stringify(comparableNotebook(compiled)) === JSON.stringify(comparableNotebook(source)),
+  "encrypted website data is not up to date with the private source",
+);
+const selectedAssetUrls = await validateCompiledAssets({
+  source,
+  compiled,
+  config: target,
+  privateDir,
+  contentDir,
+  secret,
+});
 
 const sourceEntries = await Promise.all(
   notebooks.map(async (config) => {
@@ -39,17 +55,30 @@ const libraryPayload = JSON.parse(await readFile(resolve(contentDir, libraryOutp
 const library = JSON.parse(await decryptPayload(libraryPayload, secret));
 assert(Array.isArray(library.notebooks), "private notebook library must contain a notebooks array");
 assert(library.notebooks.length === sourceEntries.length, "private notebook library is incomplete");
+const allAssetUrls = new Set();
 for (const { config, value } of sourceEntries) {
   const item = library.notebooks.find((notebook) => notebook.id === config.id);
   assert(item, `private notebook library is missing ${config.id}`);
   assert(item.title === value.title, `private notebook title is not up to date: ${config.id}`);
   assert(item.categoryCount === value.categories.length, `private category count is not up to date: ${config.id}`);
-  assert(item.publicVisible === value.publicVisible, `private visibility is not up to date: ${config.id}`);
+  assert(item.publicVisible === (value.publicVisible === true), `private visibility is not up to date: ${config.id}`);
   assert(item.href === config.href, `private page link is not up to date: ${config.id}`);
+  const urls = await validateCompiledAssets({
+    source: value,
+    compiled: item,
+    config,
+    privateDir,
+    contentDir,
+    secret,
+  });
+  urls.forEach((url) => allAssetUrls.add(url));
 }
+selectedAssetUrls.forEach((url) => allAssetUrls.add(url));
+const orphanedAssets = await findOrphanedAssets(contentDir, allAssetUrls);
+assert(orphanedAssets.length === 0, "secure media directory contains orphaned encrypted files");
 
 const publicManifest = JSON.parse(await readFile(resolve(contentDir, publicOutputFile), "utf8"));
-const expectedPublic = sourceEntries.filter(({ value }) => value.publicVisible);
+const expectedPublic = sourceEntries.filter(({ value }) => value.publicVisible === true);
 assert(Array.isArray(publicManifest.notebooks), "public notebook manifest must contain a notebooks array");
 assert(publicManifest.notebooks.length === expectedPublic.length, "public notebook manifest is not up to date");
 for (const { config, value } of expectedPublic) {
@@ -59,5 +88,5 @@ for (const { config, value } of expectedPublic) {
 }
 
 console.log(
-  `${source.title} is valid: ${source.categories.length} categories, ${sectionCount} sections, ${library.notebooks.length} notebooks in the private library.`,
+  `${source.title} is valid: ${source.categories.length} categories, ${sectionCount} sections, ${allAssetUrls.size} encrypted image files, ${library.notebooks.length} notebooks in the private library.`,
 );
