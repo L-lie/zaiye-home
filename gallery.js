@@ -464,6 +464,12 @@ function setActiveLinks() {
 
 function renderFeature() {
   const feature = document.querySelector("[data-feature-card]");
+  const hero = feature.closest(".archive-hero");
+  hero.hidden = Boolean(activeType);
+  if (hero.hidden) {
+    feature.replaceChildren();
+    return;
+  }
   const project = activeCase || PROJECTS.find((item) => projectHasType(item, activeProject)) || PROJECTS[0];
   feature.innerHTML = `
     <a class="archive-feature-card" href="gallery.html?case=${project.id}#archive-browser">

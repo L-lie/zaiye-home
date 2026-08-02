@@ -802,6 +802,10 @@ address a:hover {
   padding: 24px 0 22px;
 }
 
+.archive-hero[hidden] {
+  display: none;
+}
+
 .archive-hero-copy {
   display: grid;
   align-content: end;
