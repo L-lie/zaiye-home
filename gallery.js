@@ -361,6 +361,10 @@ function cleanTitle(title = "") {
   return title.replace(/\s+/g, " ").replace(/《\s+/g, "《").replace(/\s+》/g, "》").trim();
 }
 
+function displayTitle(title = "") {
+  return cleanTitle(title).replace(/[《》]/g, "");
+}
+
 function mediaFor(file) {
   return portfolioMedia[file] || {};
 }
@@ -422,7 +426,7 @@ function artworkCaption(title, project) {
   const cleaned = cleanTitle(title);
   const titleMatch = cleaned.match(/《[^》]+》/);
   const fallbackName = cleanTitle(project?.title || "作品").replace(/美术设计$/, "").trim();
-  const workName = titleMatch?.[0] || fallbackName;
+  const workName = displayTitle(titleMatch?.[0] || fallbackName);
   let description = cleaned;
 
   if (titleMatch) {
@@ -444,7 +448,7 @@ function projectHasType(project, type) {
 function currentLabel() {
   if (activeType === "all") return "全部美术资料";
   if (activeType) return TYPE_LABELS[activeType] || "作品";
-  if (activeCase) return activeCase.title;
+  if (activeCase) return displayTitle(activeCase.title);
   if (activeProject) return PROJECT_LABELS[activeProject] || "项目入口";
   return "项目入口";
 }
@@ -465,7 +469,7 @@ function renderFeature() {
     <a class="archive-feature-card" href="gallery.html?case=${project.id}#archive-browser">
       ${portfolioImageMarkup(project.image, project.title, { loading: "eager", priority: true })}
       <span>${project.meta}</span>
-      <strong>${project.title}</strong>
+      <strong>${displayTitle(project.title)}</strong>
       <em>查看项目</em>
     </a>
   `;
@@ -475,7 +479,7 @@ function renderChips() {
   const wrap = document.querySelector("[data-archive-chips]");
   const chips = [
     { label: "全部", href: "gallery.html?type=all#archive-browser", active: activeType === "all" },
-    { label: activeCase ? cleanTitle(activeCase.title) : "项目", href: activeCase ? window.location.href : "gallery.html#archive-selected", active: showingProjectList || Boolean(activeCase) },
+    { label: activeCase ? displayTitle(activeCase.title) : "项目", href: activeCase ? window.location.href : "gallery.html#archive-selected", active: showingProjectList || Boolean(activeCase) },
     ...Object.entries(TYPE_LABELS).map(([key, label]) => ({
       label,
       href: `gallery.html?type=${key}#archive-browser`,
@@ -523,7 +527,7 @@ function renderSubChips() {
       active: !activeCase,
     },
     ...projects.map((project) => ({
-      label: cleanTitle(project.title),
+      label: displayTitle(project.title),
       href: `gallery.html?type=${activeType}&case=${project.id}#archive-browser`,
       active: activeCase?.id === project.id,
     })),
@@ -581,7 +585,7 @@ function renderProjects() {
     card.innerHTML = `
       ${portfolioImageMarkup(item.poster || item.image, item.title)}
       <span>${item.meta}</span>
-      <strong>${item.title}</strong>
+      <strong>${displayTitle(item.title)}</strong>
       <p>${item.copy}</p>
     `;
     return card;
@@ -615,10 +619,10 @@ const ITEM_ORDER = {
   "assets/portfolio/slide-19-01.jpeg": 1,
   "assets/portfolio/slide-19-02.jpeg": 2,
   "assets/portfolio/slide-19-03.jpeg": 3,
-  "assets/portfolio/slide-20-01.png": 0,
-  "assets/portfolio/slide-20-03.png": 1,
-  "assets/portfolio/slide-20-04.png": 2,
-  "assets/portfolio/slide-20-02.jpeg": 3,
+  "assets/portfolio/slide-20-02.jpeg": 0,
+  "assets/portfolio/slide-20-01.png": 1,
+  "assets/portfolio/slide-20-03.png": 2,
+  "assets/portfolio/slide-20-04.png": 3,
 };
 
 function groupItems(items) {
@@ -689,6 +693,30 @@ function bindInlineStrip(card) {
   const carousel = card.querySelector("[data-inline-carousel]");
   if (!carousel || !card.classList.contains("is-horizontal-strip")) return;
 
+  const previous = card.querySelector('[data-inline-nav="previous"]');
+  const next = card.querySelector('[data-inline-nav="next"]');
+
+  const updateNavigation = () => {
+    if (!previous || !next) return;
+    const maxScroll = Math.max(0, carousel.scrollWidth - carousel.clientWidth);
+    const hasOverflow = maxScroll > 2;
+    previous.hidden = !hasOverflow;
+    next.hidden = !hasOverflow;
+    previous.disabled = !hasOverflow || carousel.scrollLeft <= 2;
+    next.disabled = !hasOverflow || carousel.scrollLeft >= maxScroll - 2;
+  };
+
+  [previous, next].forEach((button) => {
+    button?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const direction = button.dataset.inlineNav === "previous" ? -1 : 1;
+      carousel.scrollBy({ left: direction * carousel.clientWidth, behavior: "smooth" });
+    });
+  });
+  carousel.addEventListener("scroll", updateNavigation, { passive: true });
+  window.requestAnimationFrame(updateNavigation);
+
   let startX = 0;
   let startY = 0;
   let moved = false;
@@ -743,19 +771,25 @@ function renderItems(items) {
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
     card.innerHTML = `
-      <div
-        class="archive-work-carousel"
-        data-inline-carousel
-        data-index="0"
-      >
-        <div class="archive-work-track" data-inline-track>
-          ${group.items.map((entry, imageIndex) => `
-            <span class="archive-image-frame ${ratioClassForFile(entry.file)}">
-              ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
-              ${watermarkMarkup()}
-            </span>
-          `).join("")}
+      <div class="archive-work-carousel-shell">
+        <div
+          class="archive-work-carousel"
+          data-inline-carousel
+          data-index="0"
+        >
+          <div class="archive-work-track" data-inline-track>
+            ${group.items.map((entry, imageIndex) => `
+              <span class="archive-image-frame ${ratioClassForFile(entry.file)}">
+                ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
+                ${watermarkMarkup()}
+              </span>
+            `).join("")}
+          </div>
         </div>
+        ${group.items.length > 1 ? `
+          <button class="archive-work-nav previous" type="button" data-inline-nav="previous" aria-label="上一组图片">‹</button>
+          <button class="archive-work-nav next" type="button" data-inline-nav="next" aria-label="下一组图片">›</button>
+        ` : ""}
       </div>
       <span class="archive-work-meta">${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
       <div class="archive-work-caption">
@@ -958,7 +992,7 @@ function applySearch() {
       card.innerHTML = `
         ${portfolioImageMarkup(item.poster || item.image, item.title)}
         <span>${item.meta}</span>
-        <strong>${item.title}</strong>
+        <strong>${displayTitle(item.title)}</strong>
         <p>${item.copy}</p>
       `;
       return card;

@@ -1063,6 +1063,49 @@ address a:hover {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
+.archive-work-carousel-shell {
+  position: relative;
+}
+
+.archive-work-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50%;
+  background: rgba(20, 20, 20, 0.58);
+  color: #fff;
+  font: 400 2rem/1 Georgia, serif;
+  transform: translateY(-50%);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
+.archive-work-nav.previous {
+  left: 12px;
+}
+
+.archive-work-nav.next {
+  right: 12px;
+}
+
+.archive-work-nav:hover:not(:disabled) {
+  background: rgba(20, 20, 20, 0.78);
+}
+
+.archive-work-nav:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.archive-work-nav[hidden] {
+  display: none;
+}
+
 .archive-work-track {
   display: block;
   width: 100%;
@@ -1619,6 +1662,10 @@ body.is-lightbox-open {
   }
 
   .archive-lightbox-nav {
+    display: none;
+  }
+
+  .archive-work-nav {
     display: none;
   }
 
