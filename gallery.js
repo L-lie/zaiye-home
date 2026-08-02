@@ -1036,7 +1036,7 @@ function bindMobileSidebar() {
   const toggle = document.querySelector("[data-archive-sidebar-toggle]");
   const scrim = document.querySelector("[data-archive-sidebar-scrim]");
   if (!sidebar || !toggle || !scrim) return;
-  const mobileQuery = window.matchMedia("(max-width: 720px)");
+  const mobileQuery = window.matchMedia("(max-width: 1180px)");
 
   const setOpen = (open) => {
     const nextOpen = mobileQuery.matches && open;
