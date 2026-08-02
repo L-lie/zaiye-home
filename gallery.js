@@ -339,10 +339,12 @@ const activeProject = params.get("project");
 const activeCaseId = params.get("case");
 const activeCase = PROJECTS.find((item) => item.id === activeCaseId);
 const showingProjectList = !activeType && !activeCase;
+const PORTFOLIO_DATA_VERSION = "20260802c";
 
 let allItems = [];
 let filteredItems = [];
 let renderedGroups = [];
+let portfolioMedia = {};
 let lightboxState = {
   scale: 1,
   x: 0,
@@ -350,10 +352,55 @@ let lightboxState = {
   dragging: false,
   pointerX: 0,
   pointerY: 0,
+  startX: 0,
+  startY: 0,
+  pointerType: "",
 };
 
 function cleanTitle(title = "") {
   return title.replace(/\s+/g, " ").replace(/《\s+/g, "《").replace(/\s+》/g, "》").trim();
+}
+
+function mediaFor(file) {
+  return portfolioMedia[file] || {};
+}
+
+function ratioClassForFile(file) {
+  const media = mediaFor(file);
+  if (!media.width || !media.height) return "";
+  const ratio = media.width / media.height;
+  if (ratio > 16 / 9) return "is-ultrawide";
+  if (ratio > 1) return "is-wide";
+  return "is-square-or-tall";
+}
+
+function portfolioImageMarkup(file, alt, options = {}) {
+  const media = mediaFor(file);
+  const source = media.preview || file;
+  const loading = options.loading || "lazy";
+  const index = Number.isInteger(options.imageIndex)
+    ? ` data-group-image-index="${options.imageIndex}"`
+    : "";
+  const dimensions = media.width && media.height
+    ? ` width="${media.width}" height="${media.height}"`
+    : "";
+  const priority = options.priority ? ' fetchpriority="high"' : "";
+  return `<img${index} src="${source}" data-original-src="${file}" alt="${cleanTitle(alt)}" loading="${loading}"${priority}${dimensions} draggable="false" />`;
+}
+
+function bindPortfolioImageFallbacks() {
+  document.addEventListener("error", (event) => {
+    const image = event.target.closest?.("img[data-original-src]");
+    if (!image) return;
+    const fallback = image.dataset.originalSrc;
+    delete image.dataset.originalSrc;
+    if (fallback) image.src = fallback;
+  }, true);
+}
+
+function registerPortfolioCache() {
+  if (!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register(`portfolio-sw.js?v=${PORTFOLIO_DATA_VERSION}`).catch(() => {});
 }
 
 function matchesRule(item, rules, key, fieldName) {
@@ -369,6 +416,25 @@ function typeForItem(item) {
 
 function projectForItem(item) {
   return PROJECTS.find((project) => project.slides.includes(Number(item.slide)));
+}
+
+function artworkCaption(title, project) {
+  const cleaned = cleanTitle(title);
+  const titleMatch = cleaned.match(/《[^》]+》/);
+  const fallbackName = cleanTitle(project?.title || "作品").replace(/美术设计$/, "").trim();
+  const workName = titleMatch?.[0] || fallbackName;
+  let description = cleaned;
+
+  if (titleMatch) {
+    description = description.replace(titleMatch[0], "");
+  } else if (fallbackName && description.includes(fallbackName)) {
+    description = description.replace(fallbackName, "");
+  }
+
+  return {
+    workName,
+    description: description.replace(/\s+/g, " ").trim(),
+  };
 }
 
 function projectHasType(project, type) {
@@ -397,7 +463,7 @@ function renderFeature() {
   const project = activeCase || PROJECTS.find((item) => projectHasType(item, activeProject)) || PROJECTS[0];
   feature.innerHTML = `
     <a class="archive-feature-card" href="gallery.html?case=${project.id}#archive-browser">
-      <img src="${project.image}" alt="${project.title}" />
+      ${portfolioImageMarkup(project.image, project.title, { loading: "eager", priority: true })}
       <span>${project.meta}</span>
       <strong>${project.title}</strong>
       <em>查看项目</em>
@@ -513,7 +579,7 @@ function renderProjects() {
     card.className = "archive-case-card";
     card.href = `gallery.html?case=${item.id}#archive-browser`;
     card.innerHTML = `
-      <img src="${item.poster || item.image}" alt="${item.title}" loading="lazy" />
+      ${portfolioImageMarkup(item.poster || item.image, item.title)}
       <span>${item.meta}</span>
       <strong>${item.title}</strong>
       <p>${item.copy}</p>
@@ -588,24 +654,60 @@ function baseFilteredItems() {
     });
 }
 
-function classifyPairImages(card) {
-  const images = Array.from(card.querySelectorAll(".archive-work-track img"));
-  if (images.length !== 2) return;
+function watermarkMarkup() {
+  return `<span class="archive-image-watermark" aria-hidden="true">${
+    Array.from({ length: 7 }, () => "<span>再野文化</span>").join("")
+  }</span>`;
+}
 
-  const apply = () => {
-    if (!images.every((image) => image.naturalWidth && image.naturalHeight)) return;
-    const orientations = images.map((image) => (
-      image.naturalWidth >= image.naturalHeight ? "landscape" : "portrait"
-    ));
-    card.classList.toggle("is-landscape-pair", orientations.every((item) => item === "landscape"));
-    card.classList.toggle("is-portrait-pair", orientations.every((item) => item === "portrait"));
-    card.classList.toggle("is-mixed-pair", new Set(orientations).size > 1);
+function classifyImageRatios(card) {
+  const images = Array.from(card.querySelectorAll(".archive-work-track img"));
+  if (!images.length) return;
+
+  const apply = (image) => {
+    if (!image.naturalWidth || !image.naturalHeight) return;
+    const frame = image.closest(".archive-image-frame");
+    if (!frame) return;
+    const ratio = image.naturalWidth / image.naturalHeight;
+    frame.classList.remove("is-ultrawide", "is-wide", "is-square-or-tall");
+    frame.classList.add(
+      ratio > 16 / 9
+        ? "is-ultrawide"
+        : ratio > 1
+          ? "is-wide"
+          : "is-square-or-tall",
+    );
   };
 
   images.forEach((image) => {
-    if (!image.complete) image.addEventListener("load", apply, { once: true });
+    if (!image.complete) image.addEventListener("load", () => apply(image), { once: true });
+    apply(image);
   });
-  apply();
+}
+
+function bindInlineStrip(card) {
+  const carousel = card.querySelector("[data-inline-carousel]");
+  if (!carousel || !card.classList.contains("is-horizontal-strip")) return;
+
+  let startX = 0;
+  let startY = 0;
+  let moved = false;
+
+  carousel.addEventListener("pointerdown", (event) => {
+    startX = event.clientX;
+    startY = event.clientY;
+    moved = false;
+  });
+  carousel.addEventListener("pointermove", (event) => {
+    const deltaX = Math.abs(event.clientX - startX);
+    const deltaY = Math.abs(event.clientY - startY);
+    if (deltaX > 10 && deltaX > deltaY) moved = true;
+  });
+  carousel.addEventListener("pointerup", () => {
+    if (!moved) return;
+    card.dataset.suppressLightbox = "true";
+    window.setTimeout(() => delete card.dataset.suppressLightbox, 250);
+  });
 }
 
 function renderItems(items) {
@@ -627,57 +729,50 @@ function renderItems(items) {
     const item = group.primary;
     const type = typeForItem(item);
     const project = projectForItem(item);
-    const hasStack = group.items.length > 3;
+    const caption = artworkCaption(item.title, project);
+    const ratioClasses = group.items.map((entry) => ratioClassForFile(entry.file));
+    const isTwoUltrawide = group.items.length === 2
+      && ratioClasses.every((className) => className === "is-ultrawide");
     const card = document.createElement("article");
     card.className = "archive-work-card";
-    if (group.items.length === 2) card.classList.add("is-pair");
-    if (group.items.length === 3) card.classList.add("is-trio");
-    if (hasStack) card.classList.add("is-stack");
+    if (group.items.length > 1) card.classList.add("is-horizontal-strip");
+    if (isTwoUltrawide) card.classList.add("is-two-ultrawide");
     card.dataset.groupIndex = String(index);
     card.dataset.title = cleanTitle(item.title);
     card.tabIndex = 0;
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
     card.innerHTML = `
-      <div class="archive-work-carousel" data-inline-carousel data-index="0">
+      <div
+        class="archive-work-carousel"
+        data-inline-carousel
+        data-index="0"
+      >
         <div class="archive-work-track" data-inline-track>
           ${group.items.map((entry, imageIndex) => `
-            <img data-group-image-index="${imageIndex}" src="${entry.file}" alt="${cleanTitle(entry.title)}" loading="lazy" draggable="false" />
+            <span class="archive-image-frame ${ratioClassForFile(entry.file)}">
+              ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
+              ${watermarkMarkup()}
+            </span>
           `).join("")}
         </div>
-        ${hasStack ? `
-          <button class="archive-work-slide prev" type="button" data-inline-control data-inline-step="-1" aria-label="上一张">‹</button>
-          <button class="archive-work-slide next" type="button" data-inline-control data-inline-step="1" aria-label="下一张">›</button>
-        ` : ""}
       </div>
-      <span>${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
-      <strong>${cleanTitle(item.title)}</strong>
+      <span class="archive-work-meta">${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
+      <div class="archive-work-caption">
+        <strong>${caption.workName}</strong>
+        ${caption.description ? `<span>${caption.description}</span>` : ""}
+      </div>
       ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
     `;
-    classifyPairImages(card);
-    if (hasStack) setInlineSlide(card, 0);
+    classifyImageRatios(card);
+    bindInlineStrip(card);
     return card;
   }));
 }
 
-function setInlineSlide(card, nextIndex) {
-  const group = renderedGroups[Number(card.dataset.groupIndex)];
-  const carousel = card.querySelector("[data-inline-carousel]");
-  const track = card.querySelector("[data-inline-track]");
-  if (!group || !carousel || !track) return;
-  const total = group.items.length;
-  const index = (nextIndex + total) % total;
-  carousel.dataset.index = String(index);
-  carousel.style.setProperty("--slide-index", index);
-  track.querySelectorAll("img").forEach((image, imageIndex) => {
-    image.classList.toggle("is-current", imageIndex === index);
-  });
-  track.style.transform = "";
-}
-
 function updateLightboxImage(viewer) {
-  const image = viewer.querySelector("[data-lightbox-image]");
-  image.style.transform = `translate3d(${lightboxState.x}px, ${lightboxState.y}px, 0) scale(${lightboxState.scale})`;
+  const media = viewer.querySelector("[data-lightbox-media]");
+  media.style.transform = `translate3d(${lightboxState.x}px, ${lightboxState.y}px, 0) scale(${lightboxState.scale})`;
 }
 
 function resetLightboxTransform(viewer) {
@@ -694,6 +789,7 @@ function showLightboxImage(viewer, nextIndex) {
   viewer.dataset.index = String(index);
   const image = viewer.querySelector("[data-lightbox-image]");
   const count = viewer.querySelector("[data-lightbox-count]");
+  image.dataset.originalSrc = images[index].fallback || "";
   image.src = images[index].file;
   image.alt = images[index].title || "";
   if (count) count.textContent = images.length > 1 ? `${index + 1} / ${images.length}` : "";
@@ -707,9 +803,20 @@ function closeLightbox() {
 
 function openLightbox(group, startIndex = 0) {
   closeLightbox();
-  lightboxState = { scale: 1, x: 0, y: 0, dragging: false, pointerX: 0, pointerY: 0 };
+  lightboxState = {
+    scale: 1,
+    x: 0,
+    y: 0,
+    dragging: false,
+    pointerX: 0,
+    pointerY: 0,
+    startX: 0,
+    startY: 0,
+    pointerType: "",
+  };
   const images = group.items.map((item) => ({
-    file: item.file,
+    file: mediaFor(item.file).display || item.file,
+    fallback: item.file,
     title: cleanTitle(item.title),
   }));
   const title = cleanTitle(group.primary.title);
@@ -727,7 +834,10 @@ function openLightbox(group, startIndex = 0) {
     <button class="archive-lightbox-close" type="button" aria-label="关闭">×</button>
     ${hasMultiple ? `<button class="archive-lightbox-nav prev" type="button" aria-label="上一张">‹</button>` : ""}
     <div class="archive-lightbox-stage" data-lightbox-stage>
-      <img data-lightbox-image src="" alt="${title || ""}" draggable="false" />
+      <span class="archive-lightbox-media" data-lightbox-media>
+        <img data-lightbox-image src="" alt="${title || ""}" draggable="false" />
+        ${watermarkMarkup()}
+      </span>
     </div>
     ${hasMultiple ? `<button class="archive-lightbox-nav next" type="button" aria-label="下一张">›</button>` : ""}
     <div class="archive-lightbox-count" data-lightbox-count></div>
@@ -760,17 +870,32 @@ function openLightbox(group, startIndex = 0) {
     lightboxState.dragging = true;
     lightboxState.pointerX = event.clientX;
     lightboxState.pointerY = event.clientY;
+    lightboxState.startX = event.clientX;
+    lightboxState.startY = event.clientY;
+    lightboxState.pointerType = event.pointerType;
     image.setPointerCapture(event.pointerId);
   });
   image.addEventListener("pointermove", (event) => {
     if (!lightboxState.dragging) return;
+    if (lightboxState.pointerType === "touch" && lightboxState.scale <= 1) {
+      lightboxState.pointerX = event.clientX;
+      lightboxState.pointerY = event.clientY;
+      return;
+    }
     lightboxState.x += event.clientX - lightboxState.pointerX;
     lightboxState.y += event.clientY - lightboxState.pointerY;
     lightboxState.pointerX = event.clientX;
     lightboxState.pointerY = event.clientY;
     updateLightboxImage(viewer);
   });
-  image.addEventListener("pointerup", () => {
+  image.addEventListener("pointerup", (event) => {
+    if (lightboxState.pointerType === "touch" && lightboxState.scale <= 1 && hasMultiple) {
+      const deltaX = event.clientX - lightboxState.startX;
+      const deltaY = event.clientY - lightboxState.startY;
+      if (Math.abs(deltaX) >= 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
+        showLightboxImage(viewer, Number(viewer.dataset.index) + (deltaX < 0 ? 1 : -1));
+      }
+    }
     lightboxState.dragging = false;
   });
   image.addEventListener("pointercancel", () => {
@@ -784,24 +909,13 @@ function openLightbox(group, startIndex = 0) {
 
 function bindLightbox() {
   document.addEventListener("click", (event) => {
-    const inlineControl = event.target.closest("[data-inline-control]");
-    if (inlineControl) {
-      event.preventDefault();
-      event.stopPropagation();
-      const card = inlineControl.closest("[data-group-index]");
-      const carousel = card?.querySelector("[data-inline-carousel]");
-      if (card && carousel) {
-        setInlineSlide(card, Number(carousel.dataset.index || 0) + Number(inlineControl.dataset.inlineStep || 0));
-      }
-      return;
-    }
     const trigger = event.target.closest("[data-group-index]");
     if (!trigger) return;
+    if (trigger.dataset.suppressLightbox === "true") return;
     const clickedImage = event.target.closest("[data-group-image-index]");
-    const carousel = trigger.querySelector("[data-inline-carousel]");
     const startIndex = clickedImage
       ? Number(clickedImage.dataset.groupImageIndex)
-      : Number(carousel?.dataset.index || 0);
+      : 0;
     openLightbox(
       renderedGroups[Number(trigger.dataset.groupIndex)] || { primary: {}, items: [] },
       Number.isFinite(startIndex) ? startIndex : 0,
@@ -842,7 +956,7 @@ function applySearch() {
       card.className = "archive-case-card";
       card.href = `gallery.html?case=${item.id}#archive-browser`;
       card.innerHTML = `
-        <img src="${item.poster || item.image}" alt="${item.title}" loading="lazy" />
+        ${portfolioImageMarkup(item.poster || item.image, item.title)}
         <span>${item.meta}</span>
         <strong>${item.title}</strong>
         <p>${item.copy}</p>
@@ -877,17 +991,55 @@ function scrollToResults() {
   });
 }
 
+function bindMobileSidebar() {
+  const sidebar = document.querySelector(".archive-sidebar");
+  const toggle = document.querySelector("[data-archive-sidebar-toggle]");
+  const scrim = document.querySelector("[data-archive-sidebar-scrim]");
+  if (!sidebar || !toggle || !scrim) return;
+  const mobileQuery = window.matchMedia("(max-width: 720px)");
+
+  const setOpen = (open) => {
+    const nextOpen = mobileQuery.matches && open;
+    sidebar.classList.toggle("is-open", nextOpen);
+    document.body.classList.toggle("is-archive-menu-open", nextOpen);
+    toggle.setAttribute("aria-expanded", String(nextOpen));
+    toggle.textContent = nextOpen ? "收起菜单" : "菜单";
+    scrim.tabIndex = nextOpen ? 0 : -1;
+  };
+
+  toggle.addEventListener("click", () => {
+    setOpen(!sidebar.classList.contains("is-open"));
+  });
+  scrim.addEventListener("click", () => setOpen(false));
+  sidebar.addEventListener("click", (event) => {
+    if (event.target.closest("a[data-filter-link]")) setOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && sidebar.classList.contains("is-open")) setOpen(false);
+  });
+  mobileQuery.addEventListener("change", () => setOpen(false));
+  setOpen(false);
+}
+
 async function initGallery() {
   setActiveLinks();
-  renderFeature();
   renderChips();
-  renderProjects();
   bindMenu();
+  bindMobileSidebar();
   bindLightbox();
+  bindPortfolioImageFallbacks();
+  registerPortfolioCache();
 
-  const response = await fetch("assets/portfolio/portfolio-index.json", { cache: "no-store" });
+  const [response, mediaResponse] = await Promise.all([
+    fetch(`assets/portfolio/portfolio-index.json?v=${PORTFOLIO_DATA_VERSION}`),
+    fetch(`assets/portfolio/portfolio-media.json?v=${PORTFOLIO_DATA_VERSION}`),
+  ]);
+  const mediaManifest = mediaResponse.ok ? await mediaResponse.json() : { items: {} };
+  portfolioMedia = mediaManifest.items || {};
   allItems = await response.json();
   filteredItems = baseFilteredItems();
+  renderFeature();
+  renderProjects();
   renderSubChips();
   renderItems(filteredItems);
   scrollToResults();

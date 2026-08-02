@@ -1,0 +1,10 @@
+{
+  "name": "llie-studio-site",
+  "private": true,
+  "scripts": {
+    "build:portfolio-media": "node scripts/build-portfolio-media.cjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.3"
+  }
+}

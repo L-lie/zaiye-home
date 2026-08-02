@@ -1,21 +1,509 @@
 {
-  "version": 1,
-  "updatedAt": "2026-07-27",
+  "version": 2,
+  "updatedAt": "2026-07-29",
   "items": [
     {
-      "id": "original-brief-clarifier",
-      "title": "需求澄清助手",
+      "id": "writing-structured-article",
+      "title": "结构化文章起草",
+      "summary": "把一个主题整理成有明确读者、观点和层次的文章初稿。",
+      "category": "writing",
       "type": "task",
-      "model": "通用",
-      "prompt": "你是项目需求分析助手。请根据我提供的信息，输出：1. 已确认目标；2. 仍缺失的关键信息；3. 可执行的下一步；4. 风险与假设。不要编造未提供的事实。",
-      "tags": [
-        "办公",
-        "需求",
-        "通用"
+      "model": "通用文本模型",
+      "prompt": "请围绕“@主题”写一篇面向@读者的文章。核心目标是@目标。先给出一句明确观点，再按“问题背景、关键分析、具体建议、结论”组织正文。语气采用@语气，避免空泛口号和未经说明的数据。篇幅约为@篇幅。",
+      "variables": [
+        { "name": "主题", "label": "文章主题", "placeholder": "例如：AI 如何改变概念设计" },
+        { "name": "读者", "label": "目标读者", "placeholder": "例如：影视美术从业者" },
+        { "name": "目标", "label": "写作目标", "placeholder": "例如：解释变化并给出行动建议" },
+        { "name": "语气", "label": "表达语气", "placeholder": "例如：专业、直接、克制", "default": "专业、直接" },
+        { "name": "篇幅", "label": "目标篇幅", "placeholder": "例如：1200 字", "default": "1000 字" }
       ],
-      "sourceName": "Prompt Vault 原创通用模板",
+      "usage": "填写主题和读者后复制使用；需要更精确时，再补充目标、语气和篇幅。",
+      "tags": ["写作", "文章", "结构"],
+      "sourceName": "Prompt Vault 原创模板",
       "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
-      "license": "Prompt Vault 原创模板；允许公开再发布、收藏、修改，并用于个人或商业项目。"
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "writing-tone-rewrite",
+      "title": "指定语气改写",
+      "summary": "保留事实和原意，只调整表达方式与阅读节奏。",
+      "category": "writing",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请把下面的文字改写为@语气，面向@读者。保留原有事实、数字、专有名词和结论，不新增信息。删除重复表达，改善句子节奏，并把篇幅控制在@篇幅。原文：\n\n@原文",
+      "variables": [
+        { "name": "语气", "label": "目标语气", "placeholder": "例如：自然、专业、不讨好" },
+        { "name": "读者", "label": "目标读者", "placeholder": "例如：项目合作方" },
+        { "name": "篇幅", "label": "目标篇幅", "placeholder": "例如：300 字以内" },
+        { "name": "原文", "label": "需要改写的文字", "placeholder": "粘贴原文" }
+      ],
+      "usage": "适合邮件、说明文字、社交媒体和项目文案。模型不得补写原文没有的事实。",
+      "tags": ["改写", "语气", "润色"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "writing-source-summary",
+      "title": "长资料提炼摘要",
+      "summary": "从长文本中提取结论、证据、风险和待确认信息。",
+      "category": "writing",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请阅读下面的资料，为@使用场景生成摘要。依次输出：1. 三句话核心结论；2. 支撑结论的关键事实；3. 尚未证实或存在冲突的信息；4. 对@读者最重要的下一步。严格区分原文事实与推断，不确定时标注“待确认”。资料：\n\n@资料",
+      "variables": [
+        { "name": "使用场景", "label": "摘要用途", "placeholder": "例如：项目会前快速了解" },
+        { "name": "读者", "label": "摘要读者", "placeholder": "例如：导演和美术指导" },
+        { "name": "资料", "label": "原始资料", "placeholder": "粘贴需要提炼的长文本" }
+      ],
+      "usage": "适合会议材料、研究资料和长对话记录。输出会把事实与推断分开。",
+      "tags": ["摘要", "资料", "提炼"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "writing-title-options",
+      "title": "标题方向生成器",
+      "summary": "基于真实内容生成不同策略的标题，而不是堆砌夸张词。",
+      "category": "writing",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "根据@内容，为@平台生成标题方案。分别提供：5 个信息型标题、5 个观点型标题、5 个问题型标题。每个标题不超过@字数，不使用虚假悬念、夸张承诺或内容中没有的结论。最后推荐 3 个，并说明各自适合的读者。\n\n内容：@内容",
+      "variables": [
+        { "name": "内容", "label": "内容摘要", "placeholder": "粘贴正文或说明核心内容" },
+        { "name": "平台", "label": "发布平台", "placeholder": "例如：微信公众号、B 站", "default": "微信公众号" },
+        { "name": "字数", "label": "标题字数", "placeholder": "例如：20 字", "default": "22 字" }
+      ],
+      "usage": "适合文章、视频和作品发布。推荐结果会同时说明标题策略。",
+      "tags": ["标题", "内容发布", "创意"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "writing-interview-outline",
+      "title": "人物访谈提纲",
+      "summary": "围绕访谈目标生成有追问路径的问题，而不只是问题列表。",
+      "category": "writing",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "为人物@受访者设计一份关于@主题的访谈提纲，目标是@目标。请按“建立背景、关键经历、方法与判断、矛盾与反思、未来计划”组织问题。每个核心问题后补一个可根据回答继续深入的追问。避免暗示答案和重复提问，控制在@问题数个核心问题以内。",
+      "variables": [
+        { "name": "受访者", "label": "受访者身份", "placeholder": "例如：概念设计师" },
+        { "name": "主题", "label": "访谈主题", "placeholder": "例如：从剧本到视觉世界观" },
+        { "name": "目标", "label": "访谈目标", "placeholder": "例如：提炼可复用的工作方法" },
+        { "name": "问题数", "label": "核心问题数", "placeholder": "例如：12", "default": "12" }
+      ],
+      "usage": "先填写受访者身份和访谈目标，再根据实际资料删改问题。",
+      "tags": ["访谈", "提纲", "人物"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-cinematic-key-art",
+      "title": "电影感主视觉",
+      "summary": "把主题、场景和情绪整合成可执行的电影主视觉提示词。",
+      "category": "image",
+      "type": "scene",
+      "model": "通用图像模型",
+      "prompt": "@主体位于@场景中，正在@动作。画面传达@情绪。采用@构图，@镜头视角，@光线，主色为@色彩。材质细节真实，空间层次清晰，主体轮廓可读，电影概念设计，@画幅。避免文字、水印、重复肢体和无意义背景元素。",
+      "variables": [
+        { "name": "主体", "label": "画面主体", "placeholder": "例如：穿旧式宇航服的勘探员" },
+        { "name": "场景", "label": "环境场景", "placeholder": "例如：被海水淹没的未来剧院" },
+        { "name": "动作", "label": "主体动作", "placeholder": "例如：举灯观察舞台" },
+        { "name": "情绪", "label": "情绪氛围", "placeholder": "例如：安静、压迫、未知" },
+        { "name": "构图", "label": "构图方式", "placeholder": "例如：前景遮挡的纵深构图" },
+        { "name": "镜头视角", "label": "镜头视角", "placeholder": "例如：24mm 低机位广角" },
+        { "name": "光线", "label": "光线设计", "placeholder": "例如：顶部冷光与手电暖光" },
+        { "name": "色彩", "label": "主色关系", "placeholder": "例如：深青、灰蓝、少量琥珀" },
+        { "name": "画幅", "label": "画面比例", "placeholder": "例如：2.39:1", "default": "16:9" }
+      ],
+      "usage": "适合概念图和项目主视觉。变量越具体，镜头结果越稳定。",
+      "tags": ["图像", "电影感", "主视觉"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-character-turnaround",
+      "title": "角色设定转面图",
+      "summary": "生成正面、侧面和背面的统一角色设定展示。",
+      "category": "image",
+      "type": "character",
+      "model": "通用图像模型",
+      "prompt": "@角色的专业角色设定转面图，同一角色依次展示正面、标准侧面、背面。角色身份是@身份，年龄与体态为@体态，服装由@服装构成，关键辨识元素是@辨识元素。中性站姿，比例一致，服装结构清晰，纯@背景背景，均匀工作室光线，无透视夸张，无文字和水印。",
+      "variables": [
+        { "name": "角色", "label": "角色描述", "placeholder": "例如：近未来城市巡线员" },
+        { "name": "身份", "label": "角色身份", "placeholder": "例如：高空能源维护工" },
+        { "name": "体态", "label": "年龄与体态", "placeholder": "例如：35 岁、结实但不夸张" },
+        { "name": "服装", "label": "服装结构", "placeholder": "例如：分层防护服、工具腰带" },
+        { "name": "辨识元素", "label": "辨识元素", "placeholder": "例如：左肩红色识别灯" },
+        { "name": "背景", "label": "背景颜色", "placeholder": "例如：浅灰色", "default": "浅灰色" }
+      ],
+      "usage": "适合角色统一性确认。不要在同一条提示词中加入复杂动作和场景。",
+      "tags": ["角色", "转面图", "设定"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-environment-concept",
+      "title": "环境概念设计",
+      "summary": "从世界观功能出发，生成有尺度、动线和视觉焦点的环境概念。",
+      "category": "image",
+      "type": "scene",
+      "model": "通用图像模型",
+      "prompt": "为@世界观设计@地点。这里的主要功能是@功能，空间由@空间结构组成，主要材质为@材质。设置一个明确视觉焦点：@焦点，并用@尺度参照建立真实尺度。时间与天气为@时间天气，光线服务于空间层级和行进动线。高质量影视环境概念设计，@画幅，无人物特写、无文字标牌、无水印。",
+      "variables": [
+        { "name": "世界观", "label": "世界观背景", "placeholder": "例如：能源枯竭后的海上城市" },
+        { "name": "地点", "label": "地点名称", "placeholder": "例如：潮汐发电中枢" },
+        { "name": "功能", "label": "空间功能", "placeholder": "例如：维护巨型水轮机" },
+        { "name": "空间结构", "label": "空间结构", "placeholder": "例如：中央竖井、环形平台、维修桥" },
+        { "name": "材质", "label": "主要材质", "placeholder": "例如：盐蚀钢材、湿混凝土" },
+        { "name": "焦点", "label": "视觉焦点", "placeholder": "例如：竖井底部发光水轮" },
+        { "name": "尺度参照", "label": "尺度参照", "placeholder": "例如：平台上的两名维修员" },
+        { "name": "时间天气", "label": "时间与天气", "placeholder": "例如：暴雨后的黎明" },
+        { "name": "画幅", "label": "画面比例", "placeholder": "例如：2.39:1", "default": "16:9" }
+      ],
+      "usage": "先定义空间用途，再补材质和光线，能减少只有气氛而没有设计的问题。",
+      "tags": ["环境", "概念设计", "世界观"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-product-photography",
+      "title": "产品摄影画面",
+      "summary": "为产品生成具有明确卖点和光线逻辑的商业摄影提示词。",
+      "category": "image",
+      "type": "scene",
+      "model": "通用图像模型",
+      "prompt": "@产品的商业产品摄影，核心卖点是@卖点。产品放置在@环境中，采用@构图和@镜头，主光为@主光，辅光用于表现@材质细节。背景色调为@色调，画面干净，边缘清晰，比例真实，保留自然接触阴影，@画幅。不要添加品牌文字、虚构接口、水印或多余配件。",
+      "variables": [
+        { "name": "产品", "label": "产品名称", "placeholder": "例如：透明外壳便携音箱" },
+        { "name": "卖点", "label": "核心卖点", "placeholder": "例如：内部结构与柔和氛围灯" },
+        { "name": "环境", "label": "拍摄环境", "placeholder": "例如：深灰色亚克力台面" },
+        { "name": "构图", "label": "构图", "placeholder": "例如：中央偏右的留白构图" },
+        { "name": "镜头", "label": "镜头", "placeholder": "例如：85mm 轻微俯拍" },
+        { "name": "主光", "label": "主光", "placeholder": "例如：左上方大型柔光箱" },
+        { "name": "材质细节", "label": "需要突出材质", "placeholder": "例如：透明塑料与阳极氧化铝" },
+        { "name": "色调", "label": "背景色调", "placeholder": "例如：冷灰与低饱和青色" },
+        { "name": "画幅", "label": "画面比例", "placeholder": "例如：4:5", "default": "4:5" }
+      ],
+      "usage": "适合电商主图和广告视觉。产品真实结构应以参考图或明确描述为准。",
+      "tags": ["产品", "摄影", "广告"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-storyboard-shot",
+      "title": "分镜单镜头设计",
+      "summary": "把剧情动作翻译成具有机位、景别和空间关系的单镜头。",
+      "category": "image",
+      "type": "scene",
+      "model": "通用图像模型",
+      "prompt": "电影分镜单帧：@角色在@地点完成@动作。剧情信息是@剧情信息。采用@景别，@机位，@镜头焦段，画面前中后景关系为@空间关系。光线为@光线，整体@风格。确保动作方向清晰、视线匹配合理、主要人物可辨识，黑白分镜质感，16:9，无文字与水印。",
+      "variables": [
+        { "name": "角色", "label": "角色", "placeholder": "例如：年轻工程师" },
+        { "name": "地点", "label": "地点", "placeholder": "例如：失重实验舱" },
+        { "name": "动作", "label": "动作", "placeholder": "例如：抓住即将飞走的数据盒" },
+        { "name": "剧情信息", "label": "剧情信息", "placeholder": "例如：数据盒里保存着唯一证据" },
+        { "name": "景别", "label": "景别", "placeholder": "例如：中全景" },
+        { "name": "机位", "label": "机位", "placeholder": "例如：略低于人物腰部" },
+        { "name": "镜头焦段", "label": "焦段", "placeholder": "例如：28mm" },
+        { "name": "空间关系", "label": "空间关系", "placeholder": "例如：前景漂浮工具、中景人物、后景舱门" },
+        { "name": "光线", "label": "光线", "placeholder": "例如：舱门红色警报灯" },
+        { "name": "风格", "label": "分镜风格", "placeholder": "例如：清晰铅笔线稿", "default": "清晰铅笔线稿" }
+      ],
+      "usage": "每次只描述一个镜头。连续分镜需要分别生成并保持人物和空间设定一致。",
+      "tags": ["分镜", "镜头", "叙事"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-visual-critique",
+      "title": "画面问题诊断",
+      "summary": "从构图、光线、色彩和叙事焦点分析一张图，并给出修改顺序。",
+      "category": "image",
+      "type": "task",
+      "model": "支持图像理解的模型",
+      "prompt": "请分析我提供的画面，目标用途是@用途，期望传达@目标感受。按以下结构回答：1. 当前最有效的视觉信息；2. 构图与视线问题；3. 光线和色彩问题；4. 尺度、透视或材质问题；5. 按影响程度排序的五项修改建议。不要只给风格形容词，每项建议都要说明具体修改位置和预期效果。",
+      "variables": [
+        { "name": "用途", "label": "画面用途", "placeholder": "例如：电影概念设计提案" },
+        { "name": "目标感受", "label": "目标感受", "placeholder": "例如：宏大、危险但仍有希望" }
+      ],
+      "usage": "把图片和生成后的 Prompt 一起发送给支持图像理解的模型。",
+      "tags": ["画面分析", "修改建议", "图像"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "video-shot-list",
+      "title": "剧情镜头清单",
+      "summary": "把一段剧情拆成连续、可拍摄且方向一致的镜头列表。",
+      "category": "video",
+      "type": "video",
+      "model": "通用文本模型",
+      "prompt": "把下面的剧情拆成@镜头数个连续镜头，成片时长约@时长，整体节奏为@节奏。每个镜头列出：景别、机位与运动、人物动作、画面重点、声音提示、建议时长。保持人物运动方向和空间轴线一致，只在剧情需要时越轴。剧情：\n\n@剧情",
+      "variables": [
+        { "name": "镜头数", "label": "镜头数量", "placeholder": "例如：8", "default": "8" },
+        { "name": "时长", "label": "成片时长", "placeholder": "例如：45 秒" },
+        { "name": "节奏", "label": "节奏", "placeholder": "例如：前慢后快" },
+        { "name": "剧情", "label": "剧情内容", "placeholder": "粘贴剧情或动作段落" }
+      ],
+      "usage": "适合短片、广告和动画预演。生成后仍需根据场地和表演条件调整。",
+      "tags": ["镜头清单", "分镜", "视频"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "video-camera-motion",
+      "title": "运镜提示词",
+      "summary": "把开始画面、结束画面和叙事目的转成清晰的镜头运动描述。",
+      "category": "video",
+      "type": "video",
+      "model": "通用视频模型",
+      "prompt": "视频镜头从@开始画面开始，镜头以@运镜方式移动，速度为@速度，经过@过程，最终停在@结束画面。主体动作是@主体动作，环境变化是@环境变化。运动目的是@叙事目的。保持主体身份、服装、光线方向和空间结构一致，避免突然变形、无原因加速、镜头穿模和背景跳变。时长@时长。",
+      "variables": [
+        { "name": "开始画面", "label": "开始画面", "placeholder": "例如：走廊尽头的关闭舱门" },
+        { "name": "运镜方式", "label": "运镜方式", "placeholder": "例如：低机位缓慢向前推轨" },
+        { "name": "速度", "label": "运动速度", "placeholder": "例如：均匀缓慢" },
+        { "name": "过程", "label": "运动过程", "placeholder": "例如：绕过前景散落的工具" },
+        { "name": "结束画面", "label": "结束画面", "placeholder": "例如：门缝中露出的蓝光" },
+        { "name": "主体动作", "label": "主体动作", "placeholder": "例如：人物谨慎靠近舱门" },
+        { "name": "环境变化", "label": "环境变化", "placeholder": "例如：警报灯逐渐熄灭" },
+        { "name": "叙事目的", "label": "叙事目的", "placeholder": "例如：制造接近未知区域的紧张感" },
+        { "name": "时长", "label": "镜头时长", "placeholder": "例如：6 秒", "default": "6 秒" }
+      ],
+      "usage": "适合图生视频和文生视频。一次只描述一种主要运镜。",
+      "tags": ["运镜", "视频生成", "镜头"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "video-ad-storyboard",
+      "title": "短广告分镜方案",
+      "summary": "围绕一个产品卖点设计短时长广告的画面和声音结构。",
+      "category": "video",
+      "type": "video",
+      "model": "通用文本模型",
+      "prompt": "为@产品设计一支@时长的短广告，目标受众是@受众，核心卖点是@卖点，发布平台是@平台。请按时间顺序输出每个镜头的画面、景别与运镜、字幕或旁白、声音、时长。前三秒必须让观众理解问题或利益点，结尾给出明确但不过度承诺的行动提示。整体风格为@风格。",
+      "variables": [
+        { "name": "产品", "label": "产品", "placeholder": "例如：便携桌面投影仪" },
+        { "name": "时长", "label": "广告时长", "placeholder": "例如：15 秒", "default": "15 秒" },
+        { "name": "受众", "label": "目标受众", "placeholder": "例如：租房居住的年轻人" },
+        { "name": "卖点", "label": "核心卖点", "placeholder": "例如：小空间快速获得大画面" },
+        { "name": "平台", "label": "发布平台", "placeholder": "例如：抖音" },
+        { "name": "风格", "label": "视觉风格", "placeholder": "例如：真实生活感、轻松、快速" }
+      ],
+      "usage": "先确定单一卖点。多个卖点会让短广告失去重点。",
+      "tags": ["广告", "分镜", "短视频"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "video-edit-rhythm",
+      "title": "剪辑节奏规划",
+      "summary": "根据素材和目标情绪安排段落长度、转折点与声音节奏。",
+      "category": "video",
+      "type": "video",
+      "model": "通用文本模型",
+      "prompt": "为一支@时长的视频制定剪辑节奏。素材包括@素材，目标情绪曲线是@情绪曲线，音乐特征是@音乐。请划分段落，说明每段的目的、建议时长、镜头平均长度、剪切依据、声音处理和转折点。指出哪些素材应保留完整动作，哪些可以用跳切或蒙太奇压缩。最终输出一份可直接执行的时间线建议。",
+      "variables": [
+        { "name": "时长", "label": "成片时长", "placeholder": "例如：90 秒" },
+        { "name": "素材", "label": "已有素材", "placeholder": "例如：采访、工作过程、成片画面" },
+        { "name": "情绪曲线", "label": "情绪曲线", "placeholder": "例如：平静进入、快速积累、克制收束" },
+        { "name": "音乐", "label": "音乐特征", "placeholder": "例如：80 BPM，前半稀疏后半加强" }
+      ],
+      "usage": "适合先有素材再做结构规划的剪辑任务。",
+      "tags": ["剪辑", "节奏", "时间线"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "coding-bug-diagnosis",
+      "title": "代码故障诊断",
+      "summary": "根据现象和证据定位原因，先诊断再给最小修复方案。",
+      "category": "coding",
+      "type": "task",
+      "model": "Codex",
+      "prompt": "请诊断下面的问题。技术环境：@技术环境。期望行为：@期望行为。实际现象：@实际现象。复现步骤：@复现步骤。错误信息或日志：@错误信息。请依次给出：1. 已确认事实；2. 最可能的原因及证据；3. 仍需检查的信息；4. 最小修复方案；5. 防止回归的测试。不要在证据不足时假装已经确定原因。",
+      "variables": [
+        { "name": "技术环境", "label": "技术环境", "placeholder": "例如：Chrome 扩展 MV3，原生 JavaScript" },
+        { "name": "期望行为", "label": "期望行为", "placeholder": "描述正确状态" },
+        { "name": "实际现象", "label": "实际现象", "placeholder": "描述错误状态" },
+        { "name": "复现步骤", "label": "复现步骤", "placeholder": "按顺序列出操作" },
+        { "name": "错误信息", "label": "错误信息", "placeholder": "粘贴日志；没有时写无" }
+      ],
+      "usage": "同时提供相关文件和日志能显著提高诊断质量。",
+      "tags": ["编程", "调试", "故障"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "coding-implementation-plan",
+      "title": "功能实施计划",
+      "summary": "把功能需求拆成可验证步骤，并明确不应改动的范围。",
+      "category": "coding",
+      "type": "task",
+      "model": "Codex",
+      "prompt": "请为以下功能制定实施计划：@功能需求。现有技术栈是@技术栈，相关模块是@相关模块，明确不能改变的是@不能改变。请先列出需要确认的假设，然后按最小可交付顺序拆分步骤。每一步包含：要修改的文件或模块、具体变化、验证方法、风险。不要加入需求之外的重构或新功能。",
+      "variables": [
+        { "name": "功能需求", "label": "功能需求", "placeholder": "描述需要实现的功能" },
+        { "name": "技术栈", "label": "技术栈", "placeholder": "例如：原生 JavaScript、Chrome MV3" },
+        { "name": "相关模块", "label": "相关模块", "placeholder": "例如：popup.js 和资源 JSON" },
+        { "name": "不能改变", "label": "保持不变", "placeholder": "例如：现有个人库数据结构" }
+      ],
+      "usage": "适合在正式改代码前明确边界和验收标准。",
+      "tags": ["编程", "计划", "实施"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "coding-review",
+      "title": "针对性代码审查",
+      "summary": "围绕真实风险检查代码，不做无关的风格重写。",
+      "category": "coding",
+      "type": "task",
+      "model": "Codex",
+      "prompt": "请审查我提供的代码或改动，重点关注@审查重点。系统用途是@系统用途，不能破坏的行为是@不能破坏。只报告能够具体说明影响的问题，并按严重程度排序。每项包含：问题位置、触发条件、用户或系统影响、建议修复、应补测试。不要把个人风格偏好当成缺陷，也不要重构无关代码。",
+      "variables": [
+        { "name": "审查重点", "label": "审查重点", "placeholder": "例如：数据丢失、权限、异步状态" },
+        { "name": "系统用途", "label": "系统用途", "placeholder": "例如：本地 Prompt 管理扩展" },
+        { "name": "不能破坏", "label": "关键行为", "placeholder": "例如：现有用户收藏和导入数据" }
+      ],
+      "usage": "把变更文件或 diff 一起提供。适合发布前风险检查。",
+      "tags": ["编程", "代码审查", "风险"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "coding-test-cases",
+      "title": "测试用例生成",
+      "summary": "从功能规则推导正常、边界、错误和回归测试。",
+      "category": "coding",
+      "type": "task",
+      "model": "Codex",
+      "prompt": "根据以下功能规则生成测试用例：@功能规则。技术环境是@技术环境，已有测试方式是@测试方式。请按正常路径、边界条件、无效输入、权限或失败状态、历史回归五组输出。每个用例包含前置条件、操作、预期结果和验证点。优先覆盖最可能造成@核心风险的情况，避免只测试成功状态。",
+      "variables": [
+        { "name": "功能规则", "label": "功能规则", "placeholder": "粘贴需求或验收规则" },
+        { "name": "技术环境", "label": "技术环境", "placeholder": "例如：浏览器扩展" },
+        { "name": "测试方式", "label": "已有测试方式", "placeholder": "例如：Node 校验加手动浏览器测试" },
+        { "name": "核心风险", "label": "核心风险", "placeholder": "例如：数据丢失或错误收藏" }
+      ],
+      "usage": "适合补齐测试范围，也可以作为人工验收清单。",
+      "tags": ["编程", "测试", "回归"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "office-requirement-clarifier",
+      "title": "需求澄清助手",
+      "summary": "识别已确认目标、缺失条件、风险和下一步。",
+      "category": "office",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请分析下面的需求，项目背景是@项目背景。依次输出：1. 已确认目标；2. 当前范围；3. 缺失的关键信息；4. 存在歧义的表述；5. 风险与假设；6. 最小可执行的下一步。不要编造未提供的事实。需求：\n\n@需求",
+      "variables": [
+        { "name": "项目背景", "label": "项目背景", "placeholder": "例如：个人使用的浏览器扩展" },
+        { "name": "需求", "label": "原始需求", "placeholder": "粘贴需求内容" }
+      ],
+      "usage": "适合在开工前发现真正需要确认的问题。",
+      "tags": ["办公", "需求", "澄清"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "office-meeting-actions",
+      "title": "会议行动项整理",
+      "summary": "把会议记录整理成决定、任务、负责人和截止时间。",
+      "category": "office",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请把下面的会议记录整理为：1. 已作出的决定；2. 待办事项；3. 每项负责人；4. 截止时间；5. 依赖条件；6. 尚未解决的问题。记录中没有明确负责人或时间时写“待确认”，不要自行指定。最后生成一段可直接发给参会者确认的简短总结。会议记录：\n\n@会议记录",
+      "variables": [
+        { "name": "会议记录", "label": "会议记录", "placeholder": "粘贴会议记录或转写文本" }
+      ],
+      "usage": "适合会后快速形成可以跟进的任务清单。",
+      "tags": ["会议", "行动项", "办公"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "office-project-plan",
+      "title": "轻量项目计划",
+      "summary": "把一个目标拆成阶段、交付物、依赖和验证方式。",
+      "category": "office",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请为@项目制定一份轻量执行计划。目标是@目标，可用时间为@时间，可用资源为@资源，限制条件是@限制。按实际交付顺序列出阶段，每个阶段包含：交付物、负责人角色、依赖、完成标准、风险。最后给出第一周可以立即开始的任务，不添加目标之外的工作。",
+      "variables": [
+        { "name": "项目", "label": "项目名称", "placeholder": "例如：建立个人作品网站" },
+        { "name": "目标", "label": "项目目标", "placeholder": "描述最终需要达成的结果" },
+        { "name": "时间", "label": "可用时间", "placeholder": "例如：四周" },
+        { "name": "资源", "label": "可用资源", "placeholder": "例如：一人、现有素材、有限预算" },
+        { "name": "限制", "label": "限制条件", "placeholder": "例如：不更换现有域名" }
+      ],
+      "usage": "适合小型项目和个人项目。输出强调交付结果而不是复杂管理术语。",
+      "tags": ["项目", "计划", "执行"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "office-email-rewrite",
+      "title": "工作邮件整理",
+      "summary": "把零散信息整理成目的明确、语气合适的工作邮件。",
+      "category": "office",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请把下面的信息整理成一封发给@收件人的工作邮件。邮件目的是@目的，语气为@语气。结构包含：简短背景、需要对方知道的重点、需要对方完成或确认的事项、明确时间。主题行提供 3 个选择。不要加入原始信息中没有的承诺。原始信息：\n\n@原始信息",
+      "variables": [
+        { "name": "收件人", "label": "收件人", "placeholder": "例如：项目制片人" },
+        { "name": "目的", "label": "邮件目的", "placeholder": "例如：确认下一版交付范围" },
+        { "name": "语气", "label": "语气", "placeholder": "例如：礼貌、直接、不过度客套", "default": "礼貌、直接" },
+        { "name": "原始信息", "label": "原始信息", "placeholder": "粘贴零散信息" }
+      ],
+      "usage": "适合确认事项、汇报进度和请求反馈。",
+      "tags": ["邮件", "沟通", "办公"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "office-decision-record",
+      "title": "决策记录整理",
+      "summary": "记录为什么做出某个选择，以及何时应该重新评估。",
+      "category": "office",
+      "type": "task",
+      "model": "通用文本模型",
+      "prompt": "请把下面的信息整理为一份决策记录。决策主题是@主题，候选方案包括@候选方案，当前选择是@当前选择。按以下结构输出：背景、目标、评估标准、各方案主要利弊、最终决定、决定依据、已知代价、需要监测的信号、重新评估条件。只使用已提供的信息，不足处标记“待补充”。补充材料：\n\n@补充材料",
+      "variables": [
+        { "name": "主题", "label": "决策主题", "placeholder": "例如：资源库数据放在哪里维护" },
+        { "name": "候选方案", "label": "候选方案", "placeholder": "例如：扩展内置、网站 JSON、数据库" },
+        { "name": "当前选择", "label": "当前选择", "placeholder": "例如：网站静态 JSON 加本地回退" },
+        { "name": "补充材料", "label": "补充材料", "placeholder": "粘贴讨论记录或约束" }
+      ],
+      "usage": "适合技术和产品决策，方便日后理解当时的条件与取舍。",
+      "tags": ["决策", "记录", "复盘"],
+      "sourceName": "Prompt Vault 原创模板",
+      "sourceUrl": "https://zaiye.art/prompt-vault-resources.json",
+      "license": "允许收藏、修改并用于个人或商业项目"
     }
   ]
 }

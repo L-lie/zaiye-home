@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="再野文化工作室作品档案，按项目和美术资料类型浏览影视美术、舞台、综艺与实景项目图集。" />
     <title>作品档案 | 再野文化工作室</title>
-    <link rel="icon" href="assets/site-logo.png" type="image/png" />
+    <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js?v=20260723d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260723i" />
+    <link rel="stylesheet" href="styles.css?v=20260802h" />
     <link rel="stylesheet" href="theme.css?v=20260723d" />
-    <script src="gallery.js?v=20260723i" defer></script>
+    <script src="gallery.js?v=20260802g" defer></script>
   </head>
   <body class="archive-body">
     <header class="site-header archive-header">
@@ -22,18 +22,23 @@
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
         <a href="gallery.html" aria-current="page">作品</a>
-        <a href="index.html#scope">服务</a>
         <a href="canvas.html">Canvas</a>
         <a href="notes.html">学习笔记</a>
         <a href="prompt-vault.html">Prompt Vault</a>
-        <a href="tools/creative-vault/index.html">Creative Vault</a>
         <a href="tools/overlap-slicer/index.html">重叠切图</a>
         <a href="index.html#contact">联系</a>
       </nav>
     </header>
 
     <main class="archive-shell">
-      <aside class="archive-sidebar" aria-label="作品分类">
+      <aside id="archive-sidebar" class="archive-sidebar" aria-label="作品分类">
+        <button
+          class="archive-sidebar-toggle"
+          type="button"
+          data-archive-sidebar-toggle
+          aria-controls="archive-sidebar"
+          aria-expanded="false"
+        >菜单</button>
         <a class="archive-sidebar-home" href="index.html">
           <img src="assets/site-logo.png" alt="" width="36" height="36" />
           <span>
@@ -52,7 +57,7 @@
 
         <nav class="archive-menu">
           <a class="archive-menu-item is-active" href="gallery.html" data-filter-link>全部作品</a>
-          <div class="archive-menu-group">
+          <div class="archive-menu-group archive-project-types">
             <button type="button" class="archive-menu-toggle" aria-expanded="true">项目类型</button>
             <div class="archive-submenu">
               <a href="gallery.html?project=stage#archive-selected" data-filter-link>舞台剧</a>
@@ -63,7 +68,7 @@
               <a href="gallery.html?project=immersive#archive-selected" data-filter-link>实景 / 沉浸</a>
             </div>
           </div>
-          <div class="archive-menu-group">
+          <div class="archive-menu-group archive-material-types">
             <button type="button" class="archive-menu-toggle" aria-expanded="true">美术资料</button>
             <div class="archive-submenu">
               <a href="gallery.html?type=atmosphere#archive-browser" data-filter-link>气氛图</a>
@@ -80,6 +85,13 @@
           </div>
         </nav>
       </aside>
+      <button
+        class="archive-sidebar-scrim"
+        type="button"
+        data-archive-sidebar-scrim
+        aria-label="收起作品菜单"
+        tabindex="-1"
+      ></button>
 
       <section class="archive-main" aria-label="作品档案">
         <section class="archive-hero">

@@ -43,6 +43,7 @@ let previewMetrics = null;
 let stitchFiles = [];
 let stitchPlacedItems = [];
 let stitchDrag = null;
+let selectedTile = null;
 let selectedStitchItem = null;
 let stitchPlacementMode = "";
 
@@ -284,7 +285,17 @@ autoAlignButton.addEventListener("click", () => {
 });
 
 fullscreenStitchButton.addEventListener("click", () => {
-  if (!stitchPlacedItems.length) return;
+  if (tilesNode.classList.contains("is-fullscreen")) {
+    tilesNode.classList.remove("is-fullscreen");
+    updateTileActions();
+    return;
+  }
+  if (!stitchPlacedItems.length) {
+    if (!getVisibleTiles().length) return;
+    tilesNode.classList.add("is-fullscreen");
+    updateTileActions();
+    return;
+  }
   stitchResult.classList.add("is-fullscreen");
   updateStitchActionButtons();
 });
@@ -295,10 +306,18 @@ closeFullscreenStitchButton.addEventListener("click", () => {
 });
 
 deleteSelectedTileButton.addEventListener("click", () => {
+  if (selectedTile) {
+    deleteSelectedVisibleTile();
+    return;
+  }
   deleteSelectedStitchItem();
 });
 
 clearStitchTilesButton.addEventListener("click", () => {
+  if (getVisibleTiles().length) {
+    clearVisibleTiles();
+    return;
+  }
   stitchPlacedItems = [];
   stitchDrag = null;
   selectedStitchItem = null;
@@ -310,6 +329,11 @@ clearStitchTilesButton.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && tilesNode.classList.contains("is-fullscreen")) {
+    tilesNode.classList.remove("is-fullscreen");
+    updateTileActions();
+    return;
+  }
   if (event.key === "Escape" && stitchResult.classList.contains("is-fullscreen")) {
     stitchResult.classList.remove("is-fullscreen");
     updateStitchActionButtons();
@@ -336,6 +360,7 @@ stitchPreview.addEventListener("pointerdown", (event) => {
   if (index < 0) return;
   const [item] = stitchPlacedItems.splice(index, 1);
   stitchPlacedItems.push(item);
+  selectedTile = null;
   selectedStitchItem = item;
   deleteSelectedTileButton.disabled = false;
   stitchDrag = {
@@ -425,9 +450,9 @@ async function loadSourceFile(file) {
   canvas.height = image.naturalHeight;
   canvas.getContext("2d").drawImage(image, 0, 0);
   URL.revokeObjectURL(image.src);
-  const nextBaseName = cleanBaseName(file.name || "ai-image");
+  baseName = cleanBaseName(file.name || "ai-image");
   if (hasChromeStorage) await chrome.storage.local.remove("overlapSlicerCapture");
-  await setSourceCanvas(canvas, nextBaseName);
+  await setSourceCanvas(canvas, baseName);
 }
 
 async function loadSourceData(source) {
@@ -436,8 +461,8 @@ async function loadSourceData(source) {
   canvas.width = image.naturalWidth;
   canvas.height = image.naturalHeight;
   canvas.getContext("2d").drawImage(image, 0, 0);
-  const nextBaseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
-  await setSourceCanvas(canvas, nextBaseName);
+  baseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
+  await setSourceCanvas(canvas, baseName);
 }
 
 function wireExternalSourceImport() {
@@ -473,8 +498,8 @@ async function loadSourceRecord(source) {
   canvas.height = image.naturalHeight;
   canvas.getContext("2d").drawImage(image, 0, 0);
   if (source.blob) URL.revokeObjectURL(src);
-  const nextBaseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
-  await setSourceCanvas(canvas, nextBaseName);
+  baseName = cleanBaseName(source.name || source.pageTitle || "ai-image");
+  await setSourceCanvas(canvas, baseName);
 }
 
 async function setSourceCanvas(canvas, name) {
@@ -553,8 +578,10 @@ function makeTiles() {
   deleteSelectedTileButton.disabled = true;
   clearStitchTilesButton.disabled = true;
   stitchResult.classList.remove("is-fullscreen");
+  tilesNode.classList.remove("is-fullscreen");
   stitchPlacedItems = [];
   stitchDrag = null;
+  selectedTile = null;
   selectedStitchItem = null;
   tiles = calculateTiles().map((tile) => {
     const canvas = document.createElement("canvas");
@@ -588,6 +615,7 @@ function makeTiles() {
   copyNextButton.textContent = getCopyNextLabel();
   renderPreview();
   renderTiles();
+  updateTileActions();
 }
 
 function clearPreview() {
@@ -661,6 +689,7 @@ function addManualCropTile(canvas) {
     title: `裁剪 ${manualCropCount}`,
   };
   manualCropTiles.push(tile);
+  selectedTile = tile;
   nextCopyIndex = 0;
   updateTileActions();
 }
@@ -673,6 +702,10 @@ function updateTileActions() {
   const visibleTiles = getVisibleTiles();
   copyNextButton.disabled = !visibleTiles.length;
   downloadAllButton.disabled = !visibleTiles.length;
+  fullscreenStitchButton.disabled = !visibleTiles.length && !stitchPlacedItems.length;
+  deleteSelectedTileButton.disabled = !selectedTile && !selectedStitchItem;
+  clearStitchTilesButton.disabled = !visibleTiles.length && !stitchPlacedItems.length;
+  fullscreenStitchButton.textContent = tilesNode.classList.contains("is-fullscreen") ? "退出满屏" : "满屏调整";
   copyNextButton.textContent = getCopyNextLabel();
 }
 
@@ -681,6 +714,40 @@ function getCopyNextLabel() {
   if (!visibleTiles.length) return "复制下一张";
   const tile = visibleTiles[nextCopyIndex] || visibleTiles[0];
   return `复制下一张 ${tile.title || `R${tile.row + 1} C${tile.col + 1}`}`;
+}
+
+function flipTileHorizontal(tile) {
+  const source = cloneCanvas(tile.canvas);
+  const context = tile.canvas.getContext("2d");
+  context.clearRect(0, 0, tile.canvas.width, tile.canvas.height);
+  context.save();
+  context.translate(tile.canvas.width, 0);
+  context.scale(-1, 1);
+  context.drawImage(source, 0, 0);
+  context.restore();
+  renderTiles();
+}
+
+function deleteSelectedVisibleTile() {
+  if (!selectedTile) return;
+  manualCropTiles = manualCropTiles.filter((tile) => tile !== selectedTile);
+  tiles = tiles.filter((tile) => tile !== selectedTile);
+  selectedTile = null;
+  nextCopyIndex = 0;
+  renderTiles();
+  updateTileActions();
+  stitchStatus.textContent = "已删除选中的切片。";
+}
+
+function clearVisibleTiles() {
+  manualCropTiles = [];
+  tiles = [];
+  selectedTile = null;
+  nextCopyIndex = 0;
+  tilesNode.classList.remove("is-fullscreen");
+  renderTiles();
+  updateTileActions();
+  stitchStatus.textContent = "已清空右侧切片。调整参数或重新裁剪后会生成新的切片。";
 }
 
 function calculateTiles() {
@@ -868,6 +935,14 @@ function renderTiles() {
   for (const tile of getVisibleTiles()) {
     const card = document.createElement("article");
     card.className = "tile";
+    if (selectedTile === tile) card.classList.add("is-selected");
+    card.addEventListener("click", () => {
+      selectedTile = tile;
+      selectedStitchItem = null;
+      redrawStitchPreview();
+      updateTileActions();
+      renderTiles();
+    });
     const visibleCanvas = tile.canvas.cloneNode();
     visibleCanvas.getContext("2d").drawImage(tile.canvas, 0, 0);
 
@@ -878,14 +953,28 @@ function renderTiles() {
     size.textContent = `${tile.width} x ${tile.height}px · ${tile.aspect}${tile.aspectMatched ? "" : " 接近"}`;
     const actions = document.createElement("div");
     actions.className = "tile-actions";
+    const flipButton = document.createElement("button");
+    flipButton.textContent = "左右翻转";
+    flipButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectedTile = tile;
+      flipTileHorizontal(tile);
+      updateTileActions();
+    });
     const copyButton = document.createElement("button");
     copyButton.textContent = "复制";
-    copyButton.addEventListener("click", () => copyTile(tile));
+    copyButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      copyTile(tile);
+    });
     const downloadButton = document.createElement("button");
     downloadButton.textContent = "下载";
-    downloadButton.addEventListener("click", () => downloadCanvas(tile.canvas, tile.name));
+    downloadButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      downloadCanvas(tile.canvas, tile.name);
+    });
 
-    actions.append(copyButton, downloadButton);
+    actions.append(flipButton, copyButton, downloadButton);
     footer.append(title, size, actions);
     card.append(visibleCanvas, footer);
     tilesNode.append(card);
@@ -978,11 +1067,14 @@ function deleteSelectedStitchItem() {
 
 function updateStitchActionButtons() {
   const hasPlaced = stitchPlacedItems.length > 0;
+  const hasVisibleTiles = getVisibleTiles().length > 0;
   downloadMergedButton.disabled = !hasPlaced;
   autoAlignButton.disabled = stitchPlacedItems.length < 2;
-  fullscreenStitchButton.disabled = !hasPlaced || stitchResult.classList.contains("is-fullscreen");
-  deleteSelectedTileButton.disabled = !selectedStitchItem;
-  clearStitchTilesButton.disabled = !hasPlaced;
+  fullscreenStitchButton.disabled =
+    (!hasPlaced && !hasVisibleTiles) || stitchResult.classList.contains("is-fullscreen");
+  deleteSelectedTileButton.disabled = !selectedStitchItem && !selectedTile;
+  clearStitchTilesButton.disabled = !hasPlaced && !hasVisibleTiles;
+  fullscreenStitchButton.textContent = tilesNode.classList.contains("is-fullscreen") ? "退出满屏" : "满屏调整";
 }
 
 function compactImageOnlyStitchGrid() {

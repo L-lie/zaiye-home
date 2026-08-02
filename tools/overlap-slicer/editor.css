@@ -254,6 +254,20 @@ canvas[hidden] {
   display: none;
 }
 
+.tiles.is-fullscreen {
+  position: fixed;
+  inset: 12px;
+  z-index: 1000;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  align-content: start;
+  max-height: none;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101114;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65);
+}
+
 .stitch-status {
   padding: 10px 14px 0;
   font-size: 13px;
@@ -328,6 +342,12 @@ canvas[hidden] {
   border-radius: 8px;
   background: #12151b;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.tile.is-selected {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(86, 183, 255, 0.26);
 }
 
 .tile canvas {
@@ -351,7 +371,7 @@ canvas[hidden] {
 
 .tile-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
 
