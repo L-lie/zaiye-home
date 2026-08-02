@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="再野文化工作室（简称再野、再野文化）作品网站，展示影视美术、场景视觉、陈设道具及舞台综艺等项目作品。"
+      content="再野文化工作室，简称再野，参与电影、网大、剧集、综艺、舞台与宣传片项目的影视美术、场景视觉和陈设道具设计。"
     />
-    <title>再野文化工作室 | 影视美术与场景视觉</title>
+    <title>再野｜再野文化工作室 · 影视美术与场景视觉</title>
     <link rel="canonical" href="https://zaiye.art/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="再野文化工作室" />
-    <meta property="og:title" content="再野文化工作室 | 影视美术与场景视觉" />
+    <meta property="og:title" content="再野｜再野文化工作室 · 影视美术与场景视觉" />
     <meta
       property="og:description"
-      content="再野文化工作室作品网站，展示影视美术、场景视觉、陈设道具及舞台综艺等项目作品。"
+      content="把文字里的世界做成镜头里的现场。查看再野文化工作室的作品、美术资料、学习笔记和创作工具。"
     />
     <meta property="og:url" content="https://zaiye.art/" />
     <meta property="og:image" content="https://zaiye.art/assets/hero-production-design.png" />
@@ -28,7 +28,7 @@
             "@id": "https://zaiye.art/#website",
             "url": "https://zaiye.art/",
             "name": "再野文化工作室",
-            "alternateName": ["再野文化", "再野", "ZAIYE CULTURE", "zaiye.art"],
+            "alternateName": ["再野", "再野文化", "ZAIYE CULTURE", "zaiye.art"],
             "inLanguage": "zh-CN",
             "publisher": { "@id": "https://zaiye.art/#organization" }
           },
@@ -37,7 +37,8 @@
             "@id": "https://zaiye.art/#organization",
             "url": "https://zaiye.art/",
             "name": "再野文化工作室",
-            "alternateName": ["再野文化", "再野", "ZAIYE CULTURE"],
+            "alternateName": ["再野", "再野文化", "ZAIYE CULTURE"],
+            "email": "comiccai@163.com",
             "logo": {
               "@type": "ImageObject",
               "url": "https://zaiye.art/favicon.png",
@@ -48,98 +49,97 @@
         ]
       }
     </script>
-    <script src="theme.js"></script>
-    <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="theme.css?v=20260721-2" />
+    <script>
+      document.documentElement.dataset.theme = localStorage.getItem("zaiye-site-theme") === "light" ? "light" : "dark";
+    </script>
+    <link rel="preload" href="assets/hero-production-design.png" as="image" />
+    <link rel="stylesheet" href="home-preview.css?v=20260802-6" />
   </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="再野文化工作室 home">
-        <img class="brand-logo" src="assets/site-logo.png" alt="" width="38" height="38" />
-        <span class="brand-copy">
-          <span class="brand-mark">再野文化工作室</span>
-          <span class="brand-line">ZAIYE CULTURE</span>
+  <body class="is-loading">
+    <div class="scene" aria-hidden="true">
+      <img
+        class="scene-image"
+        src="assets/hero-production-design.png"
+        alt=""
+        width="1891"
+        height="831"
+        fetchpriority="high"
+      />
+      <div class="scene-shade"></div>
+    </div>
+
+    <div class="loading-screen" role="status" aria-live="polite">
+      <span>工作室正在亮灯</span>
+      <span class="loading-line"></span>
+    </div>
+
+    <header class="studio-header">
+      <a class="studio-brand" href="#entrance" aria-label="返回工作室入口">
+        <span class="studio-logo"><img src="assets/site-logo.png" alt="" width="38" height="38" /></span>
+        <span>
+          <strong>再野文化工作室</strong>
+          <small>ZAIYE CULTURE</small>
         </span>
       </a>
-      <nav class="site-nav" aria-label="Primary navigation">
-        <a href="gallery.html">作品</a>
-        <a href="canvas.html">Canvas</a>
-        <a href="notes.html">学习笔记</a>
-        <a href="prompt-vault.html">Prompt Vault</a>
-        <a href="tools/overlap-slicer/index.html">重叠切图</a>
+      <nav class="zone-nav" aria-label="工作室区域">
+        <a href="#work-wall">作品墙</a>
+        <a href="#tool-room">工具区</a>
+        <a href="#study-desk">学习桌</a>
         <a href="#contact">联系</a>
       </nav>
+      <div class="header-end">
+        <button class="theme-toggle" type="button" data-theme-toggle aria-label="切换日夜模式"></button>
+      </div>
     </header>
 
-    <main id="top">
-      <section class="hero" aria-label="再野文化工作室 introduction">
-        <img
-          class="hero-image"
-          src="assets/hero-production-design.png"
-          alt="带有置景、图纸、道具和工作灯的电影美术工作空间"
-        />
-        <div class="hero-scrim"></div>
-        <div class="hero-content">
-          <p class="eyebrow">影视美术 / 场景视觉 / 陈设道具 / 舞台综艺</p>
+    <main class="studio-journey" data-journey>
+      <section class="studio-stop entrance is-active" id="entrance" data-scene="entrance" data-title="入口">
+        <div class="entrance-copy">
+          <p class="entrance-label">影视美术 / 场景视觉 / 陈设道具 / 舞台综艺</p>
           <h1>把文字里的世界做成镜头里的现场</h1>
-          <p class="hero-copy">
-            再野文化工作室参与电影、网大、剧集、综艺、舞台与宣传片项目的美术设计工作，
-            覆盖气氛图、陈设图、置景模型、施工制作图、道具资产、戏用平面与分镜等内容。
-          </p>
-          <div class="hero-actions">
-            <a class="button primary" href="gallery.html">查看作品</a>
-            <a class="button secondary" href="canvas.html">打开 Canvas</a>
-          </div>
-        </div>
-        <div class="hero-footer" aria-label="Studio highlights">
-          <span>影视美术设计</span>
-          <span>场景 / 陈设 / 道具</span>
-          <span>舞台 / 综艺 / 实景</span>
+          <p>再野文化工作室参与电影、网大、剧集、综艺、舞台与宣传片项目的美术设计工作。</p>
         </div>
       </section>
 
-      <section class="intro band">
-        <div class="section-label">简介</div>
-        <div class="intro-text">
-          <p>
-            再野文化工作室（简称“再野”）由美术设计蔡再田主理，作品涉及电影、网大、剧集、综艺、舞台、
-            宣传片和实景项目。页面以项目经历和美术资料为索引，便于快速了解可合作的方向。
-          </p>
-        </div>
+      <section class="studio-stop" id="work-wall" data-scene="work" data-title="作品墙">
+        <article class="zone-copy zone-copy-left">
+          <p class="zone-kind">作品墙</p>
+          <h2>作品与美术资料</h2>
+          <p>按项目类型和资料类别查看电影、剧集、综艺、舞台与实景项目。</p>
+          <a class="zone-link" href="gallery.html">查看作品</a>
+        </article>
       </section>
 
-      <section class="scope band" id="scope">
-        <div class="section-heading compact">
-          <p class="eyebrow">服务范围</p>
-          <h2>从参考、图纸到现场执行</h2>
-        </div>
-        <div class="scope-grid">
-          <div>
-            <h3>电影 / 网大</h3>
-            <p>气氛图、场景概念、特效设计、道具资产、角色三视图与分镜。</p>
+      <section class="studio-stop" id="tool-room" data-scene="tools" data-title="工具区">
+        <article class="zone-copy zone-copy-left">
+          <p class="zone-kind">工具区</p>
+          <h2>创作工具</h2>
+          <p>Prompt 管理、图片处理和工作中反复使用的小工具。</p>
+          <div class="zone-actions">
+            <a class="zone-link" href="prompt-vault.html">Prompt Vault</a>
+            <a class="zone-link zone-link-secondary" href="tools/overlap-slicer/index.html">重叠切图</a>
           </div>
-          <div>
-            <h3>剧集 / 短剧 / 情景剧</h3>
-            <p>陈设图、置景模型、戏用平面、生活痕迹和镜头内细节。</p>
-          </div>
-          <div>
-            <h3>综艺 / 舞台 / 实景</h3>
-            <p>棚内空间、舞台视觉、实景搭建、施工级模型与现场沟通。</p>
-          </div>
+        </article>
+      </section>
+
+      <section class="studio-stop" id="study-desk" data-scene="study" data-title="学习桌">
+        <article class="zone-copy zone-copy-left">
+          <p class="zone-kind">学习桌</p>
+          <h2>学习笔记</h2>
+          <p>记录软件操作、项目方法和阶段复盘。</p>
+          <a class="zone-link" href="notes.html">查看笔记</a>
+        </article>
+        <div class="inline-contact" id="contact">
+          <span>联系</span>
+          <a href="mailto:comiccai@163.com">comiccai@163.com</a>
+          <span>微信 czt424</span>
         </div>
       </section>
     </main>
 
-    <footer class="footer" id="contact">
-      <div>
-        <p class="eyebrow">联系合作</p>
-        <h2>项目合作、前期美术方案、视觉参考整理与现场执行</h2>
-      </div>
-      <address>
-        <a href="mailto:comiccai@163.com">comiccai@163.com</a>
-        <a href="tel:17605880424">17605880424</a>
-        <a href="#">微信 czt424</a>
-      </address>
-    </footer>
+    <noscript>
+      <p class="noscript-message">需要启用 JavaScript 才能体验工作室镜头。你仍可从顶部菜单直接进入各区域。</p>
+    </noscript>
+    <script src="home-preview.js?v=20260802-6"></script>
   </body>
 </html>
