@@ -14,12 +14,12 @@
 
 .vault-hero {
   position: relative;
-  min-height: 100dvh;
+  min-height: clamp(680px, 82dvh, 820px);
   display: grid;
-  grid-template-columns: minmax(300px, 0.7fr) minmax(520px, 1.3fr);
-  gap: clamp(28px, 4vw, 68px);
+  grid-template-columns: minmax(300px, 0.62fr) minmax(520px, 1.38fr);
+  gap: clamp(12px, 1.2vw, 24px);
   align-items: center;
-  padding: 112px clamp(24px, 5vw, 72px) 56px;
+  padding: 104px clamp(24px, 4vw, 60px) 36px;
   border-bottom: 1px solid var(--line);
   background-image:
     linear-gradient(var(--line) 1px, transparent 1px),
@@ -114,8 +114,9 @@
 .vault-window-desktop {
   z-index: 1;
   top: 6%;
-  right: -3%;
-  width: 92%;
+  right: -1%;
+  width: 96%;
+  aspect-ratio: 1520 / 1160;
   transform: rotate(-1.6deg);
 }
 
@@ -124,6 +125,7 @@
   right: 7%;
   bottom: 0;
   width: 30%;
+  aspect-ratio: 720 / 1166;
   max-height: 76%;
   transform: rotate(1.4deg);
 }
@@ -285,6 +287,7 @@
 
   .vault-hero {
     grid-template-columns: 1fr;
+    min-height: 100dvh;
     padding-top: 136px;
   }
 

@@ -1,11 +1,22 @@
-const CACHE_NAME = "zaiye-portfolio-images-v1";
+const CACHE_NAME = "zaiye-site-images-v2";
 const GENERATED_IMAGE_PATH = "/assets/portfolio/generated/";
+const CACHED_IMAGE_PATHS = new Set([
+  "/assets/prompt-vault-desktop.webp",
+  "/assets/prompt-vault-mobile.webp",
+]);
+
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys
-        .filter((key) => key.startsWith("zaiye-portfolio-images-") && key !== CACHE_NAME)
+        .filter((key) => (
+          key.startsWith("zaiye-portfolio-images-")
+          || key.startsWith("zaiye-site-images-")
+        ) && key !== CACHE_NAME)
         .map((key) => caches.delete(key)),
     )),
   );
@@ -18,7 +29,10 @@ self.addEventListener("fetch", (event) => {
   if (
     request.method !== "GET"
     || url.origin !== self.location.origin
-    || !url.pathname.includes(GENERATED_IMAGE_PATH)
+    || (
+      !url.pathname.includes(GENERATED_IMAGE_PATH)
+      && !CACHED_IMAGE_PATHS.has(url.pathname)
+    )
   ) return;
 
   event.respondWith(

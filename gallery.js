@@ -339,7 +339,7 @@ const activeProject = params.get("project");
 const activeCaseId = params.get("case");
 const activeCase = PROJECTS.find((item) => item.id === activeCaseId);
 const showingProjectList = !activeType && !activeCase;
-const PORTFOLIO_DATA_VERSION = "20260802c";
+const PORTFOLIO_DATA_VERSION = "20260802d";
 
 let allItems = [];
 let filteredItems = [];

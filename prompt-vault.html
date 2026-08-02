@@ -18,10 +18,13 @@
     />
     <meta property="og:url" content="https://zaiye.art/prompt-vault.html" />
     <meta property="og:image" content="https://zaiye.art/assets/prompt-vault-product.jpg" />
+    <link rel="preload" as="image" href="assets/prompt-vault-desktop.webp" type="image/webp" fetchpriority="high" />
+    <link rel="preload" as="image" href="assets/prompt-vault-mobile.webp" type="image/webp" fetchpriority="high" />
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js"></script>
+    <script defer src="prompt-vault-cache.js?v=20260802-1"></script>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="prompt-vault.css?v=20260721-2" />
+    <link rel="stylesheet" href="prompt-vault.css?v=20260802-1" />
     <link rel="stylesheet" href="theme.css?v=20260721-2" />
   </head>
   <body class="vault-body">
@@ -64,10 +67,10 @@
 
         <div class="vault-product-scene" aria-label="Prompt Vault 桌面端和窄屏端界面">
           <figure class="vault-window vault-window-desktop">
-            <img src="assets/prompt-vault-desktop.png" alt="Prompt Vault 桌面端界面" />
+            <img src="assets/prompt-vault-desktop.webp" alt="Prompt Vault 桌面端界面" width="1520" height="1160" fetchpriority="high" decoding="async" />
           </figure>
           <figure class="vault-window vault-window-mobile">
-            <img src="assets/prompt-vault-mobile.png" alt="Prompt Vault 窄屏端界面" />
+            <img src="assets/prompt-vault-mobile.webp" alt="Prompt Vault 窄屏端界面" width="720" height="1166" fetchpriority="high" decoding="async" />
           </figure>
         </div>
       </section>
