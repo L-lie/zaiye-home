@@ -1,15 +1,12 @@
 const DB_NAME = "zaiye-canvas-db";
 const STORE_NAME = "boards";
 const LEGACY_STORAGE_KEY = "zaiye-canvas-v1";
-const PRIVATE_LIBRARY_URL = "assets/content/notes-library.enc.json";
-const SESSION_KEY = "zaiye-notes-session-key";
 const DEFAULT_VIEW = { x: -520, y: -320, scale: 0.9 };
+const MAX_IMAGE_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 2560;
+const IMAGE_QUALITY = 0.84;
 
 const els = {
-  canvasAccess: document.getElementById("canvasAccess"),
-  canvasUnlockForm: document.getElementById("canvasUnlockForm"),
-  canvasUnlockKey: document.getElementById("canvasUnlockKey"),
-  canvasUnlockMessage: document.getElementById("canvasUnlockMessage"),
   canvasHome: document.getElementById("canvasHome"),
   canvasWorkspace: document.getElementById("canvasWorkspace"),
   homeActions: document.getElementById("homeActions"),
@@ -80,10 +77,6 @@ function requestResult(request) {
   });
 }
 
-function base64ToBytes(value) {
-  return Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
-}
-
 function makeUuid() {
   if (crypto.randomUUID) return crypto.randomUUID();
   const bytes = new Uint8Array(16);
@@ -98,41 +91,6 @@ function makeUuid() {
   bytes[8] = (bytes[8] & 0x3f) | 0x80;
   const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, "0"));
   return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
-}
-
-async function decryptPrivateLibrary(payload, secret) {
-  if (!crypto.subtle) throw new Error("当前页面需要 HTTPS 才能解锁私人内容");
-  const passwordKey = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
-  const key = await crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      hash: "SHA-256",
-      salt: base64ToBytes(payload.salt),
-      iterations: payload.iterations,
-    },
-    passwordKey,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["decrypt"],
-  );
-  const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: base64ToBytes(payload.iv) },
-    key,
-    base64ToBytes(payload.ciphertext),
-  );
-  return JSON.parse(new TextDecoder().decode(plaintext));
-}
-
-async function verifyCanvasSecret(secret) {
-  const response = await fetch(`${PRIVATE_LIBRARY_URL}?v=${Date.now()}`, { cache: "no-store" });
-  if (!response.ok) throw new Error("无法读取私人密钥校验文件");
-  await decryptPrivateLibrary(await response.json(), secret);
 }
 
 async function openDatabase() {
@@ -163,6 +121,18 @@ async function putBoard(board) {
 
 async function removeBoard(id) {
   return requestResult(boardStore("readwrite").delete(id));
+}
+
+function setStatus(message, isError = false) {
+  els.statusText.textContent = message;
+  els.statusText.classList.toggle("is-error", isError);
+}
+
+function storageErrorMessage(error) {
+  if (error?.name === "QuotaExceededError") {
+    return "保存失败：本机存储空间不足，请先导出备份并删除大图";
+  }
+  return "保存失败：请确认浏览器允许本站使用本机存储";
 }
 
 function normalizedBoard(value = {}) {
@@ -242,7 +212,6 @@ async function renderBoardLibrary() {
 
 function showHome() {
   document.body.classList.add("canvas-home-mode");
-  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = false;
   els.canvasWorkspace.hidden = true;
   els.homeActions.hidden = false;
@@ -254,23 +223,10 @@ function showHome() {
 
 function showEditor() {
   document.body.classList.remove("canvas-home-mode");
-  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = true;
   els.canvasWorkspace.hidden = false;
   els.homeActions.hidden = true;
   els.editorActions.hidden = false;
-}
-
-function showAccess() {
-  document.body.classList.add("canvas-home-mode");
-  els.canvasAccess.hidden = false;
-  els.canvasHome.hidden = true;
-  els.canvasWorkspace.hidden = true;
-  els.homeActions.hidden = true;
-  els.editorActions.hidden = true;
-  state = null;
-  selectedId = null;
-  els.canvasUnlockKey.focus();
 }
 
 function openBoard(id) {
@@ -281,8 +237,12 @@ function openBoard(id) {
 
 async function createBoard() {
   const board = normalizedBoard();
-  await putBoard(board);
-  openBoard(board.id);
+  try {
+    await putBoard(board);
+    openBoard(board.id);
+  } catch (error) {
+    window.alert(storageErrorMessage(error));
+  }
 }
 
 async function loadCurrentBoard(id) {
@@ -300,16 +260,23 @@ async function loadCurrentBoard(id) {
 }
 
 async function saveBoard(status = "已保存到本机") {
-  if (!state) return;
+  if (!state) return false;
   state.view = { ...view };
   state.updatedAt = new Date().toISOString();
-  await putBoard(state);
-  els.statusText.textContent = status;
+  try {
+    await putBoard(state);
+    setStatus(status);
+    return true;
+  } catch (error) {
+    console.error("Canvas save failed", error);
+    setStatus(storageErrorMessage(error), true);
+    return false;
+  }
 }
 
 function scheduleSave(status = "正在编辑") {
   if (!state) return;
-  els.statusText.textContent = status;
+  setStatus(status);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => saveBoard(), 450);
 }
@@ -337,7 +304,7 @@ function centerBoardPoint() {
 
 function updateBrushCursor(event) {
   if (event) lastPointerClient = { x: event.clientX, y: event.clientY };
-  const drawableTools = ["pen", "eraser", "heal", "smudge"];
+  const drawableTools = ["pen", "eraser"];
   if (!state || !drawableTools.includes(activeTool) || !lastPointerClient || spacePan) {
     els.brushCursor.hidden = true;
     return;
@@ -600,41 +567,6 @@ function eraseAt(point) {
   }
 }
 
-function startSelection(event, shape) {
-  event.preventDefault();
-  const rect = els.viewport.getBoundingClientRect();
-  const selection = document.createElement("div");
-  selection.className = `selection-box ${shape}`;
-  els.viewport.append(selection);
-  dragState = {
-    type: "selection",
-    shape,
-    pointerId: event.pointerId,
-    startX: event.clientX - rect.left,
-    startY: event.clientY - rect.top,
-    selection,
-  };
-  updateSelectionBox(event);
-  els.viewport.setPointerCapture(event.pointerId);
-}
-
-function updateSelectionBox(event) {
-  if (dragState?.type !== "selection") return;
-  const rect = els.viewport.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  const left = Math.min(dragState.startX, x);
-  const top = Math.min(dragState.startY, y);
-  const width = Math.abs(x - dragState.startX);
-  const height = Math.abs(y - dragState.startY);
-  Object.assign(dragState.selection.style, {
-    left: `${left}px`,
-    top: `${top}px`,
-    width: `${width}px`,
-    height: `${height}px`,
-  });
-}
-
 function startViewportAction(event) {
   if (event.button !== 0) return;
   const pencilTool = spacePan ? "pan" : (event.pointerType === "pen" ? (activeTool === "eraser" ? "eraser" : activeTool === "select" ? "pen" : activeTool) : activeTool);
@@ -665,29 +597,11 @@ function startViewportAction(event) {
     els.viewport.setPointerCapture(event.pointerId);
     return;
   }
-  if (pencilTool === "heal" || pencilTool === "smudge") {
-    event.preventDefault();
-    currentStroke = {
-      id: makeUuid(),
-      color: pencilTool === "heal" ? "#d7c7a8" : activeColor,
-      width: Number(els.strokeWidth.value),
-      points: [],
-    };
-    appendStrokePoint(event);
-    renderInk();
-    dragState = { type: "ink", pointerId: event.pointerId };
-    els.viewport.setPointerCapture(event.pointerId);
-    return;
-  }
   if (pencilTool === "eraser") {
     event.preventDefault();
     eraseAt(boardPointFromClient(event.clientX, event.clientY));
     dragState = { type: "eraser", pointerId: event.pointerId };
     els.viewport.setPointerCapture(event.pointerId);
-    return;
-  }
-  if (pencilTool === "lasso" || pencilTool === "rect-lasso") {
-    startSelection(event, pencilTool === "lasso" ? "lasso" : "rect");
     return;
   }
   if (closestElement(event.target, ".canvas-item")) return;
@@ -729,10 +643,6 @@ function movePointer(event) {
     eraseAt(boardPointFromClient(event.clientX, event.clientY));
     return;
   }
-  if (dragState.type === "selection") {
-    updateSelectionBox(event);
-    return;
-  }
   const item = state.items.find((entry) => entry.id === dragState.id);
   if (!item) return;
   item.x = dragState.itemX + (event.clientX - dragState.startX) / view.scale;
@@ -752,10 +662,6 @@ function endPointer(event) {
     currentStroke = null;
     renderInk();
     scheduleSave("已保存笔迹");
-  }
-  if (dragState.type === "selection") {
-    dragState.selection.remove();
-    els.statusText.textContent = "已框选区域";
   }
   dragState = null;
   els.viewport.classList.remove("dragging");
@@ -781,19 +687,70 @@ function readImage(file) {
   });
 }
 
+function loadImageSource(file) {
+  if (window.createImageBitmap) return createImageBitmap(file);
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("无法解码图片"));
+    };
+    image.src = url;
+  });
+}
+
+async function compressImage(file) {
+  if (file.size > MAX_IMAGE_FILE_BYTES) {
+    throw new Error("原文件超过 25MB");
+  }
+  const source = await loadImageSource(file);
+  const sourceWidth = source.width || source.naturalWidth;
+  const sourceHeight = source.height || source.naturalHeight;
+  if (!sourceWidth || !sourceHeight) throw new Error("无法读取图片尺寸");
+  const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+  canvas.height = Math.max(1, Math.round(sourceHeight * scale));
+  const context = canvas.getContext("2d", { alpha: true });
+  if (!context) throw new Error("当前浏览器无法处理图片");
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  source.close?.();
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", IMAGE_QUALITY));
+  if (!blob) throw new Error("图片压缩失败");
+  return readImage(blob);
+}
+
 async function readImages(files, point, status = "已添加图片") {
   const images = [...files].filter((file) => file.type.startsWith("image/"));
+  if (!images.length) {
+    setStatus("没有找到可导入的图片", true);
+    return;
+  }
+  let added = 0;
   for (let index = 0; index < images.length; index += 1) {
     const file = images[index];
-    addItem("image", {
-      title: file.name?.replace(/\.[^.]+$/, "") || "粘贴的图片",
-      body: "图片参考",
-      src: await readImage(file),
-      x: point.x + index * 34,
-      y: point.y + index * 34,
-      status,
-    });
+    setStatus(`正在压缩图片 ${index + 1}/${images.length}`);
+    try {
+      addItem("image", {
+        title: file.name?.replace(/\.[^.]+$/, "") || "粘贴的图片",
+        body: "图片参考",
+        src: await compressImage(file),
+        x: point.x + added * 34,
+        y: point.y + added * 34,
+        status,
+      });
+      added += 1;
+    } catch (error) {
+      console.error("Canvas image import failed", error);
+      setStatus(`无法添加“${file.name || "图片"}”：${error.message || "处理失败"}`, true);
+    }
   }
+  if (added) setStatus(`${status}（${added} 张）`);
 }
 
 function isTypingTarget(target) {
@@ -825,16 +782,17 @@ async function handlePaste(event) {
   }
 }
 
-function exportBoard() {
+async function exportBoard(suffix = "") {
   if (!state) return;
-  saveBoard();
+  const saved = await saveBoard();
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${state.title || "zaiye-canvas"}.json`;
+  link.download = `${state.title || "zaiye-canvas"}${suffix}.json`;
   link.click();
   URL.revokeObjectURL(url);
+  setStatus(saved ? (suffix ? "已导出分享文件" : "已导出本机备份") : "本机保存失败，已导出当前内容", !saved);
 }
 
 function readBoardFile(file) {
@@ -885,7 +843,7 @@ function setTool(tool) {
 function setStrokeWidth(width) {
   const nextWidth = Math.min(Number(els.strokeWidth.max), Math.max(Number(els.strokeWidth.min), width));
   els.strokeWidth.value = String(nextWidth);
-  els.statusText.textContent = `画笔粗细 ${nextWidth}`;
+  setStatus(`画笔粗细 ${nextWidth}`);
   updateBrushCursor();
 }
 
@@ -909,30 +867,11 @@ function showToolMenu(event) {
   els.toolMenu.hidden = false;
 }
 
-async function copyText(value) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-    return;
-  }
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.append(textarea);
-  textarea.select();
-  document.execCommand("copy");
-  textarea.remove();
-}
-
 async function shareCurrentBoard() {
   if (!state) return;
-  await saveBoard("已保存，正在生成分享链接");
-  const secret = sessionStorage.getItem(SESSION_KEY) || "";
-  const url = new URL(window.location.href);
-  url.searchParams.set("board", state.id);
-  if (secret) url.hash = `key=${encodeURIComponent(secret)}`;
-  await copyText(url.href);
-  els.statusText.textContent = secret ? "已复制分享链接" : "已复制链接，请另行发送密钥";
+  const confirmed = window.confirm("分享文件包含当前画布的全部文字和图片，且没有加密。只发送给你信任的人。继续导出？");
+  if (!confirmed) return;
+  await exportBoard("-分享");
 }
 
 function handleCanvasShortcut(event) {
@@ -942,10 +881,6 @@ function handleCanvasShortcut(event) {
     z: "zoom",
     b: "pen",
     e: "eraser",
-    d: "lasso",
-    v: "rect-lasso",
-    s: "heal",
-    w: "smudge",
   };
 
   if (event.code === "Space") {
@@ -993,32 +928,11 @@ function endCanvasShortcut(event) {
   if (!dragState) els.viewport.classList.remove("dragging");
 }
 
-async function unlockCanvas(secret) {
-  els.canvasUnlockMessage.textContent = "正在解锁…";
-  try {
-    await verifyCanvasSecret(secret);
-    sessionStorage.setItem(SESSION_KEY, secret);
-    els.canvasUnlockKey.value = "";
-    els.canvasUnlockMessage.textContent = "";
-    await openDatabase();
-    await migrateLegacyBoard();
-    const id = new URL(window.location.href).searchParams.get("board");
-    if (id) await loadCurrentBoard(id);
-    else showHome();
-    return true;
-  } catch {
-    sessionStorage.removeItem(SESSION_KEY);
-    showAccess();
-    els.canvasUnlockMessage.textContent = "密钥不正确，请重新输入";
-    return false;
-  }
-}
-
 els.newBoard.addEventListener("click", createBoard);
 els.newBoardHero.addEventListener("click", createBoard);
 els.newBoardEmpty.addEventListener("click", createBoard);
-els.backToBoards.addEventListener("click", () => {
-  saveBoard();
+els.backToBoards.addEventListener("click", async () => {
+  if (!await saveBoard()) return;
   window.location.href = "canvas.html";
 });
 els.importBoardHome.addEventListener("click", () => els.sharedImportFile.click());
@@ -1086,7 +1000,7 @@ els.clearBoard.addEventListener("click", () => {
 });
 
 els.saveBoard.addEventListener("click", () => saveBoard());
-els.exportBoard.addEventListener("click", exportBoard);
+els.exportBoard.addEventListener("click", () => exportBoard());
 els.importBoard.addEventListener("click", () => els.importFile.click());
 els.importFile.addEventListener("change", async () => {
   const file = els.importFile.files[0];
@@ -1101,9 +1015,9 @@ els.importFile.addEventListener("change", async () => {
     hydrateForm();
     applyView();
     renderBoard();
-    saveBoard("已导入");
+    await saveBoard("已导入");
   } catch {
-    els.statusText.textContent = "导入失败";
+    setStatus("导入失败：请确认文件是有效的画布备份", true);
   }
   els.importFile.value = "";
 });
@@ -1176,16 +1090,12 @@ els.viewport.addEventListener("drop", async (event) => {
 });
 window.addEventListener("paste", handlePaste);
 
-els.canvasUnlockForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const secret = els.canvasUnlockKey.value.trim();
-  if (secret) await unlockCanvas(secret);
-});
-
 async function init() {
   const url = new URL(window.location.href);
-  const hashKey = new URLSearchParams(url.hash.replace(/^#/, "")).get("key");
-  if (hashKey) sessionStorage.setItem(SESSION_KEY, hashKey);
+  if (new URLSearchParams(url.hash.replace(/^#/, "")).has("key")) {
+    url.hash = "";
+    history.replaceState(null, "", url.href);
+  }
   await openDatabase();
   await migrateLegacyBoard();
   const id = url.searchParams.get("board");
@@ -1195,7 +1105,6 @@ async function init() {
 
 init().catch(() => {
   document.body.classList.add("canvas-home-mode");
-  els.canvasAccess.hidden = true;
   els.canvasHome.hidden = false;
   els.canvasWorkspace.hidden = true;
   els.boardEmpty.hidden = false;

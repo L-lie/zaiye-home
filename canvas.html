@@ -10,7 +10,7 @@
     <title>Canvas | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js?v=20260723c"></script>
-    <link rel="stylesheet" href="canvas.css?v=20260723c" />
+    <link rel="stylesheet" href="canvas.css?v=20260803a" />
     <link rel="stylesheet" href="theme.css" />
   </head>
   <body>
@@ -32,8 +32,8 @@
       <div class="header-actions" id="editorActions" hidden>
         <button id="backToBoards" type="button">全部画布</button>
         <button id="saveBoard" type="button">保存</button>
-        <button id="exportBoard" type="button">导出</button>
-        <button id="shareBoard" type="button">分享</button>
+        <button id="exportBoard" type="button">导出备份</button>
+        <button id="shareBoard" type="button">导出分享文件</button>
         <button id="importBoard" type="button">导入</button>
         <input id="importFile" type="file" accept="application/json,.json" hidden />
         <a href="prompt-vault.html">Prompt Vault</a>
@@ -42,40 +42,13 @@
       </div>
     </header>
 
-    <main class="canvas-access" id="canvasAccess" hidden>
-      <section class="canvas-access-card">
-        <div>
-          <p class="eyebrow">私人内容</p>
-          <h1>打开 Canvas</h1>
-          <p>输入密钥后才能查看和编辑你的画布库</p>
-        </div>
-        <form class="canvas-unlock-form" id="canvasUnlockForm" autocomplete="on">
-          <input
-            class="credential-username"
-            name="username"
-            type="text"
-            value="zaiye-canvas-owner"
-            autocomplete="username"
-            tabindex="-1"
-            aria-hidden="true"
-            readonly
-          />
-          <label for="canvasUnlockKey">私人解锁密钥</label>
-          <div class="canvas-unlock-row">
-            <input id="canvasUnlockKey" name="password" type="password" autocomplete="current-password" required />
-            <button type="submit">解锁</button>
-          </div>
-          <p class="canvas-form-message" id="canvasUnlockMessage" aria-live="polite"></p>
-        </form>
-      </section>
-    </main>
-
     <main class="canvas-home" id="canvasHome">
       <section class="canvas-home-heading">
         <div>
           <p class="eyebrow">再野创作空间</p>
           <h1>画布</h1>
           <p>整理参考图、Prompt、手写草图和项目判断</p>
+          <p class="local-storage-notice">本机私人资料，仅保存在当前浏览器。清除浏览器数据会丢失，请定期导出备份。</p>
         </div>
         <button class="new-board-button" id="newBoardHero" type="button">新建画布</button>
       </section>
@@ -143,7 +116,7 @@
             <button id="resetView" type="button">回到中心</button>
             <button id="clearBoard" type="button">清空</button>
           </div>
-          <p class="hint">拖动空白处移动画布，滚轮缩放。图片可以拖入或直接粘贴，文字也可直接粘贴成备注。</p>
+          <p class="hint">拖动空白处移动画布，滚轮缩放。图片可以拖入或直接粘贴，导入时会自动压缩；文字也可直接粘贴成备注。</p>
         </section>
       </aside>
 
@@ -154,10 +127,6 @@
             <button class="ink-tool" type="button" data-tool="zoom" aria-pressed="false">缩放</button>
             <button class="ink-tool" type="button" data-tool="pen" aria-pressed="false">画笔</button>
             <button class="ink-tool" type="button" data-tool="eraser" aria-pressed="false">橡皮</button>
-            <button class="ink-tool" type="button" data-tool="lasso" aria-pressed="false">套索</button>
-            <button class="ink-tool" type="button" data-tool="rect-lasso" aria-pressed="false">方选</button>
-            <button class="ink-tool" type="button" data-tool="heal" aria-pressed="false">修复</button>
-            <button class="ink-tool" type="button" data-tool="smudge" aria-pressed="false">涂抹</button>
           </div>
           <div class="color-swatches" aria-label="画笔颜色">
             <button class="color-swatch active" type="button" data-color="#18231f" style="--swatch:#18231f" aria-label="深绿色"></button>
@@ -183,11 +152,6 @@
         <div class="tool-menu" id="toolMenu" hidden>
           <button type="button" data-menu-tool="pen">画笔</button>
           <button type="button" data-menu-tool="eraser">橡皮</button>
-          <button type="button" data-menu-tool="lasso">套索</button>
-          <button type="button" data-menu-tool="rect-lasso">方形套索</button>
-          <button type="button" data-menu-tool="heal">污点修复</button>
-          <button type="button" data-menu-tool="smudge">涂抹</button>
-          <hr />
           <button type="button" data-width="2">细笔</button>
           <button type="button" data-width="6">中笔</button>
           <button type="button" data-width="14">粗笔</button>
@@ -223,6 +187,6 @@
 
     <input id="sharedImportFile" type="file" accept="application/json,.json" hidden />
 
-    <script src="canvas.js?v=20260723c"></script>
+    <script src="canvas.js?v=20260803a"></script>
   </body>
 </html>
