@@ -10,7 +10,7 @@
     <title>Canvas | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js?v=20260723c"></script>
-    <link rel="stylesheet" href="canvas.css?v=20260803a" />
+    <link rel="stylesheet" href="canvas.css?v=20260803b" />
     <link rel="stylesheet" href="theme.css" />
   </head>
   <body>
@@ -128,13 +128,21 @@
             <button class="ink-tool" type="button" data-tool="pen" aria-pressed="false">画笔</button>
             <button class="ink-tool" type="button" data-tool="eraser" aria-pressed="false">橡皮</button>
           </div>
+          <div class="brush-library" aria-label="PS 笔刷">
+            <select id="brushSelect" aria-label="当前笔刷">
+              <option value="round">圆形画笔</option>
+            </select>
+            <button id="importBrush" type="button">导入 .abr</button>
+            <button id="downloadBrush" type="button" disabled>原文件</button>
+            <input id="brushFile" type="file" accept=".abr,application/octet-stream" hidden />
+          </div>
           <div class="color-swatches" aria-label="画笔颜色">
             <button class="color-swatch active" type="button" data-color="#18231f" style="--swatch:#18231f" aria-label="深绿色"></button>
             <button class="color-swatch" type="button" data-color="#b85b5b" style="--swatch:#b85b5b" aria-label="红色"></button>
             <button class="color-swatch" type="button" data-color="#2f6f9f" style="--swatch:#2f6f9f" aria-label="蓝色"></button>
             <button class="color-swatch" type="button" data-color="#f4efe6" style="--swatch:#f4efe6" aria-label="白色"></button>
           </div>
-          <label class="stroke-size">粗细 <input id="strokeWidth" type="range" min="1" max="24" value="5" /></label>
+          <label class="stroke-size">粗细 <input id="strokeWidth" type="range" min="1" max="160" value="5" /></label>
           <button id="undoInk" type="button">撤销笔迹</button>
         </div>
         <div class="stage-toolbar">
@@ -187,6 +195,6 @@
 
     <input id="sharedImportFile" type="file" accept="application/json,.json" hidden />
 
-    <script src="canvas.js?v=20260803a"></script>
+    <script src="canvas.js?v=20260803b"></script>
   </body>
 </html>

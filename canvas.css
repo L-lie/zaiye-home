@@ -407,10 +407,18 @@ textarea:focus {
 }
 
 .tool-segment,
-.color-swatches {
+.color-swatches,
+.brush-library {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.brush-library select {
+  width: 132px;
+  min-height: 32px;
+  padding: 5px 28px 5px 8px;
+  font-size: 0.78rem;
 }
 
 .ink-toolbar button {
@@ -479,6 +487,22 @@ textarea:focus {
 
 #statusText.is-error {
   color: #ffb7a8;
+}
+
+.database-notice {
+  position: fixed;
+  z-index: 100;
+  right: 16px;
+  bottom: 16px;
+  max-width: min(420px, calc(100% - 32px));
+  border: 1px solid #b85b5b;
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: #251b1a;
+  color: #ffe0d8;
+  box-shadow: 0 18px 42px var(--shadow);
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .viewport {
@@ -820,6 +844,10 @@ textarea:focus {
 
   .stroke-size {
     display: none;
+  }
+
+  .brush-library select {
+    width: 116px;
   }
 
   .ink-toolbar button {

@@ -1,10 +1,15 @@
 const DB_NAME = "zaiye-canvas-db";
 const STORE_NAME = "boards";
+const BRUSH_STORE_NAME = "brush-packs";
 const LEGACY_STORAGE_KEY = "zaiye-canvas-v1";
 const DEFAULT_VIEW = { x: -520, y: -320, scale: 0.9 };
 const MAX_IMAGE_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 2560;
 const IMAGE_QUALITY = 0.84;
+const MAX_ABR_FILE_BYTES = 32 * 1024 * 1024;
+const MAX_BRUSH_TIP_EDGE = 4096;
+const MAX_BRUSH_TIP_PIXELS = 4 * 1024 * 1024;
+const ABR_PARSER_URL = "assets/vendor/canvas/ag-psd-31.0.2.min.js";
 
 const els = {
   canvasHome: document.getElementById("canvasHome"),
@@ -51,6 +56,10 @@ const els = {
   statusText: document.getElementById("statusText"),
   zoomText: document.getElementById("zoomText"),
   strokeWidth: document.getElementById("strokeWidth"),
+  brushSelect: document.getElementById("brushSelect"),
+  importBrush: document.getElementById("importBrush"),
+  downloadBrush: document.getElementById("downloadBrush"),
+  brushFile: document.getElementById("brushFile"),
   undoInk: document.getElementById("undoInk"),
   toolMenu: document.getElementById("toolMenu"),
 };
@@ -69,6 +78,17 @@ let lastBoardPointer = null;
 let lastPointerClient = null;
 let spacePan = false;
 let temporaryZoomTool = null;
+let activeBrushId = "round";
+let brushPacks = [];
+let abrParserPromise = null;
+let currentStrokeGroup = null;
+let renderedStrokePointCount = 0;
+let inkFrame = 0;
+let eraserFrame = 0;
+let pendingEraserPoints = [];
+let lastEraserPoint = null;
+const strokeBoundsIndex = new Map();
+const missingBrushIds = new Set();
 
 function requestResult(request) {
   return new Promise((resolve, reject) => {
@@ -94,17 +114,51 @@ function makeUuid() {
 }
 
 async function openDatabase() {
-  const request = indexedDB.open(DB_NAME, 1);
+  const request = indexedDB.open(DB_NAME, 2);
+  request.onblocked = () => showDatabaseNotice("画布数据库正在升级，请关闭其他已打开的 Canvas 标签页后刷新本页");
   request.onupgradeneeded = () => {
     if (!request.result.objectStoreNames.contains(STORE_NAME)) {
       request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
     }
+    if (!request.result.objectStoreNames.contains(BRUSH_STORE_NAME)) {
+      request.result.createObjectStore(BRUSH_STORE_NAME, { keyPath: "id" });
+    }
   };
   db = await requestResult(request);
+  db.onversionchange = () => {
+    db.close();
+    showDatabaseNotice("画布已在其他标签页更新，请刷新本页后继续");
+  };
+}
+
+function showDatabaseNotice(message) {
+  let notice = document.getElementById("databaseNotice");
+  if (!notice) {
+    notice = document.createElement("div");
+    notice.id = "databaseNotice";
+    notice.className = "database-notice";
+    notice.setAttribute("role", "status");
+    document.body.append(notice);
+  }
+  notice.textContent = message;
+  notice.hidden = false;
+  setStatus(message, true);
 }
 
 function boardStore(mode = "readonly") {
   return db.transaction(STORE_NAME, mode).objectStore(STORE_NAME);
+}
+
+function brushStore(mode = "readonly") {
+  return db.transaction(BRUSH_STORE_NAME, mode).objectStore(BRUSH_STORE_NAME);
+}
+
+async function getBrushPacks() {
+  return requestResult(brushStore().getAll());
+}
+
+async function putBrushPack(pack) {
+  return requestResult(brushStore("readwrite").put(pack));
 }
 
 async function getBoards() {
@@ -137,6 +191,13 @@ function storageErrorMessage(error) {
 
 function normalizedBoard(value = {}) {
   const now = new Date().toISOString();
+  const brushTips = value.brushTips && typeof value.brushTips === "object" ? { ...value.brushTips } : {};
+  const strokes = Array.isArray(value.strokes) ? value.strokes.map((stroke) => {
+    if (!stroke?.brushId || !stroke.brushTip) return stroke;
+    brushTips[stroke.brushId] ||= { name: stroke.brushName || "导入笔刷", tipData: stroke.brushTip, compatibility: stroke.brushCompatibility || "笔尖兼容" };
+    const { brushTip, ...lightStroke } = stroke;
+    return lightStroke;
+  }) : [];
   return {
     id: value.id || makeUuid(),
     title: value.title || "未命名画布",
@@ -145,7 +206,8 @@ function normalizedBoard(value = {}) {
     updatedAt: value.updatedAt || now,
     view: value.view || { ...DEFAULT_VIEW },
     items: Array.isArray(value.items) ? value.items : [],
-    strokes: Array.isArray(value.strokes) ? value.strokes : [],
+    strokes,
+    brushTips,
   };
 }
 
@@ -261,6 +323,7 @@ async function loadCurrentBoard(id) {
 
 async function saveBoard(status = "已保存到本机") {
   if (!state) return false;
+  pruneUnusedBrushTips();
   state.view = { ...view };
   state.updatedAt = new Date().toISOString();
   try {
@@ -272,6 +335,13 @@ async function saveBoard(status = "已保存到本机") {
     setStatus(storageErrorMessage(error), true);
     return false;
   }
+}
+
+function pruneUnusedBrushTips() {
+  const usedBrushIds = new Set(state.strokes.map((stroke) => stroke.brushId).filter(Boolean));
+  Object.keys(state.brushTips || {}).forEach((brushId) => {
+    if (!usedBrushIds.has(brushId)) delete state.brushTips[brushId];
+  });
 }
 
 function scheduleSave(status = "正在编辑") {
@@ -438,39 +508,150 @@ function beginInlineEdit(target, id, field) {
 }
 
 function renderInk() {
+  if (inkFrame) cancelAnimationFrame(inkFrame);
+  inkFrame = 0;
   els.inkLayer.replaceChildren();
+  strokeBoundsIndex.clear();
+  missingBrushIds.clear();
   state.strokes.forEach((stroke) => renderStroke(stroke));
-  if (currentStroke) renderStroke(currentStroke);
+  if (currentStroke) {
+    currentStrokeGroup = renderStroke(currentStroke);
+    renderedStrokePointCount = currentStroke.points.length;
+  }
+  if (missingBrushIds.size) setStatus("部分自定义笔尖缺失，已用圆形画笔显示", true);
 }
 
 function renderStroke(stroke) {
-  if (!stroke.points.length) return;
+  if (!stroke.points.length) return null;
+  const brushTip = brushTipForStroke(stroke);
   const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
   group.dataset.strokeId = stroke.id;
+  if (brushTip) appendBrushFilter(group, stroke);
   const points = stroke.points;
   for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const point = points[index];
-    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", previous.x);
-    line.setAttribute("y1", previous.y);
-    line.setAttribute("x2", point.x);
-    line.setAttribute("y2", point.y);
-    line.setAttribute("stroke", stroke.color);
-    line.setAttribute("stroke-width", stroke.width * (0.42 + ((previous.pressure + point.pressure) / 2) * 0.9));
-    line.setAttribute("stroke-linecap", "round");
-    line.setAttribute("stroke-linejoin", "round");
-    group.append(line);
+    appendStrokeSegment(group, stroke, points[index - 1], points[index], group.dataset.brushFilter, brushTip);
   }
   if (points.length === 1) {
-    const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    dot.setAttribute("cx", points[0].x);
-    dot.setAttribute("cy", points[0].y);
-    dot.setAttribute("r", Math.max(1, stroke.width * points[0].pressure * 0.5));
-    dot.setAttribute("fill", stroke.color);
-    group.append(dot);
+    if (brushTip) {
+      appendBrushStamp(group, stroke, points[0], group.dataset.brushFilter, brushTip);
+    } else {
+      const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", points[0].x);
+      dot.setAttribute("cy", points[0].y);
+      dot.setAttribute("r", Math.max(1, stroke.width * points[0].pressure * 0.5));
+      dot.setAttribute("fill", stroke.color);
+      group.append(dot);
+    }
   }
   els.inkLayer.append(group);
+  strokeBoundsIndex.set(stroke.id, getStrokeBounds(stroke));
+  return group;
+}
+
+function brushTipForStroke(stroke) {
+  if (!stroke.brushId) return "";
+  const tipData = state?.brushTips?.[stroke.brushId]?.tipData || findBrush(stroke.brushId)?.brush.tipData || "";
+  if (!tipData) missingBrushIds.add(stroke.brushId);
+  return tipData;
+}
+
+function appendBrushFilter(group, stroke) {
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const filter = document.createElementNS("http://www.w3.org/2000/svg", "filter");
+  const flood = document.createElementNS("http://www.w3.org/2000/svg", "feFlood");
+  const composite = document.createElementNS("http://www.w3.org/2000/svg", "feComposite");
+  const filterId = `brush-color-${stroke.id}`;
+  filter.id = filterId;
+  filter.setAttribute("x", "-20%");
+  filter.setAttribute("y", "-20%");
+  filter.setAttribute("width", "140%");
+  filter.setAttribute("height", "140%");
+  flood.setAttribute("flood-color", stroke.color);
+  flood.setAttribute("result", "brushColor");
+  composite.setAttribute("in", "brushColor");
+  composite.setAttribute("in2", "SourceGraphic");
+  composite.setAttribute("operator", "in");
+  filter.append(flood, composite);
+  defs.append(filter);
+  group.dataset.brushFilter = filterId;
+  group.append(defs);
+}
+
+function getStrokeBounds(stroke) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  stroke.points.forEach((point) => {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  });
+  const padding = stroke.width || 1;
+  return { minX: minX - padding, minY: minY - padding, maxX: maxX + padding, maxY: maxY + padding };
+}
+
+function appendStrokeSegment(group, stroke, previous, point, brushFilterId = group.dataset?.brushFilter, brushTip = brushTipForStroke(stroke)) {
+  if (brushTip) {
+    const distance = Math.hypot(point.x - previous.x, point.y - previous.y);
+    const spacing = Math.max(1.5, stroke.width * Math.max(0.02, stroke.brushSpacing || 0.12));
+    const steps = Math.max(1, Math.ceil(distance / spacing));
+    for (let step = 1; step <= steps; step += 1) {
+      const ratio = step / steps;
+      appendBrushStamp(group, stroke, {
+        x: previous.x + (point.x - previous.x) * ratio,
+        y: previous.y + (point.y - previous.y) * ratio,
+        pressure: previous.pressure + (point.pressure - previous.pressure) * ratio,
+      }, brushFilterId, brushTip);
+    }
+    return;
+  }
+  const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  line.setAttribute("x1", previous.x);
+  line.setAttribute("y1", previous.y);
+  line.setAttribute("x2", point.x);
+  line.setAttribute("y2", point.y);
+  line.setAttribute("stroke", stroke.color);
+  line.setAttribute("stroke-width", stroke.width * (0.42 + ((previous.pressure + point.pressure) / 2) * 0.9));
+  line.setAttribute("stroke-linecap", "round");
+  line.setAttribute("stroke-linejoin", "round");
+  group.append(line);
+}
+
+function appendBrushStamp(group, stroke, point, brushFilterId = group.dataset?.brushFilter, brushTip = brushTipForStroke(stroke)) {
+  const size = Math.max(1, stroke.width * (0.35 + point.pressure * 0.9));
+  const stamp = document.createElementNS("http://www.w3.org/2000/svg", "image");
+  stamp.setAttribute("href", brushTip);
+  stamp.setAttribute("x", point.x - size / 2);
+  stamp.setAttribute("y", point.y - size / 2);
+  stamp.setAttribute("width", size);
+  stamp.setAttribute("height", size);
+  stamp.setAttribute("opacity", 0.35 + point.pressure * 0.65);
+  if (brushFilterId) stamp.setAttribute("filter", `url(#${brushFilterId})`);
+  group.append(stamp);
+}
+
+function renderCurrentStrokeDelta() {
+  inkFrame = 0;
+  if (!currentStroke?.points.length || !currentStrokeGroup) return;
+  if (renderedStrokePointCount === 1 && currentStroke.points.length > 1) {
+    Array.from(currentStrokeGroup.children).forEach((child) => {
+      if (child.tagName.toLowerCase() !== "defs") child.remove();
+    });
+  }
+  const start = Math.max(1, renderedStrokePointCount);
+  const fragment = document.createDocumentFragment();
+  const brushTip = brushTipForStroke(currentStroke);
+  for (let index = start; index < currentStroke.points.length; index += 1) {
+    appendStrokeSegment(fragment, currentStroke, currentStroke.points[index - 1], currentStroke.points[index], currentStrokeGroup.dataset.brushFilter, brushTip);
+  }
+  currentStrokeGroup.append(fragment);
+  renderedStrokePointCount = currentStroke.points.length;
+}
+
+function queueCurrentStrokeRender() {
+  if (!inkFrame) inkFrame = requestAnimationFrame(renderCurrentStrokeDelta);
 }
 
 function selectItem(id) {
@@ -559,12 +740,47 @@ function appendStrokePoint(event) {
 
 function eraseAt(point) {
   const radius = 18 / view.scale;
-  const before = state.strokes.length;
-  state.strokes = state.strokes.filter((stroke) => !stroke.points.some((entry) => Math.hypot(entry.x - point.x, entry.y - point.y) <= radius));
-  if (state.strokes.length !== before) {
-    renderInk();
-    scheduleSave("已擦除笔迹");
+  const removedIds = new Set();
+  state.strokes.forEach((stroke) => {
+    const bounds = strokeBoundsIndex.get(stroke.id) || getStrokeBounds(stroke);
+    strokeBoundsIndex.set(stroke.id, bounds);
+    const hitRadius = radius + (stroke.width || 1) / 2;
+    if (point.x + hitRadius < bounds.minX || point.x - hitRadius > bounds.maxX || point.y + hitRadius < bounds.minY || point.y - hitRadius > bounds.maxY) return;
+    if (stroke.points.some((entry) => Math.hypot(entry.x - point.x, entry.y - point.y) <= hitRadius)) removedIds.add(stroke.id);
+  });
+  if (removedIds.size) {
+    state.strokes = state.strokes.filter((stroke) => !removedIds.has(stroke.id));
+    removedIds.forEach((id) => {
+      strokeBoundsIndex.delete(id);
+      els.inkLayer.querySelector(`[data-stroke-id="${id}"]`)?.remove();
+    });
+    return true;
   }
+  return false;
+}
+
+function queueErase(point) {
+  pendingEraserPoints.push(point);
+  if (eraserFrame) return;
+  eraserFrame = requestAnimationFrame(flushEraseQueue);
+}
+
+function flushEraseQueue() {
+  eraserFrame = 0;
+  const queued = pendingEraserPoints.splice(0);
+  const stepLength = Math.max(1, 18 / view.scale);
+  let erased = false;
+  queued.forEach((point) => {
+    const start = lastEraserPoint || point;
+    const distance = Math.hypot(point.x - start.x, point.y - start.y);
+    const steps = Math.max(1, Math.ceil(distance / stepLength));
+    for (let step = 1; step <= steps; step += 1) {
+      const ratio = step / steps;
+      erased = eraseAt({ x: start.x + (point.x - start.x) * ratio, y: start.y + (point.y - start.y) * ratio }) || erased;
+    }
+    lastEraserPoint = point;
+  });
+  if (erased) scheduleSave("已擦除笔迹");
 }
 
 function startViewportAction(event) {
@@ -585,21 +801,38 @@ function startViewportAction(event) {
   }
   if (pencilTool === "pen") {
     event.preventDefault();
+    const selectedBrush = findBrush(activeBrushId)?.brush;
+    if (selectedBrush) {
+      state.brushTips[selectedBrush.id] = {
+        name: selectedBrush.name,
+        tipData: selectedBrush.tipData,
+        compatibility: selectedBrush.compatibility,
+      };
+    }
     currentStroke = {
       id: makeUuid(),
       color: activeColor,
       width: Number(els.strokeWidth.value),
       points: [],
+      ...(selectedBrush ? {
+        brushId: selectedBrush.id,
+        brushName: selectedBrush.name,
+        brushSpacing: selectedBrush.spacing,
+        brushCompatibility: selectedBrush.compatibility,
+      } : {}),
     };
     appendStrokePoint(event);
-    renderInk();
+    currentStrokeGroup = renderStroke(currentStroke);
+    renderedStrokePointCount = currentStroke.points.length;
     dragState = { type: "ink", pointerId: event.pointerId };
     els.viewport.setPointerCapture(event.pointerId);
     return;
   }
   if (pencilTool === "eraser") {
     event.preventDefault();
-    eraseAt(boardPointFromClient(event.clientX, event.clientY));
+    pendingEraserPoints = [];
+    lastEraserPoint = null;
+    queueErase(boardPointFromClient(event.clientX, event.clientY));
     dragState = { type: "eraser", pointerId: event.pointerId };
     els.viewport.setPointerCapture(event.pointerId);
     return;
@@ -636,11 +869,12 @@ function movePointer(event) {
   if (dragState.type === "ink") {
     const events = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
     events.forEach(appendStrokePoint);
-    renderInk();
+    queueCurrentStrokeRender();
     return;
   }
   if (dragState.type === "eraser") {
-    eraseAt(boardPointFromClient(event.clientX, event.clientY));
+    const events = event.getCoalescedEvents ? event.getCoalescedEvents() : [event];
+    events.forEach((entry) => queueErase(boardPointFromClient(entry.clientX, entry.clientY)));
     return;
   }
   const item = state.items.find((entry) => entry.id === dragState.id);
@@ -658,10 +892,24 @@ function movePointer(event) {
 function endPointer(event) {
   if (!dragState || (event && event.pointerId !== dragState.pointerId)) return;
   if (dragState.type === "ink" && currentStroke?.points.length) {
+    if (inkFrame) cancelAnimationFrame(inkFrame);
+    inkFrame = 0;
+    renderCurrentStrokeDelta();
     state.strokes.push(currentStroke);
+    strokeBoundsIndex.set(currentStroke.id, getStrokeBounds(currentStroke));
     currentStroke = null;
-    renderInk();
+    currentStrokeGroup = null;
+    renderedStrokePointCount = 0;
     scheduleSave("已保存笔迹");
+  }
+  if (dragState.type === "eraser") {
+    if (event && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      pendingEraserPoints.push(boardPointFromClient(event.clientX, event.clientY));
+    }
+    if (eraserFrame) cancelAnimationFrame(eraserFrame);
+    eraserFrame = 0;
+    if (pendingEraserPoints.length) flushEraseQueue();
+    lastEraserPoint = null;
   }
   dragState = null;
   els.viewport.classList.remove("dragging");
@@ -702,6 +950,188 @@ function loadImageSource(file) {
     };
     image.src = url;
   });
+}
+
+function canvasDataUrlFromAlpha(alpha, width, height) {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) throw new Error("无效笔尖尺寸");
+  if (width > MAX_BRUSH_TIP_EDGE || height > MAX_BRUSH_TIP_EDGE || width * height > MAX_BRUSH_TIP_PIXELS) throw new Error("笔尖尺寸超出安全范围");
+  if (!alpha || alpha.length !== width * height) throw new Error("笔尖像素数据不完整");
+  const maxTipSize = 256;
+  const scale = Math.min(1, maxTipSize / Math.max(width, height));
+  const source = document.createElement("canvas");
+  source.width = width;
+  source.height = height;
+  const sourceContext = source.getContext("2d");
+  if (!sourceContext) throw new Error("浏览器无法处理笔尖图像");
+  const imageData = sourceContext.createImageData(width, height);
+  for (let index = 0; index < alpha.length; index += 1) {
+    const offset = index * 4;
+    imageData.data[offset] = 255;
+    imageData.data[offset + 1] = 255;
+    imageData.data[offset + 2] = 255;
+    imageData.data[offset + 3] = alpha[index];
+  }
+  sourceContext.putImageData(imageData, 0, 0);
+  if (scale === 1) return source.toDataURL("image/png");
+  const output = document.createElement("canvas");
+  output.width = Math.max(1, Math.round(width * scale));
+  output.height = Math.max(1, Math.round(height * scale));
+  const outputContext = output.getContext("2d");
+  if (!outputContext) throw new Error("浏览器无法缩放笔尖图像");
+  outputContext.drawImage(source, 0, 0, output.width, output.height);
+  return output.toDataURL("image/png");
+}
+
+function computedBrushTip(size = 128, hardness = 1, roundness = 1) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("浏览器无法生成笔尖图像");
+  context.save();
+  context.translate(64, 64);
+  context.scale(1, Math.max(0.05, Math.min(1, roundness || 1)));
+  const hardStop = Math.max(0, Math.min(0.98, hardness ?? 1));
+  const gradient = context.createRadialGradient(0, 0, 0, 0, 0, 62);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(hardStop, "rgba(255,255,255,1)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  context.fillStyle = gradient;
+  context.fillRect(-64, -64, 128, 128);
+  context.restore();
+  return { tipData: canvas.toDataURL("image/png"), size: Math.max(1, size), compatibility: "基础形状" };
+}
+
+function loadAbrParser() {
+  if (window.agPsd?.readAbr) return Promise.resolve(window.agPsd);
+  if (abrParserPromise) return abrParserPromise;
+  abrParserPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = ABR_PARSER_URL;
+    script.async = true;
+    script.dataset.canvasAbrParser = "true";
+    script.onload = () => {
+      if (window.agPsd?.readAbr) resolve(window.agPsd);
+      else reject(new Error("ABR 解析器不可用"));
+    };
+    script.onerror = () => reject(new Error("ABR 解析器加载失败"));
+    document.head.append(script);
+  }).catch((error) => {
+    abrParserPromise = null;
+    throw error;
+  });
+  return abrParserPromise;
+}
+
+function parseAbrBrushes(file, buffer) {
+  if (!window.agPsd?.readAbr) throw new Error("ABR 解析器未加载");
+  const abr = window.agPsd.readAbr(new Uint8Array(buffer));
+  const samples = new Map(abr.samples.map((sample) => [sample.id, sample]));
+  const usedSamples = new Set();
+  const brushes = abr.brushes.map((brush, index) => {
+    const shape = brush.shape || {};
+    const sample = shape.sampledData ? samples.get(shape.sampledData) : null;
+    if (sample) usedSamples.add(sample.id);
+    const base = sample
+      ? { tipData: canvasDataUrlFromAlpha(sample.alpha, sample.bounds.w, sample.bounds.h), size: shape.size || Math.max(sample.bounds.w, sample.bounds.h), compatibility: "笔尖兼容" }
+      : computedBrushTip(shape.size, shape.hardness, (shape.roundness || 100) / 100);
+    return {
+      id: makeUuid(),
+      name: brush.name || `${file.name} ${index + 1}`,
+      spacing: Math.max(0.02, (brush.spacing ?? shape.spacing ?? 12) / 100),
+      ...base,
+    };
+  });
+  abr.samples.forEach((sample, index) => {
+    if (usedSamples.has(sample.id)) return;
+    brushes.push({
+      id: makeUuid(),
+      name: `${file.name} 笔尖 ${index + 1}`,
+      spacing: 0.12,
+      size: Math.max(sample.bounds.w, sample.bounds.h),
+      tipData: canvasDataUrlFromAlpha(sample.alpha, sample.bounds.w, sample.bounds.h),
+      compatibility: "笔尖兼容",
+    });
+  });
+  return brushes;
+}
+
+function fallbackAbrBrush(file) {
+  return {
+    id: makeUuid(),
+    name: `${file.name}（简化兼容）`,
+    spacing: 0.12,
+    ...computedBrushTip(48, 0.8, 1),
+    compatibility: "简化兼容",
+  };
+}
+
+function findBrush(id) {
+  for (const pack of brushPacks) {
+    const brush = pack.brushes.find((entry) => entry.id === id);
+    if (brush) return { brush, pack };
+  }
+  return null;
+}
+
+function renderBrushLibrary() {
+  els.brushSelect.replaceChildren(new Option("圆形画笔", "round"));
+  brushPacks.forEach((pack) => {
+    const group = document.createElement("optgroup");
+    group.label = pack.name;
+    pack.brushes.forEach((brush) => {
+      const option = new Option(`${brush.name} · ${brush.compatibility}`, brush.id);
+      option.dataset.packId = pack.id;
+      group.append(option);
+    });
+    els.brushSelect.append(group);
+  });
+  if (!findBrush(activeBrushId)) activeBrushId = "round";
+  els.brushSelect.value = activeBrushId;
+  els.downloadBrush.disabled = activeBrushId === "round";
+}
+
+async function importAbrFile(file) {
+  if (!file.name.toLowerCase().endsWith(".abr")) throw new Error("请选择 .abr 笔刷文件");
+  if (file.size > MAX_ABR_FILE_BYTES) throw new Error("ABR 文件超过 32MB，请拆分笔刷包后再导入");
+  const buffer = await file.arrayBuffer();
+  if (buffer.byteLength < 4) throw new Error("ABR 文件已损坏或内容不完整");
+  const version = new DataView(buffer).getUint16(0, false);
+  if (![1, 2, 6, 7, 9, 10].includes(version)) throw new Error("这不是可识别的 ABR 文件");
+  let brushes;
+  let status;
+  if (version === 1 || version === 2) {
+    brushes = [fallbackAbrBrush(file)];
+    status = "已保留旧版原始 .abr；当前以简化圆形笔尖使用";
+  } else {
+    try {
+      await loadAbrParser();
+      brushes = parseAbrBrushes(file, buffer);
+    } catch {
+      throw new Error("ABR 文件已损坏或格式暂不受支持");
+    }
+    if (!brushes.length) throw new Error("没有可用笔刷");
+    status = `已导入 ${brushes.length} 支笔刷，原始 .abr 已保留在本机`;
+  }
+  const pack = { id: makeUuid(), name: file.name, file: new Blob([buffer], { type: "application/octet-stream" }), brushes, createdAt: new Date().toISOString() };
+  await putBrushPack(pack);
+  brushPacks.push(pack);
+  activeBrushId = brushes[0].id;
+  renderBrushLibrary();
+  els.strokeWidth.value = String(Math.min(160, Math.max(1, Math.round(brushes[0].size || 24))));
+  setTool("pen");
+  setStatus(status);
+}
+
+function downloadActiveBrushPack() {
+  const match = findBrush(activeBrushId);
+  if (!match?.pack.file) return;
+  const url = URL.createObjectURL(match.pack.file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = match.pack.name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function compressImage(file) {
@@ -785,7 +1215,12 @@ async function handlePaste(event) {
 async function exportBoard(suffix = "") {
   if (!state) return;
   const saved = await saveBoard();
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const serialized = JSON.stringify(state, null, 2);
+  const blob = new Blob([serialized], { type: "application/json" });
+  els.statusText.dataset.exportBytes = String(blob.size);
+  els.statusText.dataset.brushTipAssets = String(Object.keys(state.brushTips || {}).length);
+  els.statusText.dataset.strokeTipFields = String(state.strokes.filter((stroke) => "brushTip" in stroke).length);
+  els.statusText.dataset.tipDataOccurrences = String((serialized.match(/data:image\/png/g) || []).length);
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -1038,6 +1473,29 @@ document.querySelectorAll(".color-swatch").forEach((button) => button.addEventLi
   setTool("pen");
 }));
 els.strokeWidth.addEventListener("input", () => setStrokeWidth(Number(els.strokeWidth.value)));
+els.importBrush.addEventListener("click", () => els.brushFile.click());
+els.brushFile.addEventListener("change", async () => {
+  const file = els.brushFile.files[0];
+  els.brushFile.value = "";
+  if (!file) return;
+  try {
+    await importAbrFile(file);
+  } catch (error) {
+    const message = error?.name === "QuotaExceededError" ? storageErrorMessage(error) : `导入失败：${error?.message || "无法读取 ABR"}`;
+    setStatus(message, true);
+  }
+});
+els.brushSelect.addEventListener("change", () => {
+  activeBrushId = els.brushSelect.value;
+  const match = findBrush(activeBrushId);
+  els.downloadBrush.disabled = !match;
+  if (match) {
+    els.strokeWidth.value = String(Math.min(160, Math.max(1, Math.round(match.brush.size || 24))));
+    setStatus(`${match.brush.name} · ${match.brush.compatibility}`);
+  }
+  setTool("pen");
+});
+els.downloadBrush.addEventListener("click", downloadActiveBrushPack);
 els.undoInk.addEventListener("click", () => {
   if (!state?.strokes.length) return;
   state.strokes.pop();
@@ -1098,6 +1556,8 @@ async function init() {
   }
   await openDatabase();
   await migrateLegacyBoard();
+  brushPacks = await getBrushPacks();
+  renderBrushLibrary();
   const id = url.searchParams.get("board");
   if (id) await loadCurrentBoard(id);
   else showHome();
