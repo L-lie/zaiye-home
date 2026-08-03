@@ -20,17 +20,15 @@ themeButton.addEventListener("click", () => {
 
 updateThemeButton();
 
-function finishLoading() {
-  document.body.classList.remove("is-loading");
+function revealScene() {
+  document.body.classList.add("scene-ready");
 }
 
 if (sceneImage.complete && sceneImage.naturalWidth) {
-  finishLoading();
+  revealScene();
 } else {
-  sceneImage.addEventListener("load", finishLoading, { once: true });
-  sceneImage.addEventListener("error", () => {
-    sceneImage.src = "assets/hero-production-design.png";
-  }, { once: true });
+  sceneImage.addEventListener("load", revealScene, { once: true });
+  sceneImage.addEventListener("error", revealScene, { once: true });
 }
 
 function showStop(index) {

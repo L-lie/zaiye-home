@@ -50,27 +50,27 @@
       }
     </script>
     <script>
+      document.documentElement.classList.add("js");
       document.documentElement.dataset.theme = localStorage.getItem("zaiye-site-theme") === "light" ? "light" : "dark";
     </script>
-    <link rel="preload" href="assets/hero-production-design.png" as="image" />
-    <link rel="stylesheet" href="home-preview.css?v=20260802-7" />
+    <link rel="preload" href="assets/hero-production-design.webp" as="image" type="image/webp" />
+    <link rel="stylesheet" href="home-preview.css?v=20260803-1" />
   </head>
-  <body class="is-loading">
+  <body>
     <div class="scene" aria-hidden="true">
-      <img
-        class="scene-image"
-        src="assets/hero-production-design.png"
-        alt=""
-        width="1891"
-        height="831"
-        fetchpriority="high"
-      />
+      <picture>
+        <source srcset="assets/hero-production-design.webp" type="image/webp" />
+        <img
+          class="scene-image"
+          src="assets/hero-production-design.png"
+          alt=""
+          width="1672"
+          height="941"
+          decoding="async"
+          fetchpriority="high"
+        />
+      </picture>
       <div class="scene-shade"></div>
-    </div>
-
-    <div class="loading-screen" role="status" aria-live="polite">
-      <span>工作室正在亮灯</span>
-      <span class="loading-line"></span>
     </div>
 
     <header class="studio-header">
@@ -140,6 +140,6 @@
     <noscript>
       <p class="noscript-message">需要启用 JavaScript 才能体验工作室镜头。你仍可从顶部菜单直接进入各区域。</p>
     </noscript>
-    <script src="home-preview.js?v=20260802-6"></script>
+    <script src="home-preview.js?v=20260803-1"></script>
   </body>
 </html>
