@@ -265,7 +265,7 @@ html[data-theme="light"] .theme-toggle {
 }
 
 .entrance-copy {
-  width: min(700px, 82vw);
+  width: min(1120px, 88vw);
   padding-bottom: clamp(32px, 6vh, 72px);
 }
 
@@ -286,11 +286,12 @@ html[data-theme="light"] .theme-toggle {
 }
 
 .entrance h1 {
-  max-width: 12em;
-  font-size: clamp(52px, min(9vw, 13vh), 132px);
+  max-width: 6.4em;
+  font-size: clamp(68px, min(11vw, 17vh), 180px);
   font-weight: 500;
   letter-spacing: -0.055em;
-  line-height: 0.94;
+  line-height: 0.92;
+  text-wrap: wrap;
 }
 
 .entrance-copy > p:not(.entrance-label) {
@@ -578,7 +579,9 @@ body:not(.is-loading) .loading-screen {
   }
 
   .entrance h1 {
-    font-size: clamp(52px, 15vw, 72px);
+    max-width: 7em;
+    font-size: clamp(50px, 15vw, 72px);
+    line-height: 0.94;
   }
 
   .zone-copy h2 {
