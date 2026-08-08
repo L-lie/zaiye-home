@@ -1,52 +1,38 @@
-# Supabase 权限基础配置
+# Supabase 未来远程后台备用说明
 
-这次只建立未来登录与权限分层所需的数据库结构和本地配置模板；现有官网页面、作品页、Canvas、学习笔记均未改动，也没有接入登录界面。
+当前作品维护已改为仅绑定 `127.0.0.1` 的 Codex 本地编辑器，不需要邮箱、密码、验证码或 Supabase Auth。请不要为当前编辑流程修改邮件模板，也不要删除已经建立的 Supabase 数据结构。
 
-## 一次性配置
+## 已保留的备用基础
 
-1. 在 [Supabase](https://supabase.com/) 创建项目。
-2. 在 Authentication > Providers 中启用 Email 登录。
-3. 打开 SQL Editor，执行 [`supabase/schema.sql`](supabase/schema.sql) 全部内容。
-4. 后续用邮箱注册你的站长账号后，在 SQL Editor 执行下列 SQL，把该账号设成站长：
+- `supabase/schema.sql`：主人资料与原有私人数据权限基础。
+- `supabase/portfolio.sql`：作品草稿、发布历史、资产登记与 Storage RLS。
+- `supabase/verify-portfolio-policies.sql`：只读核查四条 Storage owner policy。
+- `portfolio-originals`：私人原图桶，限制 JPG、PNG、WebP。
+- `portfolio-public`：公开水印 WebP 桶。
+- `supabase-config.js`：只包含可公开的 Project URL 与 `sb_publishable_` key。
 
-```sql
-update public.profiles as profile
-set site_role = 'owner'
-from auth.users as user_account
-where profile.id = user_account.id
-  and lower(user_account.email) = lower('YOUR_OWNER_EMAIL');
-```
+这些文件和桶供未来需要远程后台时继续开发。目前 `admin.html` 不加载 Supabase 客户端，不依赖登录会话；作品页仍保留对既有正式发布数据的兼容读取，并在没有远程正式版本时读取仓库内静态 JSON。
 
-5. 以后接入前端时，将 `.env.example` 复制为 `.env`，填入项目地址和 publishable key。
+## 绝对不要提供或提交
 
-## 以后只需要提供
+- 数据库密码
+- Secret key、`service_role` key 或以 `sb_secret_` 开头的 key
+- GitHub token
+- `.private/`、主人原图或任何本地绝对路径
 
-```text
-SUPABASE_URL=
-SUPABASE_PUBLISHABLE_KEY=
-OWNER_EMAIL=
-```
+浏览器端最多只能使用 Project URL 和以 `sb_publishable_` 开头的公开 key，真正权限必须由 RLS 控制。
 
-不要提供密码、`service_role` key、GitHub token、分享链接的原始口令或 `.private/` 内容。
+## 只读权限核查
 
-## 当前权限模型
+在 Supabase SQL Editor 运行 `supabase/verify-portfolio-policies.sql`。结果应正好有 4 行，并且每行的 `policy_exists`、`covers_originals`、`covers_public`、`checks_owner`、`checks_owner_folder` 均为 `true`。Dashboard bucket 列表里的 policy 数量只是界面归类，不能代替这项核查。
 
-- 未登录访客：只能访问公开官网内容。
-- 普通登录用户：只能读取和编辑自己创建的私人笔记本与画布。
-- 站长账号：拥有自己的私人笔记本、画布及其分享链接。
-- 公开主页和作品页的正式编辑：以后应由受保护的服务端 API 或后台完成；不能仅凭浏览器中的角色让用户直接改 GitHub 静态文件。
+匿名检查应继续满足：
 
-## 未来分享链接
+- 不能读取私人草稿、私人资产或发布历史。
+- 不能修改正式发布数据。
+- 不能列出或下载 `portfolio-originals`。
+- 可以读取 `portfolio-public` 中已经烘焙水印的 WebP，但不能写入。
 
-每个笔记本以后由服务端生成随机 token；数据库只保存 token 的哈希。分享链接可设置密码、到期时间和撤销状态，验证必须通过服务端接口完成，不能为匿名访问开放 RLS。
+## 当前实际维护方式
 
-## 现有内容
-
-现有加密笔记、Canvas 数据与 `.private/` 内容没有被读取、迁移或提交。这套数据库结构只作为后续真实登录和权限控制的基础。
-
-## 上线前检查
-
-- 匿名请求不能读取 `private_notebooks` 与 `private_canvases`。
-- 账号 A 无法读取或修改账号 B 的记录。
-- 站长账号可以管理自己的私人记录与分享链接。
-- `notebook_share_links` 没有匿名查询策略。
+请按 `LOCAL_PORTFOLIO_EDITOR.md` 启动本地编辑器。Supabase 备用配置不参与本地草稿、图片处理或静态发布，也不应为了本地编辑器而回滚。

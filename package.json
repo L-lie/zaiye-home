@@ -2,9 +2,16 @@
   "name": "llie-studio-site",
   "private": true,
   "scripts": {
-    "build:portfolio-media": "node scripts/build-portfolio-media.cjs"
+    "build:portfolio-media": "node scripts/build-portfolio-media.cjs",
+    "editor:portfolio": "node scripts/portfolio-editor-server.cjs",
+    "test:portfolio-editor": "node scripts/test-portfolio-editor.cjs",
+    "vendor:supabase": "node scripts/vendor-supabase.cjs",
+    "test:supabase": "node scripts/test-supabase-integration.cjs"
   },
   "devDependencies": {
     "sharp": "^0.34.3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.111.0"
   }
 }

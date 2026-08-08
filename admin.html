@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="robots" content="noindex" />
-    <title>本地编辑器 | 再野文化工作室</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <title>作品编辑 | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js"></script>
     <link rel="stylesheet" href="admin.css" />
     <link rel="stylesheet" href="theme.css" />
+    <script src="admin.js?v=20260808c" defer></script>
   </head>
   <body>
     <header class="admin-header">
@@ -20,91 +21,153 @@
         </span>
       </a>
       <div class="header-actions">
-        <button id="loadDefault" type="button">读取当前作品数据</button>
-        <button id="importJson" type="button">导入 JSON</button>
-        <button id="exportJson" type="button">导出 portfolio-index.json</button>
+        <span class="status-pill" id="connectionStatus">正在连接本地服务</span>
+        <button id="loadDefault" type="button">恢复静态数据</button>
+        <button id="importJson" type="button">导入备份</button>
+        <button id="exportJson" type="button">导出备份</button>
+        <button id="saveDraft" type="button">保存草稿</button>
+        <button id="publishDraft" class="primary" type="button">发布到官网文件</button>
         <input id="jsonFile" type="file" accept="application/json,.json" hidden />
-        <a href="gallery.html" target="_blank" rel="noreferrer">预览作品页</a>
+        <a href="gallery.html" target="_blank" rel="noreferrer">查看正式页</a>
       </div>
     </header>
 
-    <main class="admin-shell">
-      <aside class="list-panel">
-        <div class="panel-head">
-          <div>
-            <p class="eyebrow">作品条目</p>
-            <strong id="itemCount">0 项</strong>
+    <main>
+      <section class="admin-shell" data-editor>
+        <aside class="list-panel">
+          <div class="mode-tabs" role="tablist" aria-label="编辑内容">
+            <button class="is-active" type="button" data-mode="items">美术资料</button>
+            <button type="button" data-mode="projects">项目</button>
           </div>
-          <button id="addItem" type="button">新增</button>
-        </div>
-        <input id="searchItems" type="search" placeholder="搜索标题、文件、页码" />
-        <div id="itemList" class="item-list"></div>
-      </aside>
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow" id="listEyebrow">图片条目</p>
+              <strong id="itemCount">0 项</strong>
+            </div>
+            <button id="addEntry" type="button">新增</button>
+          </div>
+          <input id="searchItems" type="search" placeholder="搜索标题、项目或文件" />
+          <div id="itemList" class="item-list"></div>
+        </aside>
 
-      <section class="edit-panel">
-        <div class="notice">
-          这是本地编辑器，不会直接改线上网站。导出 JSON 后，把文件上传到 GitHub 的
-          <code>assets/portfolio/portfolio-index.json</code>，网站才会更新。
-        </div>
+        <section class="edit-panel">
+          <div class="notice">
+            <strong id="draftState">尚未读取草稿</strong>
+            <span>仅供本机 Codex 使用。保存只写入 `.private` 草稿；点击“发布到官网文件”后才更新仓库里的静态作品数据。</span>
+          </div>
 
-        <div class="editor-grid">
-          <section class="form-card">
-            <p class="eyebrow">当前作品</p>
-            <label>
-              标题
-              <textarea id="title" rows="4" placeholder="作品标题、项目名、工具、说明"></textarea>
-            </label>
-            <div class="two">
+          <div class="editor-grid" data-item-editor>
+            <section class="form-card">
+              <p class="eyebrow">当前美术资料</p>
               <label>
-                简历页码
-                <input id="slide" type="number" min="0" step="1" />
+                作品文字
+                <textarea id="title" rows="4" placeholder="作品名和右侧说明"></textarea>
+              </label>
+              <div class="two">
+                <label>
+                  原简历页码
+                  <input id="slide" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  所属新项目
+                  <select id="projectId"></select>
+                </label>
+              </div>
+              <label>
+                图片地址
+                <input id="file" readonly />
+              </label>
+              <div class="upload-row">
+                <input id="itemImageFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <button id="uploadItemImage" type="button">上传并替换图片</button>
+              </div>
+              <p class="upload-help">自动生成缩略图和展示图，并把小号斜向“再野文化”文字直接烘焙进图片。</p>
+              <label>
+                补充说明
+                <textarea id="note" rows="3"></textarea>
+              </label>
+              <div class="actions">
+                <button id="moveEntryUp" type="button">前移</button>
+                <button id="moveEntryDown" type="button">后移</button>
+                <button id="duplicateItem" type="button">复制条目</button>
+                <button id="deleteItem" class="danger" type="button">删除条目</button>
+              </div>
+            </section>
+
+            <section class="form-card">
+              <p class="eyebrow">资料分类</p>
+              <div class="check-group" data-checks="projects"><strong>项目类型</strong></div>
+              <div class="check-group" data-checks="types"><strong>美术资料</strong></div>
+            </section>
+
+            <section class="preview-card">
+              <p class="eyebrow">图片预览</p>
+              <div class="preview-frame">
+                <img id="preview" alt="" />
+                <span id="previewEmpty">没有图片预览</span>
+              </div>
+              <p class="form-status" id="uploadStatus" role="status"></p>
+            </section>
+          </div>
+
+          <div class="editor-grid" data-project-editor hidden>
+            <section class="form-card">
+              <p class="eyebrow">当前项目</p>
+              <div class="two">
+                <label>
+                  项目 ID
+                  <input id="caseId" placeholder="英文或拼音，如 new-project" />
+                </label>
+                <label>
+                  项目类型
+                  <select id="caseType"></select>
+                </label>
+              </div>
+              <label>
+                项目名称
+                <input id="caseTitle" placeholder="项目名称" />
               </label>
               <label>
-                图片路径
-                <input id="file" placeholder="assets/portfolio/slide-01-01.jpeg" />
+                分类标签
+                <input id="caseMeta" placeholder="电影 / 网大" />
               </label>
-            </div>
-            <label>
-              补充说明
-              <textarea id="note" rows="3" placeholder="可选：只在数据里保存，后续详情页可用"></textarea>
-            </label>
-            <div class="actions">
-              <button id="duplicateItem" type="button">复制条目</button>
-              <button id="deleteItem" class="danger" type="button">删除条目</button>
-            </div>
-          </section>
+              <label>
+                项目介绍
+                <textarea id="caseCopy" rows="3"></textarea>
+              </label>
+              <label class="inline-check">
+                <input id="caseVisible" type="checkbox" checked />
+                在项目入口中显示
+              </label>
+              <div class="upload-row">
+                <input id="projectImageFile" type="file" accept="image/jpeg,image/png,image/webp" />
+                <button id="uploadProjectImage" type="button">上传项目封面</button>
+              </div>
+              <div class="actions">
+                <button id="moveProjectUp" type="button">前移</button>
+                <button id="moveProjectDown" type="button">后移</button>
+                <button id="deleteProject" class="danger" type="button">删除项目</button>
+              </div>
+            </section>
 
-          <section class="form-card">
-            <p class="eyebrow">分类</p>
-            <div class="check-group" data-checks="projects">
-              <strong>项目类型</strong>
-            </div>
-            <div class="check-group" data-checks="types">
-              <strong>资料类型</strong>
-            </div>
-          </section>
-
-          <section class="preview-card">
-            <p class="eyebrow">图片预览</p>
-            <div class="preview-frame">
-              <img id="preview" alt="" />
-              <span id="previewEmpty">没有图片预览</span>
-            </div>
-          </section>
-        </div>
+            <section class="preview-card">
+              <p class="eyebrow">项目封面</p>
+              <div class="preview-frame">
+                <img id="projectPreview" alt="" />
+                <span id="projectPreviewEmpty">尚未上传封面</span>
+              </div>
+              <p class="form-status" id="projectUploadStatus" role="status"></p>
+            </section>
+          </div>
+        </section>
       </section>
     </main>
 
     <template id="rowTemplate">
       <button class="item-row" type="button">
         <img alt="" />
-        <span>
-          <strong></strong>
-          <small></small>
-        </span>
+        <span><strong></strong><small></small></span>
       </button>
     </template>
-
-    <script src="admin.js"></script>
   </body>
 </html>

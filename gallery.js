@@ -33,7 +33,7 @@ const TYPE_RULES = {
   lineart: [72, 73, 74],
 };
 
-const PROJECTS = [
+const LEGACY_PROJECTS = [
   {
     id: "ai-qing-gong-yu",
     project: "feature",
@@ -324,6 +324,8 @@ const PROJECTS = [
   },
 ];
 
+let PROJECTS = LEGACY_PROJECTS.slice();
+
 const PROJECT_ENTRY_ORDER = [
   "ai-qing-gong-yu",
   "cheng-feng-po-lang",
@@ -337,9 +339,9 @@ const params = new URLSearchParams(window.location.search);
 const activeType = params.get("type");
 const activeProject = params.get("project");
 const activeCaseId = params.get("case");
-const activeCase = PROJECTS.find((item) => item.id === activeCaseId);
-const showingProjectList = !activeType && !activeCase;
-const PORTFOLIO_DATA_VERSION = "20260802d";
+let activeCase = PROJECTS.find((item) => item.id === activeCaseId);
+let showingProjectList = !activeType && !activeCase;
+const PORTFOLIO_DATA_VERSION = "20260808a";
 
 let allItems = [];
 let filteredItems = [];
@@ -419,7 +421,20 @@ function typeForItem(item) {
 }
 
 function projectForItem(item) {
-  return PROJECTS.find((project) => project.slides.includes(Number(item.slide)));
+  if (item.projectId) {
+    const assigned = PROJECTS.find((project) => project.id === item.projectId);
+    if (assigned) return assigned;
+  }
+  return PROJECTS.find((project) => (project.slides || []).includes(Number(item.slide)));
+}
+
+function mergeProjects(projects = []) {
+  const merged = new Map(LEGACY_PROJECTS.map((project) => [project.id, { ...project }]));
+  projects.forEach((project) => {
+    if (!project?.id) return;
+    merged.set(project.id, { ...(merged.get(project.id) || {}), ...project });
+  });
+  return Array.from(merged.values());
 }
 
 function artworkCaption(title, project) {
@@ -554,6 +569,10 @@ function visibleProjects() {
   const entries = PROJECTS
     .filter((item) => item.showInProjectEntry !== false)
     .sort((a, b) => {
+      if (Number.isFinite(a.order) || Number.isFinite(b.order)) {
+        return (Number.isFinite(a.order) ? a.order : Number.MAX_SAFE_INTEGER)
+          - (Number.isFinite(b.order) ? b.order : Number.MAX_SAFE_INTEGER);
+      }
       const aOrder = order.has(a.id) ? order.get(a.id) : Number.MAX_SAFE_INTEGER;
       const bOrder = order.has(b.id) ? order.get(b.id) : Number.MAX_SAFE_INTEGER;
       return aOrder - bOrder;
@@ -656,15 +675,16 @@ function groupItems(items) {
 
 function baseFilteredItems() {
   return allItems
-    .filter((item) => Number(item.slide) > 1)
+    .filter((item) => Number(item.slide) > 1 || item.id)
     .filter((item) => matchesRule(item, TYPE_RULES, activeType, "types"))
     .filter((item) => {
       if (!activeCase) return true;
-      return activeCase.slides.includes(Number(item.slide));
+      return projectForItem(item)?.id === activeCase.id;
     });
 }
 
-function watermarkMarkup() {
+function watermarkMarkup(file) {
+  if (file && mediaFor(file).watermarked) return "";
   return `<span class="archive-image-watermark" aria-hidden="true">${
     Array.from({ length: 7 }, () => "<span>再野文化</span>").join("")
   }</span>`;
@@ -787,7 +807,7 @@ function renderItems(items) {
             ${group.items.map((entry, imageIndex) => `
               <span class="archive-image-frame ${ratioClassForFile(entry.file)}">
                 ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
-                ${watermarkMarkup()}
+                ${watermarkMarkup(entry.file)}
               </span>
             `).join("")}
           </div>
@@ -832,6 +852,8 @@ function showLightboxImage(viewer, nextIndex) {
   image.dataset.originalSrc = images[index].fallback || "";
   image.src = images[index].file;
   image.alt = images[index].title || "";
+  const watermark = viewer.querySelector("[data-lightbox-watermark]");
+  if (watermark) watermark.hidden = images[index].watermarked === true;
   if (count) count.textContent = images.length > 1 ? `${index + 1} / ${images.length}` : "";
   resetLightboxTransform(viewer);
 }
@@ -858,6 +880,7 @@ function openLightbox(group, startIndex = 0) {
     file: mediaFor(item.file).display || item.file,
     fallback: item.file,
     title: cleanTitle(item.title),
+    watermarked: mediaFor(item.file).watermarked === true,
   }));
   const title = cleanTitle(group.primary.title);
   const hasMultiple = images.length > 1;
@@ -876,7 +899,7 @@ function openLightbox(group, startIndex = 0) {
     <div class="archive-lightbox-stage" data-lightbox-stage>
       <span class="archive-lightbox-media" data-lightbox-media>
         <img data-lightbox-image src="" alt="${title || ""}" draggable="false" />
-        ${watermarkMarkup()}
+        <span data-lightbox-watermark>${watermarkMarkup()}</span>
       </span>
     </div>
     ${hasMultiple ? `<button class="archive-lightbox-nav next" type="button" aria-label="下一张">›</button>` : ""}
@@ -1062,21 +1085,24 @@ function bindMobileSidebar() {
 }
 
 async function initGallery() {
-  setActiveLinks();
-  renderChips();
   bindMenu();
   bindMobileSidebar();
   bindLightbox();
   bindPortfolioImageFallbacks();
   registerPortfolioCache();
 
-  const [response, mediaResponse] = await Promise.all([
-    fetch(`assets/portfolio/portfolio-index.json?v=${PORTFOLIO_DATA_VERSION}`),
-    fetch(`assets/portfolio/portfolio-media.json?v=${PORTFOLIO_DATA_VERSION}`),
-  ]);
-  const mediaManifest = mediaResponse.ok ? await mediaResponse.json() : { items: {} };
-  portfolioMedia = mediaManifest.items || {};
-  allItems = await response.json();
+  const publication = await window.PortfolioPublication.load(
+    `assets/portfolio/portfolio-index.json?v=${PORTFOLIO_DATA_VERSION}`,
+    `assets/portfolio/portfolio-media.json?v=${PORTFOLIO_DATA_VERSION}`,
+    `assets/portfolio/portfolio-projects.json?v=${PORTFOLIO_DATA_VERSION}`,
+  );
+  portfolioMedia = publication.content.media || {};
+  allItems = publication.content.items || [];
+  PROJECTS = mergeProjects(publication.content.projects || []);
+  activeCase = PROJECTS.find((item) => item.id === activeCaseId);
+  showingProjectList = !activeType && !activeCase;
+  setActiveLinks();
+  renderChips();
   filteredItems = baseFilteredItems();
   renderFeature();
   renderProjects();
