@@ -95,6 +95,7 @@ async function main() {
     slides: [],
     showInProjectEntry: true,
     assetId: upload.payload.assetId,
+    textStyles: { title: { fontSize: 34, color: "#252724", fontWeight: 700 }, meta: {}, copy: {} },
   };
   const testItem = {
     id: "codex-local-editor-test-item",
@@ -106,6 +107,12 @@ async function main() {
     types: ["atmosphere"],
     note: "自动测试",
     assetId: upload.payload.assetId,
+    captionName: "回滚测试作品",
+    captionDescription: "可视化编辑说明",
+    captionStyles: {
+      name: { fontSize: 22, color: "#252724", fontWeight: 800 },
+      description: { fontSize: 14, color: "#777777", fontWeight: 400 },
+    },
   };
   content.projects.push(testProject);
   content.items.push(testItem);
@@ -128,6 +135,15 @@ async function main() {
   const current = await request("/api/portfolio/current");
   assert(current.payload.content.items.some((item) => item.id === testItem.id));
   assert(current.payload.content.projects.some((project) => project.id === testProject.id));
+  const publishedItem = current.payload.content.items.find((item) => item.id === testItem.id);
+  assert.equal(publishedItem.captionName, "回滚测试作品");
+  assert.equal(publishedItem.captionStyles.description.color, "#777777");
+
+  const adminSource = await fsp.readFile(path.join(root, "admin.html"), "utf8");
+  assert.match(adminSource, /id="visualFrame"/);
+  assert.match(adminSource, /id="styleFontSize"/);
+  const gallerySource = await fsp.readFile(path.join(root, "gallery.js"), "utf8");
+  assert.match(gallerySource, /data-editor-item-field/);
 
   const noMarker = await request("/api/portfolio/draft", {
     method: "POST",

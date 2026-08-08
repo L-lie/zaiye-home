@@ -109,6 +109,18 @@ function assertPublicPath(value, label) {
   }
 }
 
+function assertTextStyle(value, label) {
+  if (value == null) return;
+  if (typeof value !== "object" || Array.isArray(value)) throw new Error(`${label}格式不正确`);
+  if (value.fontSize != null && (!Number.isInteger(value.fontSize) || value.fontSize < 8 || value.fontSize > 72)) {
+    throw new Error(`${label}字号不正确`);
+  }
+  if (value.color != null && !/^#[0-9a-f]{6}$/i.test(value.color)) throw new Error(`${label}颜色不正确`);
+  if (value.fontWeight != null && ![400, 500, 600, 700, 800].includes(Number(value.fontWeight))) {
+    throw new Error(`${label}字重不正确`);
+  }
+}
+
 function validateContent(input) {
   const content = input && typeof input === "object" && !Array.isArray(input) ? structuredClone(input) : null;
   if (!content || !Array.isArray(content.items) || !Array.isArray(content.projects)) throw new Error("作品数据结构不正确");
@@ -128,6 +140,10 @@ function validateContent(input) {
     if (itemIds.has(item.id)) throw new Error(`作品 ID 重复：${item.id}`);
     itemIds.add(item.id);
     assertSafeText(String(item.title || ""), `第 ${index + 1} 个作品标题`, 2000);
+    assertSafeText(String(item.captionName || ""), `第 ${index + 1} 个作品名`, 1000);
+    assertSafeText(String(item.captionDescription || ""), `第 ${index + 1} 个作品说明`, 3000);
+    assertTextStyle(item.captionStyles?.name, `第 ${index + 1} 个作品名字体`);
+    assertTextStyle(item.captionStyles?.description, `第 ${index + 1} 个作品说明字体`);
     assertSafeText(String(item.note || ""), `第 ${index + 1} 个作品说明`, 5000);
     assertPublicPath(String(item.file || ""), `第 ${index + 1} 个作品图片`);
   });
@@ -141,6 +157,9 @@ function validateContent(input) {
     assertSafeText(String(project.title || ""), `项目 ${project.id} 名称`, 1000);
     assertSafeText(String(project.meta || ""), `项目 ${project.id} 标签`, 1000);
     assertSafeText(String(project.copy || ""), `项目 ${project.id} 介绍`, 5000);
+    assertTextStyle(project.textStyles?.title, `项目 ${project.id} 标题字体`);
+    assertTextStyle(project.textStyles?.meta, `项目 ${project.id} 标签字体`);
+    assertTextStyle(project.textStyles?.copy, `项目 ${project.id} 介绍字体`);
     assertPublicPath(String(project.poster || project.image || ""), `项目 ${project.id} 封面`);
   });
 

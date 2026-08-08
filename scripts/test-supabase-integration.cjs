@@ -26,7 +26,7 @@ assert(!adminHtml.includes("supabase-client.js"), "local editor must not load Su
 assert(adminJs.includes('apiJson("/api/portfolio/draft"'), "local draft API is missing");
 assert(adminJs.includes('apiJson("/api/portfolio/publish"'), "local publish API is missing");
 assert(adminJs.includes('fetch("/api/portfolio/upload"'), "local upload API is missing");
-assert(adminHtml.includes("admin.js?v=20260808c"), "admin scripts need a cache-busting version");
+assert(adminHtml.includes("admin.js?v=20260808d"), "admin scripts need a cache-busting version");
 
 const galleryHtml = read("gallery.html");
 const orderedScripts = [

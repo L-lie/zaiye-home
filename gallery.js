@@ -339,6 +339,7 @@ const params = new URLSearchParams(window.location.search);
 const activeType = params.get("type");
 const activeProject = params.get("project");
 const activeCaseId = params.get("case");
+const editorPreview = params.get("editor") === "1";
 let activeCase = PROJECTS.find((item) => item.id === activeCaseId);
 let showingProjectList = !activeType && !activeCase;
 const PORTFOLIO_DATA_VERSION = "20260808a";
@@ -365,6 +366,16 @@ function cleanTitle(title = "") {
 
 function displayTitle(title = "") {
   return cleanTitle(title).replace(/[《》]/g, "");
+}
+
+function textStyle(value) {
+  if (!value || typeof value !== "object") return "";
+  const declarations = [];
+  const size = Number(value.fontSize);
+  if (Number.isInteger(size) && size >= 8 && size <= 72) declarations.push(`font-size:${size}px`);
+  if (/^#[0-9a-f]{6}$/i.test(value.color || "")) declarations.push(`color:${value.color}`);
+  if ([400, 500, 600, 700, 800].includes(Number(value.fontWeight))) declarations.push(`font-weight:${Number(value.fontWeight)}`);
+  return declarations.length ? ` style="${declarations.join(";")}"` : "";
 }
 
 function mediaFor(file) {
@@ -405,6 +416,7 @@ function bindPortfolioImageFallbacks() {
 }
 
 function registerPortfolioCache() {
+  if (editorPreview) return;
   if (!("serviceWorker" in navigator)) return;
   navigator.serviceWorker.register(`portfolio-sw.js?v=${PORTFOLIO_DATA_VERSION}`).catch(() => {});
 }
@@ -437,7 +449,7 @@ function mergeProjects(projects = []) {
   return Array.from(merged.values());
 }
 
-function artworkCaption(title, project) {
+function artworkCaption(title, project, item = {}) {
   const cleaned = cleanTitle(title);
   const titleMatch = cleaned.match(/《[^》]+》/);
   const fallbackName = cleanTitle(project?.title || "作品").replace(/美术设计$/, "").trim();
@@ -451,8 +463,8 @@ function artworkCaption(title, project) {
   }
 
   return {
-    workName,
-    description: description.replace(/\s+/g, " ").trim(),
+    workName: cleanTitle(item.captionName || workName),
+    description: cleanTitle(item.captionDescription ?? description),
   };
 }
 
@@ -606,12 +618,13 @@ function renderProjects() {
   grid.replaceChildren(...projects.map((item) => {
     const card = document.createElement("a");
     card.className = "archive-case-card";
+    if (editorPreview) card.dataset.editorProjectId = item.id;
     card.href = `gallery.html?case=${item.id}#archive-browser`;
     card.innerHTML = `
       ${portfolioImageMarkup(item.poster || item.image, item.title)}
-      <span>${item.meta}</span>
-      <strong>${displayTitle(item.title)}</strong>
-      <p>${item.copy}</p>
+      <span data-editor-project-field="meta"${textStyle(item.textStyles?.meta)}>${item.meta}</span>
+      <strong data-editor-project-field="title"${textStyle(item.textStyles?.title)}>${displayTitle(item.title)}</strong>
+      <p data-editor-project-field="copy"${textStyle(item.textStyles?.copy)}>${item.copy}</p>
     `;
     return card;
   }));
@@ -783,12 +796,13 @@ function renderItems(items) {
     const item = group.primary;
     const type = typeForItem(item);
     const project = projectForItem(item);
-    const caption = artworkCaption(item.title, project);
+    const caption = artworkCaption(item.title, project, item);
     const ratioClasses = group.items.map((entry) => ratioClassForFile(entry.file));
     const isTwoUltrawide = group.items.length === 2
       && ratioClasses.every((className) => className === "is-ultrawide");
     const card = document.createElement("article");
     card.className = "archive-work-card";
+    if (editorPreview) card.dataset.editorItemIds = group.items.map((entry) => entry.id).join(",");
     if (group.items.length > 1) card.classList.add("is-horizontal-strip");
     if (isTwoUltrawide) card.classList.add("is-two-ultrawide");
     card.dataset.groupIndex = String(index);
@@ -805,7 +819,7 @@ function renderItems(items) {
         >
           <div class="archive-work-track" data-inline-track>
             ${group.items.map((entry, imageIndex) => `
-              <span class="archive-image-frame ${ratioClassForFile(entry.file)}">
+              <span class="archive-image-frame ${ratioClassForFile(entry.file)}"${editorPreview ? ` data-editor-item-id="${entry.id}"` : ""}>
                 ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
                 ${watermarkMarkup(entry.file)}
               </span>
@@ -819,8 +833,8 @@ function renderItems(items) {
       </div>
       <span class="archive-work-meta">${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
       <div class="archive-work-caption">
-        <strong>${caption.workName}</strong>
-        ${caption.description ? `<span>${caption.description}</span>` : ""}
+        <strong data-editor-item-field="captionName"${textStyle(item.captionStyles?.name)}>${caption.workName}</strong>
+        ${caption.description || editorPreview ? `<span data-editor-item-field="captionDescription"${textStyle(item.captionStyles?.description)}>${caption.description}</span>` : ""}
       </div>
       ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
     `;
@@ -1085,6 +1099,7 @@ function bindMobileSidebar() {
 }
 
 async function initGallery() {
+  document.body.classList.toggle("is-portfolio-editor-preview", editorPreview);
   bindMenu();
   bindMobileSidebar();
   bindLightbox();
@@ -1099,6 +1114,7 @@ async function initGallery() {
   portfolioMedia = publication.content.media || {};
   allItems = publication.content.items || [];
   PROJECTS = mergeProjects(publication.content.projects || []);
+  if (editorPreview) window.__portfolioEditorProjects = structuredClone(PROJECTS);
   activeCase = PROJECTS.find((item) => item.id === activeCaseId);
   showingProjectList = !activeType && !activeCase;
   setActiveLinks();

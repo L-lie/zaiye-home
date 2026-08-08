@@ -1,5 +1,6 @@
 (function initializePortfolioPublication(global) {
   const CACHE_KEY = "zaiye-portfolio-publication-v2";
+  const EDITOR_PREVIEW_KEY = "zaiye-portfolio-editor-preview-v1";
   const CACHE_MAX_AGE = 5 * 60 * 1000;
 
   function normalizeContent(value) {
@@ -77,6 +78,14 @@
   }
 
   async function load(indexUrl, mediaUrl, projectsUrl) {
+    if (/(?:^|[?&])editor=1(?:&|$)/.test(global.location?.search || "")) {
+      try {
+        const content = normalizeContent(JSON.parse(localStorage.getItem(EDITOR_PREVIEW_KEY))?.content);
+        if (content) return { source: "editor", revision: 0, content };
+      } catch {
+        // A malformed local preview falls back to the published static content.
+      }
+    }
     if (!global.ZaiyeSupabase?.isConfigured) return fetchStatic(indexUrl, mediaUrl, projectsUrl);
     const cached = readCache();
     if (cached && Date.now() - cached.cachedAt < CACHE_MAX_AGE) {

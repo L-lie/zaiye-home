@@ -7,9 +7,9 @@
     <title>作品编辑 | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js"></script>
-    <link rel="stylesheet" href="admin.css" />
+    <link rel="stylesheet" href="admin.css?v=20260809a" />
     <link rel="stylesheet" href="theme.css" />
-    <script src="admin.js?v=20260808c" defer></script>
+    <script src="admin.js?v=20260808d" defer></script>
   </head>
   <body>
     <header class="admin-header">
@@ -32,13 +32,54 @@
       </div>
     </header>
 
-    <main>
-      <section class="admin-shell" data-editor>
-        <aside class="list-panel">
-          <div class="mode-tabs" role="tablist" aria-label="编辑内容">
-            <button class="is-active" type="button" data-mode="items">美术资料</button>
-            <button type="button" data-mode="projects">项目</button>
+    <main data-editor>
+      <section class="visual-editor-shell">
+        <section class="visual-stage" aria-label="作品网页实时预览">
+          <div class="visual-stage-bar">
+            <div class="mode-tabs" role="tablist" aria-label="预览内容">
+              <button class="is-active" type="button" data-mode="items">美术资料</button>
+              <button type="button" data-mode="projects">项目入口</button>
+            </div>
+            <span>直接点击文字编辑 · 拖动卡片或图片调整顺序 · 点击图片后可替换</span>
+            <div class="viewport-buttons" aria-label="预览宽度">
+              <button class="is-active" type="button" data-viewport="desktop">电脑</button>
+              <button type="button" data-viewport="mobile">手机</button>
+            </div>
           </div>
+          <div class="visual-frame-shell" data-viewport-shell>
+            <iframe id="visualFrame" title="与正式作品页一致的编辑预览"></iframe>
+          </div>
+          <p class="visual-hint" id="visualHint">载入真实作品页面后，点击任意作品文字或图片开始编辑。</p>
+        </section>
+
+        <aside class="inspector-panel">
+          <section class="inspector-section selection-toolbar">
+            <p class="eyebrow">当前选择</p>
+            <strong id="selectionLabel">尚未选择网页内容</strong>
+            <div class="style-controls" data-style-controls hidden>
+              <label>
+                字号
+                <input id="styleFontSize" type="number" min="8" max="72" step="1" />
+              </label>
+              <label>
+                颜色
+                <input id="styleColor" type="color" value="#252724" />
+              </label>
+              <label>
+                字重
+                <select id="styleWeight">
+                  <option value="400">常规</option>
+                  <option value="500">中等</option>
+                  <option value="600">半粗</option>
+                  <option value="700">粗体</option>
+                  <option value="800">特粗</option>
+                </select>
+              </label>
+              <button id="resetStyle" type="button">恢复网页默认</button>
+            </div>
+          </section>
+
+          <section class="inspector-section list-panel">
           <div class="panel-head">
             <div>
               <p class="eyebrow" id="listEyebrow">图片条目</p>
@@ -47,21 +88,25 @@
             <button id="addEntry" type="button">新增</button>
           </div>
           <input id="searchItems" type="search" placeholder="搜索标题、项目或文件" />
-          <div id="itemList" class="item-list"></div>
-        </aside>
+            <div id="itemList" class="item-list"></div>
+          </section>
 
-        <section class="edit-panel">
-          <div class="notice">
-            <strong id="draftState">尚未读取草稿</strong>
-            <span>仅供本机 Codex 使用。保存只写入 `.private` 草稿；点击“发布到官网文件”后才更新仓库里的静态作品数据。</span>
-          </div>
+          <section class="edit-panel inspector-section">
 
           <div class="editor-grid" data-item-editor>
             <section class="form-card">
               <p class="eyebrow">当前美术资料</p>
               <label>
-                作品文字
-                <textarea id="title" rows="4" placeholder="作品名和右侧说明"></textarea>
+                作品名
+                <input id="captionName" placeholder="作品名" />
+              </label>
+              <label>
+                右侧说明
+                <textarea id="captionDescription" rows="3" placeholder="作品说明"></textarea>
+              </label>
+              <label class="legacy-field">
+                原始归档文字
+                <textarea id="title" rows="2" placeholder="用于旧资料分组和搜索"></textarea>
               </label>
               <div class="two">
                 <label>
@@ -100,7 +145,7 @@
               <div class="check-group" data-checks="types"><strong>美术资料</strong></div>
             </section>
 
-            <section class="preview-card">
+            <section class="preview-card compact-preview">
               <p class="eyebrow">图片预览</p>
               <div class="preview-frame">
                 <img id="preview" alt="" />
@@ -150,7 +195,7 @@
               </div>
             </section>
 
-            <section class="preview-card">
+            <section class="preview-card compact-preview">
               <p class="eyebrow">项目封面</p>
               <div class="preview-frame">
                 <img id="projectPreview" alt="" />
@@ -159,8 +204,13 @@
               <p class="form-status" id="projectUploadStatus" role="status"></p>
             </section>
           </div>
-        </section>
+          </section>
+        </aside>
       </section>
+      <div class="notice bottom-notice">
+        <strong id="draftState">尚未读取草稿</strong>
+        <span>仅供本机 Codex 使用。保存只写入 `.private` 草稿；点击“发布到官网文件”后才更新仓库里的静态作品数据。</span>
+      </div>
     </main>
 
     <template id="rowTemplate">

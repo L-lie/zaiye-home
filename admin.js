@@ -21,6 +21,7 @@ const TYPE_LABELS = {
 };
 
 const PUBLIC_CACHE_KEY = "zaiye-portfolio-publication-v2";
+const EDITOR_PREVIEW_KEY = "zaiye-portfolio-editor-preview-v1";
 const EMPTY_CONTENT = () => ({ version: 1, projects: [], items: [], media: {} });
 
 const els = {
@@ -41,6 +42,17 @@ const els = {
   itemEditor: document.querySelector("[data-item-editor]"),
   projectEditor: document.querySelector("[data-project-editor]"),
   draftState: document.getElementById("draftState"),
+  visualFrame: document.getElementById("visualFrame"),
+  visualHint: document.getElementById("visualHint"),
+  viewportShell: document.querySelector("[data-viewport-shell]"),
+  selectionLabel: document.getElementById("selectionLabel"),
+  styleControls: document.querySelector("[data-style-controls]"),
+  styleFontSize: document.getElementById("styleFontSize"),
+  styleColor: document.getElementById("styleColor"),
+  styleWeight: document.getElementById("styleWeight"),
+  resetStyle: document.getElementById("resetStyle"),
+  captionName: document.getElementById("captionName"),
+  captionDescription: document.getElementById("captionDescription"),
   title: document.getElementById("title"),
   slide: document.getElementById("slide"),
   projectId: document.getElementById("projectId"),
@@ -79,6 +91,19 @@ let draftRevision = 0;
 let publishedRevision = 0;
 let dirty = false;
 let uploading = false;
+let selectedVisualField = "";
+let previewTimer = 0;
+let draggedVisual = null;
+
+function normalizeTextStyle(value) {
+  if (!value || typeof value !== "object") return {};
+  const style = {};
+  const size = Number(value.fontSize);
+  if (Number.isInteger(size) && size >= 8 && size <= 72) style.fontSize = size;
+  if (/^#[0-9a-f]{6}$/i.test(value.color || "")) style.color = value.color;
+  if ([400, 500, 600, 700, 800].includes(Number(value.fontWeight))) style.fontWeight = Number(value.fontWeight);
+  return style;
+}
 
 function cleanTitle(title = "") {
   return String(title).replace(/\s+/g, " ").trim();
@@ -114,6 +139,11 @@ function normalizeContent(value) {
     showInProjectEntry: project.showInProjectEntry !== false,
     assetId: project.assetId || "",
     order: Number.isFinite(project.order) ? project.order : undefined,
+    textStyles: {
+      title: normalizeTextStyle(project.textStyles?.title),
+      meta: normalizeTextStyle(project.textStyles?.meta),
+      copy: normalizeTextStyle(project.textStyles?.copy),
+    },
   })) : [];
   const items = Array.isArray(source.items) ? source.items.map((item) => ({
     id: item.id || crypto.randomUUID(),
@@ -130,6 +160,12 @@ function normalizeContent(value) {
     note: item.note || "",
     assetId: item.assetId || "",
     order: Number.isFinite(item.order) ? item.order : undefined,
+    captionName: item.captionName || "",
+    captionDescription: Object.hasOwn(item, "captionDescription") ? item.captionDescription : undefined,
+    captionStyles: {
+      name: normalizeTextStyle(item.captionStyles?.name),
+      description: normalizeTextStyle(item.captionStyles?.description),
+    },
   })) : [];
   const media = {};
   if (source.media && typeof source.media === "object" && !Array.isArray(source.media)) {
@@ -160,6 +196,18 @@ function activeProject() {
   return content.projects[selectedProjectIndex];
 }
 
+function legacyCaption(item) {
+  if (!item) return { name: "", description: "" };
+  const title = cleanTitle(item.title);
+  const project = content.projects.find((entry) => entry.id === item.projectId)
+    || content.projects.find((entry) => entry.slides?.includes(Number(item.slide)));
+  const match = title.match(/《[^》]+》/);
+  const fallback = cleanTitle(project?.title || "作品").replace(/[《》]/g, "").replace(/美术设计$/, "").trim();
+  const name = (match?.[0] || fallback).replace(/[《》]/g, "");
+  const description = match ? title.replace(match[0], "") : title.replace(fallback, "");
+  return { name, description: cleanTitle(description) };
+}
+
 function makeEmptyItem() {
   return {
     id: crypto.randomUUID(),
@@ -170,6 +218,9 @@ function makeEmptyItem() {
     projects: [],
     types: [],
     note: "",
+    captionName: "新作品",
+    captionDescription: "",
+    captionStyles: { name: {}, description: {} },
   };
 }
 
@@ -184,12 +235,33 @@ function makeEmptyProject() {
     poster: "",
     slides: [],
     showInProjectEntry: true,
+    textStyles: { title: {}, meta: {}, copy: {} },
   };
 }
 
 function markDirty() {
   dirty = true;
   updateDraftState();
+}
+
+function writePreviewContent() {
+  localStorage.setItem(EDITOR_PREVIEW_KEY, JSON.stringify({ content }));
+}
+
+function previewUrl() {
+  return mode === "projects"
+    ? `gallery.html?editor=1&preview=${Date.now()}#archive-selected`
+    : `gallery.html?editor=1&type=all&preview=${Date.now()}#archive-browser`;
+}
+
+function schedulePreview({ immediate = false } = {}) {
+  window.clearTimeout(previewTimer);
+  const update = () => {
+    writePreviewContent();
+    els.visualFrame.src = previewUrl();
+  };
+  if (immediate) update();
+  else previewTimer = window.setTimeout(update, 120);
 }
 
 function updateDraftState(message = "") {
@@ -297,11 +369,14 @@ function setImagePreview(image, empty, source) {
 function renderItemEditor() {
   const work = activeItem();
   const disabled = !work;
-  [els.title, els.slide, els.projectId, els.note, els.itemImageFile, els.uploadItemImage,
+  [els.captionName, els.captionDescription, els.title, els.slide, els.projectId, els.note, els.itemImageFile, els.uploadItemImage,
     els.moveEntryUp, els.moveEntryDown, els.duplicateItem, els.deleteItem].forEach((element) => {
     element.disabled = disabled || uploading;
   });
   els.title.value = work?.title || "";
+  const caption = legacyCaption(work);
+  els.captionName.value = work?.captionName || caption.name;
+  els.captionDescription.value = work?.captionDescription ?? caption.description;
   els.slide.value = work?.slide ?? "";
   els.file.value = work?.file || "";
   els.note.value = work?.note || "";
@@ -348,12 +423,15 @@ function render() {
   renderList();
   renderEditor();
   updateDraftState();
+  schedulePreview();
 }
 
 function syncItemForm() {
   const work = activeItem();
   if (!work) return;
   work.title = els.title.value;
+  work.captionName = els.captionName.value;
+  work.captionDescription = els.captionDescription.value;
   work.slide = Number(els.slide.value) || 0;
   work.projectId = els.projectId.value;
   work.note = els.note.value;
@@ -421,6 +499,8 @@ function validateContent({ forPublish = false } = {}) {
     if (itemIds.has(item.id)) throw new Error("存在重复的作品条目 ID");
     itemIds.add(item.id);
     assertSafeEditorText(item.title, `第 ${index + 1} 个作品标题`);
+    assertSafeEditorText(item.captionName, `第 ${index + 1} 个作品名`);
+    assertSafeEditorText(item.captionDescription, `第 ${index + 1} 个作品说明`);
     assertSafeEditorText(item.note, `第 ${index + 1} 个作品说明`);
     assertPublicImagePath(item.file || "", `第 ${index + 1} 个作品图片`);
     if (forPublish && (!cleanTitle(item.title) || !item.file)) {
@@ -573,8 +653,225 @@ async function uploadImage(kind) {
   }
 }
 
+function selectedStyleTarget() {
+  if (!selectedVisualField) return null;
+  if (mode === "items") {
+    const item = activeItem();
+    if (!item) return null;
+    item.captionStyles ||= { name: {}, description: {} };
+    return selectedVisualField === "captionName" ? item.captionStyles.name : item.captionStyles.description;
+  }
+  const project = activeProject();
+  if (!project) return null;
+  project.textStyles ||= { title: {}, meta: {}, copy: {} };
+  return project.textStyles[selectedVisualField];
+}
+
+function cssColorToHex(value) {
+  const channels = String(value || "").match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
+  if (!channels || channels.length !== 3) return "#252724";
+  return `#${channels.map((channel) => Math.max(0, Math.min(255, Math.round(channel))).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function updateStyleControls(element = null) {
+  const style = selectedStyleTarget();
+  els.styleControls.hidden = !style;
+  if (!style) return;
+  const computed = element ? element.ownerDocument.defaultView.getComputedStyle(element) : null;
+  els.styleFontSize.value = style.fontSize || Math.round(Number.parseFloat(computed?.fontSize || "16"));
+  els.styleColor.value = style.color || cssColorToHex(computed?.color);
+  els.styleWeight.value = String(style.fontWeight || Number(computed?.fontWeight) || 400);
+}
+
+function selectItemById(id, field = "", element = null) {
+  syncActiveForm();
+  const index = content.items.findIndex((item) => item.id === id);
+  if (index < 0) return;
+  mode = "items";
+  selectedItemIndex = index;
+  selectedVisualField = field;
+  renderItemEditor();
+  renderList();
+  els.selectionLabel.textContent = field
+    ? `${activeItem().captionName || cleanTitle(activeItem().title) || "作品"} · ${field === "captionName" ? "作品名" : "说明"}`
+    : `${activeItem().captionName || cleanTitle(activeItem().title) || "作品"} · 图片`;
+  updateStyleControls(element);
+}
+
+function selectProjectById(id, field = "", element = null) {
+  syncActiveForm();
+  const index = content.projects.findIndex((project) => project.id === id);
+  if (index < 0) return;
+  mode = "projects";
+  selectedProjectIndex = index;
+  selectedVisualField = field;
+  renderProjectEditor();
+  renderList();
+  els.selectionLabel.textContent = `${cleanTitle(activeProject().title) || "项目"}${field ? ` · ${field}` : " · 封面"}`;
+  updateStyleControls(element);
+}
+
+function moveIdsBefore(sourceIds, targetIds) {
+  if (!sourceIds.length || sourceIds.some((id) => targetIds.includes(id))) return;
+  const source = content.items.filter((item) => sourceIds.includes(item.id));
+  const remaining = content.items.filter((item) => !sourceIds.includes(item.id));
+  const targetIndex = remaining.findIndex((item) => targetIds.includes(item.id));
+  remaining.splice(targetIndex < 0 ? remaining.length : targetIndex, 0, ...source);
+  content.items = remaining;
+  selectedItemIndex = content.items.findIndex((item) => item.id === sourceIds[0]);
+  markDirty();
+  render();
+}
+
+function bindVisualEditing() {
+  const doc = els.visualFrame.contentDocument;
+  if (!doc?.body) return;
+  if (mode === "projects" && content.projects.length === 0) {
+    const existingProjects = els.visualFrame.contentWindow.__portfolioEditorProjects;
+    if (Array.isArray(existingProjects) && existingProjects.length) {
+      content.projects = normalizeContent({ projects: existingProjects, items: content.items, media: content.media }).projects;
+      selectedProjectIndex = 0;
+      render();
+      return;
+    }
+  }
+  const style = doc.createElement("style");
+  style.textContent = `
+    .is-portfolio-editor-preview [data-editor-item-ids],
+    .is-portfolio-editor-preview [data-editor-project-id] { cursor: grab; outline: 1px dashed transparent; outline-offset: 5px; }
+    .is-portfolio-editor-preview [data-editor-item-ids]:hover,
+    .is-portfolio-editor-preview [data-editor-project-id]:hover { outline-color: #c99854; }
+    .is-portfolio-editor-preview [contenteditable="true"] { cursor: text; outline: 1px solid rgba(201,152,84,.8); outline-offset: 3px; }
+    .is-portfolio-editor-preview [data-editor-item-id] { cursor: pointer; }
+    .is-portfolio-editor-preview .archive-work-card[draggable="true"]:active,
+    .is-portfolio-editor-preview .archive-case-card[draggable="true"]:active { cursor: grabbing; }
+  `;
+  doc.head.append(style);
+
+  doc.querySelectorAll("[data-editor-item-ids]").forEach((card) => {
+    const ids = card.dataset.editorItemIds.split(",").filter(Boolean);
+    card.draggable = true;
+    card.addEventListener("dragstart", (event) => {
+      draggedVisual = { kind: "item-group", ids };
+      event.dataTransfer.effectAllowed = "move";
+    });
+    card.addEventListener("dragover", (event) => event.preventDefault());
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      if (draggedVisual?.kind === "item-group") moveIdsBefore(draggedVisual.ids, ids);
+    });
+    card.addEventListener("click", (event) => {
+      const editable = event.target.closest("[data-editor-item-field]");
+      if (editable) {
+        selectItemById(ids[0], editable.dataset.editorItemField, editable);
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const imageFrame = event.target.closest("[data-editor-item-id]");
+      selectItemById(imageFrame?.dataset.editorItemId || ids[0]);
+    }, true);
+    card.querySelectorAll("[data-editor-item-field]").forEach((field) => {
+      field.contentEditable = "true";
+      field.draggable = false;
+      field.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectItemById(ids[0], field.dataset.editorItemField, field);
+      });
+      field.addEventListener("input", () => {
+        const item = content.items.find((entry) => entry.id === ids[0]);
+        if (!item) return;
+        item[field.dataset.editorItemField] = field.textContent.trim();
+        selectedItemIndex = content.items.indexOf(item);
+        els[field.dataset.editorItemField].value = item[field.dataset.editorItemField];
+        markDirty();
+        renderList();
+      });
+    });
+    card.querySelectorAll("[data-editor-item-id]").forEach((frame) => {
+      frame.draggable = true;
+      frame.addEventListener("dragstart", (event) => {
+        event.stopPropagation();
+        draggedVisual = { kind: "item-image", id: frame.dataset.editorItemId };
+        event.dataTransfer.effectAllowed = "move";
+      });
+      frame.addEventListener("dragover", (event) => event.preventDefault());
+      frame.addEventListener("drop", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (draggedVisual?.kind !== "item-image" || draggedVisual.id === frame.dataset.editorItemId) return;
+        const sourceIndex = content.items.findIndex((entry) => entry.id === draggedVisual.id);
+        const targetIndex = content.items.findIndex((entry) => entry.id === frame.dataset.editorItemId);
+        [content.items[sourceIndex], content.items[targetIndex]] = [content.items[targetIndex], content.items[sourceIndex]];
+        selectedItemIndex = targetIndex;
+        markDirty();
+        render();
+      });
+    });
+  });
+
+  doc.querySelectorAll("[data-editor-project-id]").forEach((card) => {
+    const id = card.dataset.editorProjectId;
+    card.draggable = true;
+    card.addEventListener("dragstart", (event) => {
+      draggedVisual = { kind: "project", id };
+      event.dataTransfer.effectAllowed = "move";
+    });
+    card.addEventListener("dragover", (event) => event.preventDefault());
+    card.addEventListener("drop", (event) => {
+      event.preventDefault();
+      if (draggedVisual?.kind !== "project" || draggedVisual.id === id) return;
+      const sourceIndex = content.projects.findIndex((project) => project.id === draggedVisual.id);
+      const targetIndex = content.projects.findIndex((project) => project.id === id);
+      const [source] = content.projects.splice(sourceIndex, 1);
+      content.projects.splice(targetIndex, 0, source);
+      selectedProjectIndex = content.projects.indexOf(source);
+      markDirty();
+      render();
+    });
+    card.addEventListener("click", (event) => {
+      const editable = event.target.closest("[data-editor-project-field]");
+      if (editable) {
+        selectProjectById(id, editable.dataset.editorProjectField, editable);
+        return;
+      }
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      selectProjectById(id);
+    }, true);
+    card.querySelectorAll("[data-editor-project-field]").forEach((field) => {
+      field.contentEditable = "true";
+      field.draggable = false;
+      field.addEventListener("click", (event) => {
+        event.stopPropagation();
+        selectProjectById(id, field.dataset.editorProjectField, field);
+      });
+      field.addEventListener("input", () => {
+        const project = content.projects.find((entry) => entry.id === id);
+        if (!project) return;
+        project[field.dataset.editorProjectField] = field.textContent.trim();
+        selectedProjectIndex = content.projects.indexOf(project);
+        markDirty();
+        renderProjectEditor();
+        renderList();
+      });
+    });
+  });
+  els.visualHint.textContent = "现在可以直接点文字修改；拖动整张作品卡或项目卡调整顺序；点击图片后在右侧替换。";
+}
+
+function applySelectedStyle() {
+  const style = selectedStyleTarget();
+  if (!style) return;
+  style.fontSize = Math.max(8, Math.min(72, Math.round(Number(els.styleFontSize.value) || 16)));
+  style.color = els.styleColor.value;
+  style.fontWeight = Number(els.styleWeight.value) || 400;
+  markDirty();
+  schedulePreview({ immediate: true });
+}
+
 function bindFormEvents() {
-  [els.title, els.slide, els.projectId, els.note].forEach((field) => {
+  [els.captionName, els.captionDescription, els.title, els.slide, els.projectId, els.note].forEach((field) => {
     field.addEventListener("input", () => {
       syncItemForm();
       markDirty();
@@ -593,6 +890,22 @@ function bindFormEvents() {
 }
 
 function bindEditorEvents() {
+  els.visualFrame.addEventListener("load", bindVisualEditing);
+  document.querySelectorAll("[data-viewport]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const mobile = button.dataset.viewport === "mobile";
+      els.viewportShell.classList.toggle("is-mobile", mobile);
+      document.querySelectorAll("[data-viewport]").forEach((entry) => entry.classList.toggle("is-active", entry === button));
+    });
+  });
+  [els.styleFontSize, els.styleColor, els.styleWeight].forEach((field) => field.addEventListener("input", applySelectedStyle));
+  els.resetStyle.addEventListener("click", () => {
+    const style = selectedStyleTarget();
+    if (!style) return;
+    Object.keys(style).forEach((key) => delete style[key]);
+    markDirty();
+    schedulePreview({ immediate: true });
+  });
   document.querySelectorAll("[data-mode]").forEach((button) => {
     button.addEventListener("click", () => {
       syncActiveForm();
