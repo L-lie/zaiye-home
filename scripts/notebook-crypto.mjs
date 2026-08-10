@@ -21,6 +21,7 @@ export const allowedBlockTypes = new Set([
   "tip",
   "shortcuts",
   "table",
+  "code",
   "image",
   "gallery",
 ]);
@@ -55,6 +56,11 @@ function validateImageReference(item, context, assetIds) {
 function validateBlock(block, context, assetIds) {
   assert(block && typeof block === "object" && !Array.isArray(block), `block must be an object: ${context}`);
   assert(allowedBlockTypes.has(block.type), `unsupported block type: ${block.type}`);
+
+  if (block.type === "code") {
+    assert(typeof block.code === "string", `code block needs code text: ${context}`);
+    assertOptionalText(block.language, "language", context);
+  }
 
   if (block.type === "image") {
     validateImageReference(block, context, assetIds);

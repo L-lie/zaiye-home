@@ -338,6 +338,16 @@ function renderTable(block) {
   return wrapper;
 }
 
+function renderCode(block) {
+  const pre = document.createElement("pre");
+  pre.className = "note-code-block";
+  if (block.language) pre.dataset.language = block.language;
+  const code = document.createElement("code");
+  code.textContent = block.code;
+  pre.append(code);
+  return pre;
+}
+
 function renderImageFigure(item, compact = false) {
   const variant = notes?.assetBundle?.assets?.[item.assetId]?.thumbnail;
   const figure = document.createElement("figure");
@@ -410,6 +420,7 @@ function renderBlock(block) {
   if (block.type === "tip") return renderTextBlock("p", block.text, "note-tip");
   if (block.type === "ordered-list" || block.type === "unordered-list") return renderList(block);
   if (block.type === "table") return renderTable(block);
+  if (block.type === "code") return renderCode(block);
   if (block.type === "image") return renderImageFigure(block);
   if (block.type === "gallery") return renderGallery(block);
   if (block.type === "shortcuts") {
@@ -648,6 +659,7 @@ function sectionToPlainText(section) {
         const rows = (block.rows || []).map((row) => row.join(" | ")).join("\n");
         return [columns, rows].filter(Boolean).join("\n");
       }
+      if (block.type === "code") return block.code || "";
       if (block.type === "image") {
         return [block.caption, block.sourceLabel, block.credit, block.alt].filter(Boolean).join(" ");
       }

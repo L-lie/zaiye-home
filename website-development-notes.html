@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="再野文化独立产品开发、发布与维护私人实操笔记" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>从本地项目到真正上线 | 再野文化工作室</title>
+    <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
+    <script src="theme.js?v=20260723b"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="blender-notes.css?v=20260723b" />
+    <link rel="stylesheet" href="website-development-notes.css?v=20260810a" />
+    <link rel="stylesheet" href="theme.css" />
+    <script src="notebook.js?v=20260810a" defer></script>
+  </head>
+  <body
+    class="notes-body"
+    data-private-data-url="assets/content/website-development-notes.enc.json"
+    data-local-storage-key="zaiye-website-development-notes-local-v1"
+    data-local-title="我的网站开发笔记"
+    data-export-filename="my-website-development-notes.json"
+  >
+    <header class="site-header notes-site-header">
+      <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
+        <img class="brand-logo" src="assets/site-logo.png" alt="" width="38" height="38" />
+        <span class="brand-copy">
+          <span class="brand-mark">再野文化工作室</span>
+          <span class="brand-line">ZAIYE CULTURE</span>
+        </span>
+      </a>
+      <nav class="site-nav" aria-label="主导航">
+        <a href="gallery.html">作品</a>
+        <a href="canvas.html">Canvas</a>
+        <a href="notes.html" aria-current="page">学习笔记</a>
+        <a href="prompt-vault.html">Prompt Vault</a>
+        <a href="tools/overlap-slicer/index.html">重叠切图</a>
+        <a href="index.html#contact">联系</a>
+      </nav>
+    </header>
+
+    <main class="notes-page">
+      <section class="notes-heading" aria-labelledby="notes-title">
+        <p class="notes-breadcrumb"><a href="notes.html">学习笔记</a><span>/</span> 网站开发</p>
+        <h1 id="notes-title">从本地项目到真正上线</h1>
+        <p>只记录实际做过的操作、遇到的坑、解决办法和验证结果。</p>
+      </section>
+
+      <section class="access-panel" id="accessPanel" aria-labelledby="access-title">
+        <div>
+          <p class="eyebrow">私人笔记</p>
+          <h2 id="access-title">从学习笔记入口打开</h2>
+          <p class="access-copy">私人笔记统一在学习笔记入口解锁，只需输入一次主人密钥。</p>
+        </div>
+        <a class="button primary" href="notes.html">返回学习笔记</a>
+        <p class="form-message" id="unlockMessage" aria-live="polite"></p>
+        <div class="access-divider" aria-hidden="true"><span>或</span></div>
+        <button class="button secondary" id="startLocal" type="button">开始自己的笔记</button>
+      </section>
+
+      <section class="notes-app" id="notesApp" hidden>
+        <div class="notes-toolbar">
+          <div class="search-field">
+            <label for="notesSearch">搜索笔记</label>
+            <input
+              id="notesSearch"
+              type="search"
+              placeholder="搜索标题、正文、命令或平台名称"
+              autocomplete="off"
+            />
+          </div>
+          <div class="toolbar-status">
+            <span id="searchStatus" aria-live="polite"></span>
+            <span class="mode-label" id="modeLabel"></span>
+          </div>
+          <div class="local-actions" id="localActions" hidden>
+            <button type="button" id="newNote">新增笔记</button>
+            <button type="button" id="importNotes">导入</button>
+            <button type="button" id="exportNotes">导出</button>
+            <input id="importFile" type="file" accept="application/json,.json" hidden />
+          </div>
+        </div>
+
+        <div class="notes-layout">
+          <aside class="notes-sidebar" aria-label="笔记目录">
+            <div class="sidebar-heading">
+              <span>目录</span>
+              <button type="button" id="closeNotes">退出</button>
+            </div>
+            <nav id="notesNav"></nav>
+          </aside>
+          <article class="notes-content" id="notesContent"></article>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="note-dialog" id="noteDialog">
+      <form method="dialog" id="noteForm">
+        <div class="dialog-heading">
+          <h2>新增笔记</h2>
+          <button class="dialog-close" value="cancel" aria-label="关闭" type="submit">×</button>
+        </div>
+        <label>
+          大分类
+          <select id="editorCategory"></select>
+        </label>
+        <label id="newCategoryField" hidden>
+          新分类名称
+          <input id="editorNewCategory" />
+        </label>
+        <label>
+          小分类标题
+          <input id="editorTitle" required />
+        </label>
+        <label>
+          正文
+          <textarea id="editorBody" rows="9" required></textarea>
+        </label>
+        <label>
+          功能名称或快捷键
+          <input id="editorShortcuts" placeholder="用逗号分隔" />
+        </label>
+        <div class="dialog-actions">
+          <button class="button secondary" value="cancel" type="submit">取消</button>
+          <button class="button primary" value="save" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

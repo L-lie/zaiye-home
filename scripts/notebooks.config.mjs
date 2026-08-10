@@ -16,6 +16,12 @@ export const notebooks = [
     outputFile: "mingri-park-heat-world.enc.json",
     href: "mingri-park-notes.html",
   },
+  {
+    id: "website-development",
+    sourceFile: "website-development-notes.json",
+    outputFile: "website-development-notes.enc.json",
+    href: "website-development-notes.html",
+  },
 ];
 
 export function getNotebookConfig(id) {
