@@ -135,7 +135,15 @@ preview.addEventListener("pointerdown", (event) => {
   if (!capturedImage || !previewMetrics) return;
   const point = canvasPointToImage(event);
   if (!point) return;
-  if (cropRect && pointInRect(point, cropRect)) {
+  const handle = cropHandleAtPoint(point);
+  if (handle) {
+    cropInteraction = {
+      type: "resize",
+      handle,
+      start: point,
+      origin: { ...cropRect },
+    };
+  } else if (cropRect && pointInRect(point, cropRect)) {
     cropInteraction = {
       type: "move",
       start: point,
@@ -153,13 +161,22 @@ preview.addEventListener("pointerdown", (event) => {
 });
 
 preview.addEventListener("pointermove", (event) => {
-  if (!cropInteraction || !capturedImage) return;
-  const point = canvasPointToImage(event);
-  if (!point) return;
+  if (!capturedImage) return;
+  const point = canvasPointToImage(event, { clamp: Boolean(cropInteraction) });
+  if (!point) {
+    if (!cropInteraction) preview.style.cursor = "crosshair";
+    return;
+  }
+  if (!cropInteraction) {
+    preview.style.cursor = cropCursorAtPoint(point);
+    return;
+  }
   if (cropInteraction.type === "move") {
     const dx = point.x - cropInteraction.start.x;
     const dy = point.y - cropInteraction.start.y;
     cropRect = moveRect(cropInteraction.origin, dx, dy, capturedImage.width, capturedImage.height);
+  } else if (cropInteraction.type === "resize") {
+    cropRect = resizeCropRect(cropInteraction.origin, cropInteraction.handle, point, capturedImage.width, capturedImage.height);
   } else {
     cropRect = makeCropRect(cropInteraction.start, point, capturedImage.width, capturedImage.height);
   }
@@ -169,6 +186,7 @@ preview.addEventListener("pointermove", (event) => {
 
 preview.addEventListener("pointerup", () => {
   cropInteraction = null;
+  preview.style.cursor = "crosshair";
 });
 
 cropAspectInput.addEventListener("change", () => {
@@ -386,11 +404,14 @@ stitchPreview.addEventListener("pointermove", (event) => {
 stitchPreview.addEventListener("pointerup", () => {
   if (!stitchDrag) return;
   const didSwap = maybeSwapStitchItem(stitchDrag.item, stitchDrag.startX, stitchDrag.startY);
+  const didSnap = !didSwap && snapStitchItemToNearbyEdges(stitchDrag.item);
   stitchDrag = null;
   redrawStitchPreview();
   stitchStatus.textContent = didSwap
     ? "已识别为大格调整，并交换两个格子。小范围拖动仍然是自由微调。"
-    : "位置已调整。可以继续拖动、自动对齐，或下载拼合图。";
+    : didSnap
+      ? "已吸附到相邻图片边缘。可以继续微调，或下载拼合图。"
+      : "位置已调整。可以继续拖动、自动对齐，或下载拼合图。";
 });
 
 stitchPreview.addEventListener("pointercancel", () => {
@@ -906,12 +927,14 @@ function renderPreview() {
     );
     previewContext.strokeStyle = "rgba(255, 255, 255, 0.95)";
     previewContext.lineWidth = 2;
-    previewContext.strokeRect(
-      drawX + cropRect.x * scale,
-      drawY + cropRect.y * scale,
-      cropRect.width * scale,
-      cropRect.height * scale,
-    );
+    const cropDrawRect = {
+      x: drawX + cropRect.x * scale,
+      y: drawY + cropRect.y * scale,
+      width: cropRect.width * scale,
+      height: cropRect.height * scale,
+    };
+    previewContext.strokeRect(cropDrawRect.x, cropDrawRect.y, cropDrawRect.width, cropDrawRect.height);
+    drawCropHandles(cropDrawRect);
     previewContext.fillStyle = "rgba(17, 19, 25, 0.76)";
     previewContext.fillRect(
       drawX + cropRect.x * scale,
@@ -1003,7 +1026,7 @@ async function stitchProcessedTiles() {
     if (!file) continue;
     const url = URL.createObjectURL(file);
     const image = await loadImage(url);
-    const canvas = makeFeatheredTile(image, tile, stitchPlan.width, stitchPlan.height);
+    const canvas = makeStitchTile(image, tile);
     URL.revokeObjectURL(url);
     const context = canvas.getContext("2d");
     stitchPlacedItems.push({
@@ -1242,6 +1265,57 @@ function maybeSwapStitchItem(item, startX, startY) {
   return true;
 }
 
+function snapStitchItemToNearbyEdges(item) {
+  const snapDistance = Math.max(12, Math.min(item.width, item.height) * 0.025);
+  let bestX = { value: item.x, distance: snapDistance + 1 };
+  let bestY = { value: item.y, distance: snapDistance + 1 };
+
+  for (const candidate of stitchPlacedItems) {
+    if (candidate === item) continue;
+
+    const xTargets = [
+      candidate.x,
+      candidate.x + candidate.width,
+      (candidate.slotX ?? candidate.x),
+      (candidate.slotX ?? candidate.x) + candidate.width,
+    ];
+    const itemXEdges = [
+      { edge: item.x, toX: (target) => target },
+      { edge: item.x + item.width, toX: (target) => target - item.width },
+    ];
+    for (const target of xTargets) {
+      for (const edge of itemXEdges) {
+        const distance = Math.abs(edge.edge - target);
+        if (distance < bestX.distance) bestX = { value: Math.round(edge.toX(target)), distance };
+      }
+    }
+
+    const yTargets = [
+      candidate.y,
+      candidate.y + candidate.height,
+      (candidate.slotY ?? candidate.y),
+      (candidate.slotY ?? candidate.y) + candidate.height,
+    ];
+    const itemYEdges = [
+      { edge: item.y, toY: (target) => target },
+      { edge: item.y + item.height, toY: (target) => target - item.height },
+    ];
+    for (const target of yTargets) {
+      for (const edge of itemYEdges) {
+        const distance = Math.abs(edge.edge - target);
+        if (distance < bestY.distance) bestY = { value: Math.round(edge.toY(target)), distance };
+      }
+    }
+  }
+
+  const nextX = bestX.distance <= snapDistance ? bestX.value : item.x;
+  const nextY = bestY.distance <= snapDistance ? bestY.value : item.y;
+  const changed = nextX !== item.x || nextY !== item.y;
+  item.x = nextX;
+  item.y = nextY;
+  return changed;
+}
+
 function autoAlignPlacedItems() {
   const maxShift = 48;
   const step = 4;
@@ -1397,33 +1471,12 @@ async function buildImageOnlyStitchPlan() {
   };
 }
 
-function makeFeatheredTile(image, tile, targetWidth, targetHeight) {
+function makeStitchTile(image, tile) {
   const canvas = document.createElement("canvas");
   canvas.width = tile.width;
   canvas.height = tile.height;
   const context = canvas.getContext("2d");
   context.drawImage(image, 0, 0, tile.width, tile.height);
-
-  const feather = Math.max(8, Math.round(Math.min(tile.width, tile.height) * 0.08));
-  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const leftFeather = tile.x > 0 ? feather : 0;
-  const topFeather = tile.y > 0 ? feather : 0;
-  const rightFeather = tile.x + tile.width < targetWidth ? feather : 0;
-  const bottomFeather = tile.y + tile.height < targetHeight ? feather : 0;
-
-  for (let y = 0; y < canvas.height; y += 1) {
-    for (let x = 0; x < canvas.width; x += 1) {
-      let alpha = 1;
-      if (leftFeather) alpha = Math.min(alpha, x / leftFeather);
-      if (topFeather) alpha = Math.min(alpha, y / topFeather);
-      if (rightFeather) alpha = Math.min(alpha, (canvas.width - 1 - x) / rightFeather);
-      if (bottomFeather) alpha = Math.min(alpha, (canvas.height - 1 - y) / bottomFeather);
-      data[(y * canvas.width + x) * 4 + 3] = Math.round(data[(y * canvas.width + x) * 4 + 3] * Math.max(0, Math.min(1, alpha)));
-    }
-  }
-
-  context.putImageData(imageData, 0, 0);
   return canvas;
 }
 
@@ -1432,14 +1485,18 @@ function keyFromFilename(name) {
   return match ? `${Number(match[1])}-${Number(match[2])}` : "";
 }
 
-function canvasPointToImage(event) {
+function canvasPointToImage(event, options = {}) {
   if (!previewMetrics) return null;
   const rect = preview.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const canvasX = (event.clientX - rect.left) * dpr;
   const canvasY = (event.clientY - rect.top) * dpr;
-  const x = (canvasX - previewMetrics.drawX) / previewMetrics.scale;
-  const y = (canvasY - previewMetrics.drawY) / previewMetrics.scale;
+  let x = (canvasX - previewMetrics.drawX) / previewMetrics.scale;
+  let y = (canvasY - previewMetrics.drawY) / previewMetrics.scale;
+  if (options.clamp) {
+    x = Math.max(0, Math.min(capturedImage.width, x));
+    y = Math.max(0, Math.min(capturedImage.height, y));
+  }
   if (x < 0 || y < 0 || x > capturedImage.width || y > capturedImage.height) return null;
   return {
     x: Math.round(x),
@@ -1508,6 +1565,44 @@ function moveRect(rect, dx, dy, imageWidth, imageHeight) {
   };
 }
 
+function resizeCropRect(origin, handle, point, imageWidth, imageHeight) {
+  const minSize = 8;
+  const ratio = getCropAspectRatio();
+
+  if (ratio && handle.length === 2) {
+    const anchor = {
+      x: handle.includes("w") ? origin.x + origin.width : origin.x,
+      y: handle.includes("n") ? origin.y + origin.height : origin.y,
+    };
+    return makeCropRect(anchor, point, imageWidth, imageHeight);
+  }
+
+  let left = origin.x;
+  let top = origin.y;
+  let right = origin.x + origin.width;
+  let bottom = origin.y + origin.height;
+
+  if (handle.includes("w")) left = Math.min(point.x, right - minSize);
+  if (handle.includes("e")) right = Math.max(point.x, left + minSize);
+  if (handle.includes("n")) top = Math.min(point.y, bottom - minSize);
+  if (handle.includes("s")) bottom = Math.max(point.y, top + minSize);
+
+  left = Math.max(0, Math.min(imageWidth - minSize, left));
+  top = Math.max(0, Math.min(imageHeight - minSize, top));
+  right = Math.max(left + minSize, Math.min(imageWidth, right));
+  bottom = Math.max(top + minSize, Math.min(imageHeight, bottom));
+
+  let rect = {
+    x: Math.round(left),
+    y: Math.round(top),
+    width: Math.round(right - left),
+    height: Math.round(bottom - top),
+  };
+
+  if (ratio) rect = fitExistingCropToAspect(rect, imageWidth, imageHeight);
+  return rect;
+}
+
 function fitExistingCropToAspect(rect, imageWidth, imageHeight) {
   const ratio = getCropAspectRatio();
   if (!ratio) return rect;
@@ -1563,6 +1658,65 @@ function pointInRect(point, rect) {
     point.x <= rect.x + rect.width &&
     point.y <= rect.y + rect.height
   );
+}
+
+function cropHandleAtPoint(point) {
+  if (!cropRect || !previewMetrics) return "";
+  const tolerance = Math.max(6, 10 / previewMetrics.scale);
+  const left = cropRect.x;
+  const right = cropRect.x + cropRect.width;
+  const top = cropRect.y;
+  const bottom = cropRect.y + cropRect.height;
+  const nearLeft = Math.abs(point.x - left) <= tolerance;
+  const nearRight = Math.abs(point.x - right) <= tolerance;
+  const nearTop = Math.abs(point.y - top) <= tolerance;
+  const nearBottom = Math.abs(point.y - bottom) <= tolerance;
+  const insideX = point.x >= left - tolerance && point.x <= right + tolerance;
+  const insideY = point.y >= top - tolerance && point.y <= bottom + tolerance;
+
+  if (nearTop && nearLeft) return "nw";
+  if (nearTop && nearRight) return "ne";
+  if (nearBottom && nearLeft) return "sw";
+  if (nearBottom && nearRight) return "se";
+  if (nearTop && insideX) return "n";
+  if (nearBottom && insideX) return "s";
+  if (nearLeft && insideY) return "w";
+  if (nearRight && insideY) return "e";
+  return "";
+}
+
+function cropCursorAtPoint(point) {
+  const handle = cropHandleAtPoint(point);
+  if (handle === "nw" || handle === "se") return "nwse-resize";
+  if (handle === "ne" || handle === "sw") return "nesw-resize";
+  if (handle === "n" || handle === "s") return "ns-resize";
+  if (handle === "w" || handle === "e") return "ew-resize";
+  if (cropRect && pointInRect(point, cropRect)) return "move";
+  return "crosshair";
+}
+
+function drawCropHandles(rect) {
+  const size = 10;
+  const half = size / 2;
+  const points = [
+    [rect.x, rect.y],
+    [rect.x + rect.width / 2, rect.y],
+    [rect.x + rect.width, rect.y],
+    [rect.x, rect.y + rect.height / 2],
+    [rect.x + rect.width, rect.y + rect.height / 2],
+    [rect.x, rect.y + rect.height],
+    [rect.x + rect.width / 2, rect.y + rect.height],
+    [rect.x + rect.width, rect.y + rect.height],
+  ];
+  previewContext.save();
+  previewContext.fillStyle = "#f3f5f7";
+  previewContext.strokeStyle = "#101114";
+  previewContext.lineWidth = 2;
+  for (const [x, y] of points) {
+    previewContext.fillRect(x - half, y - half, size, size);
+    previewContext.strokeRect(x - half, y - half, size, size);
+  }
+  previewContext.restore();
 }
 
 async function copyTile(tile) {
