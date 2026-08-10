@@ -687,13 +687,38 @@ function groupItems(items) {
 }
 
 function baseFilteredItems() {
+  const typeOrder = Object.keys(TYPE_LABELS);
+  const activeTypeIndex = typeOrder.indexOf(activeType);
+  const continuousTypes = activeTypeIndex >= 0 ? typeOrder.slice(activeTypeIndex) : [];
+
   return allItems
     .filter((item) => Number(item.slide) > 1 || item.id)
-    .filter((item) => matchesRule(item, TYPE_RULES, activeType, "types"))
+    .filter((item) => {
+      if (!continuousTypes.length) return matchesRule(item, TYPE_RULES, activeType, "types");
+      return continuousTypes.some((type) => matchesRule(item, TYPE_RULES, type, "types"));
+    })
     .filter((item) => {
       if (!activeCase) return true;
       return projectForItem(item)?.id === activeCase.id;
     });
+}
+
+function groupedMaterialSections(items) {
+  const typeOrder = Object.keys(TYPE_LABELS);
+  const activeTypeIndex = typeOrder.indexOf(activeType);
+  if (activeTypeIndex < 0) return [{ type: null, groups: groupItems(items) }];
+
+  const seen = new Set();
+  return typeOrder.slice(activeTypeIndex).map((type) => {
+    const groups = groupItems(items.filter((item) => matchesRule(item, TYPE_RULES, type, "types")))
+      .filter((group) => {
+        const key = groupKeyForItem(group.primary);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    return { type, groups };
+  }).filter((section) => section.groups.length > 0);
 }
 
 function watermarkMarkup(file) {
@@ -785,63 +810,78 @@ function renderItems(items) {
   const browser = document.querySelector("#archive-browser");
 
   title.textContent = currentLabel();
-  renderedGroups = groupItems(items);
+  const sections = groupedMaterialSections(items);
+  renderedGroups = sections.flatMap((section) => section.groups);
   count.textContent = showingProjectList ? count.textContent : `共 ${renderedGroups.length} 项`;
   empty.hidden = items.length > 0;
   browser.hidden = showingProjectList;
   browser.classList.toggle("is-filtered", !showingProjectList);
   grid.classList.toggle("is-list", !showingProjectList);
 
-  grid.replaceChildren(...renderedGroups.map((group, index) => {
-    const item = group.primary;
-    const type = typeForItem(item);
-    const project = projectForItem(item);
-    const caption = artworkCaption(item.title, project, item);
-    const ratioClasses = group.items.map((entry) => ratioClassForFile(entry.file));
-    const isTwoUltrawide = group.items.length === 2
-      && ratioClasses.every((className) => className === "is-ultrawide");
-    const card = document.createElement("article");
-    card.className = "archive-work-card";
-    if (editorPreview) card.dataset.editorItemIds = group.items.map((entry) => entry.id).join(",");
-    if (group.items.length > 1) card.classList.add("is-horizontal-strip");
-    if (isTwoUltrawide) card.classList.add("is-two-ultrawide");
-    card.dataset.groupIndex = String(index);
-    card.dataset.title = cleanTitle(item.title);
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
-    card.innerHTML = `
-      <div class="archive-work-carousel-shell">
-        <div
-          class="archive-work-carousel"
-          data-inline-carousel
-          data-index="0"
-        >
-          <div class="archive-work-track" data-inline-track>
-            ${group.items.map((entry, imageIndex) => `
-              <span class="archive-image-frame ${ratioClassForFile(entry.file)}"${editorPreview ? ` data-editor-item-id="${entry.id}"` : ""}>
-                ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
-                ${watermarkMarkup(entry.file)}
-              </span>
-            `).join("")}
+  const cards = [];
+  let groupIndex = 0;
+  sections.forEach((section, sectionIndex) => {
+    const isFollowingType = section.type && section.type !== activeType;
+    if (sectionIndex > 0 || isFollowingType) {
+      const divider = document.createElement("header");
+      divider.className = "archive-material-continuation";
+      divider.innerHTML = `<small>继续浏览</small><h3>${TYPE_LABELS[section.type]}</h3>`;
+      cards.push(divider);
+    }
+
+    section.groups.forEach((group) => {
+      const item = group.primary;
+      const type = typeForItem(item);
+      const project = projectForItem(item);
+      const caption = artworkCaption(item.title, project, item);
+      const ratioClasses = group.items.map((entry) => ratioClassForFile(entry.file));
+      const isTwoUltrawide = group.items.length === 2
+        && ratioClasses.every((className) => className === "is-ultrawide");
+      const card = document.createElement("article");
+      card.className = "archive-work-card";
+      if (editorPreview) card.dataset.editorItemIds = group.items.map((entry) => entry.id).join(",");
+      if (group.items.length > 1) card.classList.add("is-horizontal-strip");
+      if (isTwoUltrawide) card.classList.add("is-two-ultrawide");
+      card.dataset.groupIndex = String(groupIndex);
+      card.dataset.title = cleanTitle(item.title);
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.setAttribute("aria-label", `查看 ${cleanTitle(item.title)}`);
+      card.innerHTML = `
+        <div class="archive-work-carousel-shell">
+          <div
+            class="archive-work-carousel"
+            data-inline-carousel
+            data-index="0"
+          >
+            <div class="archive-work-track" data-inline-track>
+              ${group.items.map((entry, imageIndex) => `
+                <span class="archive-image-frame ${ratioClassForFile(entry.file)}"${editorPreview ? ` data-editor-item-id="${entry.id}"` : ""}>
+                  ${portfolioImageMarkup(entry.file, entry.title, { imageIndex })}
+                  ${watermarkMarkup(entry.file)}
+                </span>
+              `).join("")}
+            </div>
           </div>
+          ${group.items.length > 1 ? `
+            <button class="archive-work-nav previous" type="button" data-inline-nav="previous" aria-label="上一组图片">‹</button>
+            <button class="archive-work-nav next" type="button" data-inline-nav="next" aria-label="下一组图片">›</button>
+          ` : ""}
         </div>
-        ${group.items.length > 1 ? `
-          <button class="archive-work-nav previous" type="button" data-inline-nav="previous" aria-label="上一组图片">‹</button>
-          <button class="archive-work-nav next" type="button" data-inline-nav="next" aria-label="下一组图片">›</button>
-        ` : ""}
-      </div>
-      <span class="archive-work-meta">${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
-      <div class="archive-work-caption">
-        <strong data-editor-item-field="captionName"${textStyle(item.captionStyles?.name)}>${caption.workName}</strong>
-        ${caption.description || editorPreview ? `<span data-editor-item-field="captionDescription"${textStyle(item.captionStyles?.description)}>${caption.description}</span>` : ""}
-      </div>
-      ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张</em>` : ""}
-    `;
-    classifyImageRatios(card);
-    bindInlineStrip(card);
-    return card;
-  }));
+        <span class="archive-work-meta">${project?.meta || "作品"} / ${TYPE_LABELS[type]}</span>
+        <div class="archive-work-caption">
+          <strong data-editor-item-field="captionName"${textStyle(item.captionStyles?.name)}>${caption.workName}</strong>
+          ${caption.description || editorPreview ? `<span data-editor-item-field="captionDescription"${textStyle(item.captionStyles?.description)}>${caption.description}</span>` : ""}
+        </div>
+        ${group.items.length > 1 ? `<em class="archive-work-count">${group.items.length} 张${isTwoUltrawide ? "" : "<small>左滑看全部</small>"}</em>` : ""}
+      `;
+      classifyImageRatios(card);
+      bindInlineStrip(card);
+      cards.push(card);
+      groupIndex += 1;
+    });
+  });
+  grid.replaceChildren(...cards);
 }
 
 function updateLightboxImage(viewer) {
@@ -1068,14 +1108,20 @@ function scrollToResults() {
   });
 }
 
-function bindMobileSidebar() {
+function bindArchiveSidebar() {
   const sidebar = document.querySelector(".archive-sidebar");
+  const shell = document.querySelector(".archive-shell");
   const toggle = document.querySelector("[data-archive-sidebar-toggle]");
   const scrim = document.querySelector("[data-archive-sidebar-scrim]");
-  if (!sidebar || !toggle || !scrim) return;
+  if (!sidebar || !shell || !toggle || !scrim) return;
   const mobileQuery = window.matchMedia("(max-width: 1180px)");
+  const desktopHoverQuery = window.matchMedia("(min-width: 1181px) and (hover: hover) and (pointer: fine)");
+  const sidebarPreferenceKey = "zaiyeArchiveSidebar";
+  let hoverTimer = 0;
+  let leaveTimer = 0;
+  let desktopPinned = window.localStorage.getItem(sidebarPreferenceKey) !== "collapsed";
 
-  const setOpen = (open) => {
+  const setMobileOpen = (open) => {
     const nextOpen = mobileQuery.matches && open;
     sidebar.classList.toggle("is-open", nextOpen);
     document.body.classList.toggle("is-archive-menu-open", nextOpen);
@@ -1084,24 +1130,80 @@ function bindMobileSidebar() {
     scrim.tabIndex = nextOpen ? 0 : -1;
   };
 
+  const clearDesktopTimers = () => {
+    window.clearTimeout(hoverTimer);
+    window.clearTimeout(leaveTimer);
+  };
+
+  const renderDesktopSidebar = (peeking = false) => {
+    if (!desktopHoverQuery.matches) return;
+    const collapsed = !desktopPinned;
+    sidebar.classList.toggle("is-desktop-collapsed", collapsed);
+    sidebar.classList.toggle("is-desktop-peeking", collapsed && peeking);
+    shell.classList.toggle("is-sidebar-collapsed", collapsed);
+    toggle.textContent = collapsed && !peeking ? "»" : "«";
+    toggle.setAttribute("aria-label", collapsed && !peeking ? "展开作品菜单" : "收起作品菜单");
+    toggle.setAttribute("aria-expanded", String(!collapsed || peeking));
+  };
+
+  const resetForViewport = () => {
+    clearDesktopTimers();
+    sidebar.classList.remove("is-desktop-collapsed", "is-desktop-peeking");
+    shell.classList.remove("is-sidebar-collapsed");
+    if (mobileQuery.matches) {
+      setMobileOpen(false);
+    } else {
+      sidebar.classList.remove("is-open");
+      document.body.classList.remove("is-archive-menu-open");
+      renderDesktopSidebar(false);
+    }
+  };
+
   toggle.addEventListener("click", () => {
-    setOpen(!sidebar.classList.contains("is-open"));
+    if (mobileQuery.matches) {
+      setMobileOpen(!sidebar.classList.contains("is-open"));
+      return;
+    }
+    desktopPinned = !desktopPinned;
+    window.localStorage.setItem(sidebarPreferenceKey, desktopPinned ? "open" : "collapsed");
+    renderDesktopSidebar(false);
   });
-  scrim.addEventListener("click", () => setOpen(false));
+  sidebar.addEventListener("pointerenter", () => {
+    if (!desktopHoverQuery.matches || desktopPinned) return;
+    window.clearTimeout(leaveTimer);
+    hoverTimer = window.setTimeout(() => renderDesktopSidebar(true), 1000);
+  });
+  sidebar.addEventListener("pointerleave", () => {
+    if (!desktopHoverQuery.matches || desktopPinned) return;
+    window.clearTimeout(hoverTimer);
+    leaveTimer = window.setTimeout(() => renderDesktopSidebar(false), 320);
+  });
+  sidebar.addEventListener("focusin", () => {
+    if (desktopHoverQuery.matches && !desktopPinned) renderDesktopSidebar(true);
+  });
+  sidebar.addEventListener("focusout", (event) => {
+    if (desktopHoverQuery.matches && !desktopPinned && !sidebar.contains(event.relatedTarget)) {
+      renderDesktopSidebar(false);
+    }
+  });
+  scrim.addEventListener("click", () => setMobileOpen(false));
   sidebar.addEventListener("click", (event) => {
-    if (event.target.closest("a[data-filter-link]")) setOpen(false);
+    if (event.target.closest("a[data-filter-link]") && mobileQuery.matches) setMobileOpen(false);
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && sidebar.classList.contains("is-open")) setOpen(false);
+    if (event.key !== "Escape") return;
+    if (sidebar.classList.contains("is-open")) setMobileOpen(false);
+    if (sidebar.classList.contains("is-desktop-peeking")) renderDesktopSidebar(false);
   });
-  mobileQuery.addEventListener("change", () => setOpen(false));
-  setOpen(false);
+  mobileQuery.addEventListener("change", resetForViewport);
+  desktopHoverQuery.addEventListener("change", resetForViewport);
+  resetForViewport();
 }
 
 async function initGallery() {
   document.body.classList.toggle("is-portfolio-editor-preview", editorPreview);
   bindMenu();
-  bindMobileSidebar();
+  bindArchiveSidebar();
   bindLightbox();
   bindPortfolioImageFallbacks();
   registerPortfolioCache();
