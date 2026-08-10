@@ -254,6 +254,10 @@
   position: sticky;
   top: 220px;
   gap: 6px;
+  max-height: calc(100dvh - 244px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .notes-nav-group {
@@ -517,6 +521,7 @@
   #notesNav {
     position: static;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: min(55dvh, 520px);
   }
 
   .notes-content {

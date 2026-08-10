@@ -50,6 +50,7 @@ let ownerSecret = "";
 let assetKeyPromise = null;
 let mediaObserver = null;
 let sessionChannel = null;
+const manuallyCollapsedCategories = new Set();
 const assetUrlCache = new Map();
 const activeAssetUrls = new Set();
 
@@ -264,6 +265,7 @@ function validateNotes(value) {
 function openNotebook(data, nextMode) {
   notes = validateNotes(data);
   mode = nextMode;
+  manuallyCollapsedCategories.clear();
   elements.accessPanel.hidden = true;
   elements.notesApp.hidden = false;
   elements.modeLabel.textContent = mode === "owner" ? "私人笔记" : "仅保存在本机";
@@ -454,10 +456,11 @@ function createNavigation() {
     categoryButton.type = "button";
     categoryButton.className = "notes-nav-button";
     categoryButton.textContent = category.title;
-    categoryButton.setAttribute("aria-expanded", categoryIndex === 0 ? "true" : "false");
+    const isInitiallyOpen = categoryIndex === 0 && !manuallyCollapsedCategories.has(categoryIndex);
+    categoryButton.setAttribute("aria-expanded", String(isInitiallyOpen));
 
     const subnav = document.createElement("div");
-    subnav.className = `notes-subnav${categoryIndex === 0 ? " is-open" : ""}`;
+    subnav.className = `notes-subnav${isInitiallyOpen ? " is-open" : ""}`;
     category.sections.forEach((section, sectionIndex) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -472,8 +475,13 @@ function createNavigation() {
       const willOpen = categoryButton.getAttribute("aria-expanded") !== "true";
       categoryButton.setAttribute("aria-expanded", String(willOpen));
       subnav.classList.toggle("is-open", willOpen);
+      if (willOpen) {
+        manuallyCollapsedCategories.delete(categoryIndex);
+      } else {
+        manuallyCollapsedCategories.add(categoryIndex);
+      }
       const categoryElement = elements.notesContent.querySelector(`#category-${category.id}`);
-      if (categoryElement) scrollToNote(categoryElement);
+      if (willOpen && categoryElement) scrollToNote(categoryElement);
     });
     group.append(categoryButton, subnav);
     fragment.append(group);
@@ -550,8 +558,10 @@ function setActiveNavigation(categoryIndex, sectionIndex) {
 
   const group = elements.notesNav.querySelector(`.notes-nav-group[data-category-index="${categoryIndex}"]`);
   if (!group) return;
-  group.querySelector(".notes-nav-button").setAttribute("aria-expanded", "true");
-  group.querySelector(".notes-subnav").classList.add("is-open");
+  if (!manuallyCollapsedCategories.has(Number(categoryIndex))) {
+    group.querySelector(".notes-nav-button").setAttribute("aria-expanded", "true");
+    group.querySelector(".notes-subnav").classList.add("is-open");
+  }
 }
 
 function syncActiveNavigation() {
