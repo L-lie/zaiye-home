@@ -688,7 +688,8 @@ function groupItems(items) {
 
 function baseFilteredItems() {
   const typeOrder = Object.keys(TYPE_LABELS);
-  const activeTypeIndex = typeOrder.indexOf(activeType);
+  const sequenceStartType = showingProjectList && !activeProject ? "atmosphere" : activeType;
+  const activeTypeIndex = typeOrder.indexOf(sequenceStartType);
   const continuousTypes = activeTypeIndex >= 0 ? typeOrder.slice(activeTypeIndex) : [];
 
   return allItems
@@ -705,7 +706,8 @@ function baseFilteredItems() {
 
 function groupedMaterialSections(items) {
   const typeOrder = Object.keys(TYPE_LABELS);
-  const activeTypeIndex = typeOrder.indexOf(activeType);
+  const sequenceStartType = showingProjectList && !activeProject ? "atmosphere" : activeType;
+  const activeTypeIndex = typeOrder.indexOf(sequenceStartType);
   if (activeTypeIndex < 0) return [{ type: null, groups: groupItems(items) }];
 
   const seen = new Set();
@@ -808,20 +810,25 @@ function renderItems(items) {
   const count = document.querySelector("[data-gallery-count]");
   const title = document.querySelector("[data-gallery-title]");
   const browser = document.querySelector("#archive-browser");
+  const threshold = document.querySelector("[data-material-threshold]");
+  const showingMaterialBridge = showingProjectList && !activeProject;
 
-  title.textContent = currentLabel();
+  title.textContent = showingMaterialBridge ? TYPE_LABELS.atmosphere : currentLabel();
   const sections = groupedMaterialSections(items);
   renderedGroups = sections.flatMap((section) => section.groups);
   count.textContent = showingProjectList ? count.textContent : `共 ${renderedGroups.length} 项`;
   empty.hidden = items.length > 0;
-  browser.hidden = showingProjectList;
-  browser.classList.toggle("is-filtered", !showingProjectList);
-  grid.classList.toggle("is-list", !showingProjectList);
+  threshold.hidden = !showingMaterialBridge;
+  browser.hidden = showingProjectList && !showingMaterialBridge;
+  browser.classList.toggle("is-filtered", !showingProjectList || showingMaterialBridge);
+  browser.classList.toggle("is-after-projects", showingMaterialBridge);
+  grid.classList.toggle("is-list", !showingProjectList || showingMaterialBridge);
 
   const cards = [];
   let groupIndex = 0;
   sections.forEach((section, sectionIndex) => {
-    const isFollowingType = section.type && section.type !== activeType;
+    const sequenceStartType = showingMaterialBridge ? "atmosphere" : activeType;
+    const isFollowingType = section.type && section.type !== sequenceStartType;
     if (sectionIndex > 0 || isFollowingType) {
       const divider = document.createElement("header");
       divider.className = "archive-material-continuation";
@@ -1126,7 +1133,7 @@ function bindArchiveSidebar() {
     sidebar.classList.toggle("is-open", nextOpen);
     document.body.classList.toggle("is-archive-menu-open", nextOpen);
     toggle.setAttribute("aria-expanded", String(nextOpen));
-    toggle.textContent = nextOpen ? "收起菜单" : "菜单";
+    toggle.textContent = nextOpen ? "收起分类" : "分类";
     scrim.tabIndex = nextOpen ? 0 : -1;
   };
 
@@ -1142,7 +1149,7 @@ function bindArchiveSidebar() {
     sidebar.classList.toggle("is-desktop-peeking", collapsed && peeking);
     shell.classList.toggle("is-sidebar-collapsed", collapsed);
     toggle.textContent = collapsed && !peeking ? "»" : "«";
-    toggle.setAttribute("aria-label", collapsed && !peeking ? "展开作品菜单" : "收起作品菜单");
+    toggle.setAttribute("aria-label", collapsed && !peeking ? "展开作品分类" : "收起作品分类");
     toggle.setAttribute("aria-expanded", String(!collapsed || peeking));
   };
 
