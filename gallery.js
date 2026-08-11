@@ -1178,7 +1178,7 @@ function bindArchiveSidebar() {
   sidebar.addEventListener("pointerenter", () => {
     if (!desktopHoverQuery.matches || desktopPinned) return;
     window.clearTimeout(leaveTimer);
-    hoverTimer = window.setTimeout(() => renderDesktopSidebar(true), 1000);
+    hoverTimer = window.setTimeout(() => renderDesktopSidebar(true), 200);
   });
   sidebar.addEventListener("pointerleave", () => {
     if (!desktopHoverQuery.matches || desktopPinned) return;
@@ -1207,10 +1207,36 @@ function bindArchiveSidebar() {
   resetForViewport();
 }
 
+function bindArchiveSearch() {
+  const container = document.querySelector(".archive-header-search");
+  const toggle = document.querySelector("[data-gallery-search-toggle]");
+  const panel = document.querySelector("#archive-search-panel");
+  const input = document.querySelector("[data-gallery-search]");
+  if (!container || !toggle || !panel || !input) return;
+
+  const setOpen = (open) => {
+    panel.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    if (open) window.requestAnimationFrame(() => input.focus());
+  };
+
+  toggle.addEventListener("click", () => setOpen(panel.hidden));
+  input.addEventListener("input", applySearch);
+  input.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    setOpen(false);
+    toggle.focus();
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!panel.hidden && !container.contains(event.target)) setOpen(false);
+  });
+}
+
 async function initGallery() {
   document.body.classList.toggle("is-portfolio-editor-preview", editorPreview);
   bindMenu();
   bindArchiveSidebar();
+  bindArchiveSearch();
   bindLightbox();
   bindPortfolioImageFallbacks();
   registerPortfolioCache();
@@ -1235,7 +1261,6 @@ async function initGallery() {
   renderItems(filteredItems);
   scrollToResults();
 
-  document.querySelector("[data-gallery-search]").addEventListener("input", applySearch);
 }
 
 initGallery().catch(() => {
