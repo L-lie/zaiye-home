@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Reference Dock</title>
+  <desc id="desc">三张参考卡片与一个橙色取色点组成的停靠面板图标</desc>
+  <rect x="6" y="6" width="116" height="116" rx="27" fill="#17191D"/>
+  <rect x="28" y="32" width="38" height="38" rx="6" fill="#F5F6F7"/>
+  <rect x="73" y="32" width="28" height="25" rx="5" fill="#D8DADD"/>
+  <rect x="73" y="64" width="32" height="39" rx="6" fill="#777B82"/>
+  <circle cx="101" cy="99" r="11" fill="#FF654D"/>
+</svg>

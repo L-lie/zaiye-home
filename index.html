@@ -14,7 +14,7 @@
     <meta property="og:title" content="再野｜再野文化工作室 · 影视美术与场景视觉" />
     <meta
       property="og:description"
-      content="把文字里的世界做成镜头里的现场。查看再野文化工作室的作品、美术资料、学习笔记和创作工具。"
+      content="把文字世界做成镜头里的现场。查看再野文化工作室的作品、美术资料、学习笔记和创作工具。"
     />
     <meta property="og:url" content="https://zaiye.art/" />
     <meta property="og:image" content="https://zaiye.art/assets/hero-production-design.png" />
@@ -54,7 +54,7 @@
       document.documentElement.dataset.theme = localStorage.getItem("zaiye-site-theme") === "light" ? "light" : "dark";
     </script>
     <link rel="preload" href="assets/hero-production-design.webp" as="image" type="image/webp" />
-    <link rel="stylesheet" href="home-preview.css?v=20260803-1" />
+    <link rel="stylesheet" href="home-preview.css?v=20260816-3" />
   </head>
   <body>
     <div class="scene" aria-hidden="true">
@@ -96,8 +96,25 @@
       <section class="studio-stop entrance is-active" id="entrance" data-scene="entrance" data-title="入口">
         <div class="entrance-copy">
           <p class="entrance-label">影视美术 / 场景视觉 / 陈设道具 / 舞台综艺</p>
-          <h1>把文字里的世界做成镜头里的现场</h1>
-          <p>再野文化工作室参与电影、网大、剧集、综艺、舞台与宣传片项目的美术设计工作。</p>
+          <h1><span>把文字世界</span><span>做成镜头里的现场</span></h1>
+          <p class="entrance-intro">从概念到银幕，为影视项目构建视觉世界。<br />场景设计 · 气氛图 · 道具与空间叙事。</p>
+          <div class="czt-framework">
+            <p class="czt-signature"><strong>CZT.</strong><span>Creation · Zone · Technology</span></p>
+            <nav class="czt-map" aria-label="CZT 工作室结构">
+              <a href="#work-wall">
+                <span class="czt-letter">C</span>
+                <span><strong>Creation</strong><small>创作 — 影视美术作品、场景视觉与实际创作成果</small></span>
+              </a>
+              <a href="#study-desk">
+                <span class="czt-letter">Z</span>
+                <span><strong>Zone</strong><small>空间 — 工作室、学习笔记与 Canvas</small></span>
+              </a>
+              <a href="#tool-room">
+                <span class="czt-letter">T</span>
+                <span><strong>Technology</strong><small>技术 — 创作技术与工具，进入再野造物 →</small></span>
+              </a>
+            </nav>
+          </div>
         </div>
       </section>
 
@@ -116,7 +133,9 @@
           <h2>创作工具</h2>
           <p>Prompt 管理、图片处理和工作中反复使用的小工具。</p>
           <div class="zone-actions">
-            <a class="zone-link" href="prompt-vault.html">Prompt Vault</a>
+            <a class="zone-link" href="tools/index.html">进入再野造物</a>
+            <a class="zone-link zone-link-secondary" href="prompt-vault.html">语藏</a>
+            <a class="zone-link zone-link-secondary" href="reference-dock/">参考图坞</a>
             <a class="zone-link zone-link-secondary" href="tools/overlap-slicer/index.html">重叠切图</a>
           </div>
         </article>
@@ -130,6 +149,7 @@
           <a class="zone-link" href="notes.html">查看笔记</a>
         </article>
         <div class="inline-contact" id="contact">
+          <span>CZT.</span>
           <span>联系</span>
           <a href="mailto:comiccai@163.com">comiccai@163.com</a>
           <span>微信 czt424</span>

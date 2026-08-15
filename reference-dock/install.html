@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Reference Dock 安装指南。支持 CCX 常规安装，以及通过 UXP Developer Tool 加载开发版。"
+    />
+    <title>安装参考图坞 | CZT. Reference Dock</title>
+    <link rel="canonical" href="https://zaiye.art/reference-dock/install.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="安装参考图坞 | CZT. Reference Dock" />
+    <meta
+      property="og:description"
+      content="选择 CCX 常规安装或 UXP Developer Tool 本地加载，把 Reference Dock 放进 Photoshop。"
+    />
+    <meta property="og:url" content="https://zaiye.art/reference-dock/install.html" />
+    <link rel="icon" href="../assets/reference-dock/reference-dock-logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="install.css?v=20260815-1" />
+    <link rel="stylesheet" href="../tools/product-nav.css?v=20260816-1" />
+  </head>
+  <body>
+    <header class="czt-product-header">
+      <a class="czt-product-brand" href="../tools/index.html"><strong>CZT.</strong><span>再野造物</span></a>
+      <nav class="czt-product-nav" aria-label="产品导航">
+        <a href="./">参考图坞主页</a>
+        <a href="#choose" aria-current="page">安装方法</a>
+        <a href="#troubleshooting">安装排错</a>
+        <a href="../tools/index.html">其他工具</a>
+      </nav>
+      <a class="czt-studio-link" href="../index.html#tool-room">↖ 返回再野文化</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <div class="hero-copy">
+          <p class="eyebrow">再造 · 参考图坞 / CZT. REFERENCE DOCK</p>
+          <h1 id="page-title">把 Reference Dock<br />装进 Photoshop</h1>
+          <p>
+            先选择你能使用的安装方式。可以使用 Creative Cloud 安装器时下载 CCX；安装器不可用时，通过 UXP Developer Tool 加载开发版文件夹。
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#choose">开始安装</a>
+            <a class="button button-secondary" href="#troubleshooting">遇到问题</a>
+          </div>
+        </div>
+        <div class="requirements" aria-label="安装要求">
+          <p class="requirements-title">安装前确认</p>
+          <dl>
+            <div>
+              <dt>Photoshop</dt>
+              <dd>25.0 或更高版本</dd>
+            </div>
+            <div>
+              <dt>插件版本</dt>
+              <dd>Reference Dock 1.0.0</dd>
+            </div>
+            <div>
+              <dt>安装文件</dt>
+              <dd>CCX 或开发版 ZIP</dd>
+            </div>
+          </dl>
+          <p class="requirements-note">修改版 Photoshop 的 UXP 支持情况不固定，无法保证每个版本都能加载。</p>
+        </div>
+      </section>
+
+      <section class="section choose-section" id="choose" aria-labelledby="choose-title">
+        <div class="section-heading">
+          <p class="eyebrow">选择安装方式</p>
+          <h2 id="choose-title">你的电脑适合哪一种？</h2>
+          <p>两种方式安装的是同一个插件。优先尝试 CCX；只有常规安装器不可用时，再使用本地加载。</p>
+        </div>
+
+        <div class="route-grid">
+          <article class="route route-recommended">
+            <div class="route-heading">
+              <span class="route-mark" aria-hidden="true">A</span>
+              <div>
+                <p class="route-kicker">常规安装</p>
+                <h3>双击 CCX 安装</h3>
+              </div>
+            </div>
+            <p>适合可以正常打开 Creative Cloud Desktop 安装确认窗口的电脑。</p>
+            <ol>
+              <li>下载 <code>Reference-Dock-v1.0.0.ccx</code>。</li>
+              <li>退出 Photoshop，双击 CCX 文件。</li>
+              <li>在 Creative Cloud 确认窗口选择“本地安装”。</li>
+              <li>重新打开 Photoshop，在“增效工具”中打开 Reference Dock。</li>
+            </ol>
+            <a class="button button-primary" href="../downloads/reference-dock/Reference-Dock-v1.0.0.ccx" download>
+              下载 CCX 安装包
+            </a>
+          </article>
+
+          <article class="route">
+            <div class="route-heading">
+              <span class="route-mark" aria-hidden="true">B</span>
+              <div>
+                <p class="route-kicker">本地加载</p>
+                <h3>加载开发版文件夹</h3>
+              </div>
+            </div>
+            <p>适合 CCX 安装器不可用，但电脑已经可以运行 Adobe UXP Developer Tool 的情况。</p>
+            <ol>
+              <li>下载开发版 ZIP，并完整解压到固定文件夹。</li>
+              <li>打开 Photoshop 和 UXP Developer Tool。</li>
+              <li>点击 Add Plugin，选择解压目录根部的 <code>manifest.json</code>。</li>
+              <li>点击 Load，再从 Photoshop“增效工具”中打开 Reference Dock。</li>
+            </ol>
+            <a class="button button-secondary" href="../downloads/reference-dock/Reference-Dock-v1.0.0-dev.zip" download>
+              下载开发版 ZIP
+            </a>
+          </article>
+        </div>
+      </section>
+
+      <section class="section after-install" aria-labelledby="after-title">
+        <div class="section-heading compact-heading">
+          <p class="eyebrow">安装完成后</p>
+          <h2 id="after-title">打开面板，停靠到工作区</h2>
+        </div>
+        <div class="after-grid">
+          <div class="after-copy">
+            <ol class="large-steps">
+              <li>
+                <strong>打开 Reference Dock</strong>
+                <span>在 Photoshop 顶部菜单找到“增效工具”或 Plugins，再选择 Reference Dock。</span>
+              </li>
+              <li>
+                <strong>停靠面板</strong>
+                <span>拖动面板标题栏，把它放到 Photoshop 工作区左侧或右侧。</span>
+              </li>
+              <li>
+                <strong>导入第一张参考图</strong>
+                <span>点击面板工具栏中的导入按钮，选择 PNG、JPG、JPEG 或 WebP。</span>
+              </li>
+            </ol>
+          </div>
+          <aside class="tip-box">
+            <p class="tip-title">开发版加载后不要移动文件夹</p>
+            <p>UXP Developer Tool 会记住当前目录。移动、改名或删除解压后的插件文件夹，会导致下次无法加载。</p>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section troubleshooting" id="troubleshooting" aria-labelledby="trouble-title">
+        <div class="section-heading">
+          <p class="eyebrow">安装排错</p>
+          <h2 id="trouble-title">没有出现面板，先检查这里</h2>
+        </div>
+        <div class="problem-list">
+          <details>
+            <summary>双击 CCX 没有任何反应</summary>
+            <p>CCX 文件没有正确关联到 Creative Cloud 安装器。可以改用开发版 ZIP；如果希望继续使用 CCX，需要修复或重新安装官方 Creative Cloud Desktop。</p>
+          </details>
+          <details>
+            <summary>UXP Developer Tool 提示 Manifest Validation Failed</summary>
+            <p>确认选择的是解压目录根部的 <code>manifest.json</code>，并且 <code>assets</code>、<code>icons</code>、<code>index.html</code> 等文件仍在同一目录结构中。</p>
+          </details>
+          <details>
+            <summary>Load 失败或按钮变红</summary>
+            <p>先确认 Photoshop 已经启动，版本不低于 25.0；再打开错误详情。如果插件目录被移动，请从 Developer Tool 中移除旧记录后重新 Add Plugin。</p>
+          </details>
+          <details>
+            <summary>加载成功，但 Photoshop 里找不到面板</summary>
+            <p>重新打开 Photoshop，然后在“增效工具”或 Plugins 菜单中查找 Reference Dock。面板可能以浮动窗口出现在屏幕边缘。</p>
+          </details>
+          <details>
+            <summary>下次打开时参考图消失</summary>
+            <p>原始图片被移动、删除，或系统撤销了文件访问权限。重新导入图片即可；插件不会复制或上传你的原图。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="section downloads" id="downloads" aria-labelledby="downloads-title">
+        <div class="download-copy">
+          <p class="eyebrow">安全下载</p>
+          <h2 id="downloads-title">只从官网获取安装包</h2>
+          <p>两个下载包包含同一版本。开发版 ZIP 用于本地加载，CCX 用于常规安装。</p>
+        </div>
+        <div class="download-actions">
+          <a class="button button-light" href="../downloads/reference-dock/Reference-Dock-v1.0.0.ccx" download>下载 CCX</a>
+          <a class="button button-outline-light" href="../downloads/reference-dock/Reference-Dock-v1.0.0-dev.zip" download>
+            下载开发版 ZIP
+          </a>
+        </div>
+        <div class="checksum">
+          <span>CCX SHA-256</span>
+          <code>ad36abd878bfdad3f73ab91cb048e880a6bf79d58ddb9c7733bd4dc5ec8173e0</code>
+          <a href="../downloads/reference-dock/Reference-Dock-v1.0.0.ccx.sha256.txt">下载校验文件</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="footer-brand">
+        <img src="../assets/reference-dock/reference-dock-logo.svg" alt="" width="30" height="30" />
+        <div>
+          <strong>再造 · 参考图坞</strong>
+          <span>CZT. Reference Dock</span>
+        </div>
+      </div>
+      <p>Reference Dock 由再野文化工作室制作</p>
+    </footer>
+  </body>
+</html>
