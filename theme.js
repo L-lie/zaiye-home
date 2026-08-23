@@ -23,6 +23,8 @@
     const button = document.createElement("button");
     button.className = "theme-toggle";
     button.type = "button";
+    button.dataset.editorPageElement = "themeButton";
+    button.dataset.editorElementKind = "icon";
     updateButton(button, document.documentElement.dataset.theme);
     button.addEventListener("click", () => {
       const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";

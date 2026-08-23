@@ -116,6 +116,10 @@ async function main() {
   };
   content.projects.push(testProject);
   content.items.push(testItem);
+  content.pageElements = {
+    archiveTitle: { text: "Work Archive", fontSize: 112, color: "#f7f3ea", fontWeight: 400, width: 720, height: 110, offsetX: 24, offsetY: -12 },
+    searchButton: { width: 44, height: 44, iconSize: 24 },
+  };
   content.media[upload.payload.file] = upload.payload.media;
 
   const draft = await request("/api/portfolio/draft", {
@@ -138,10 +142,14 @@ async function main() {
   const publishedItem = current.payload.content.items.find((item) => item.id === testItem.id);
   assert.equal(publishedItem.captionName, "回滚测试作品");
   assert.equal(publishedItem.captionStyles.description.color, "#777777");
+  assert.equal(current.payload.content.pageElements.archiveTitle.width, 720);
+  assert.equal(current.payload.content.pageElements.archiveTitle.offsetX, 24);
+  assert.equal(current.payload.content.pageElements.searchButton.iconSize, 24);
 
   const adminSource = await fsp.readFile(path.join(root, "admin.html"), "utf8");
   assert.match(adminSource, /id="visualFrame"/);
   assert.match(adminSource, /id="styleFontSize"/);
+  assert.match(adminSource, /id="undoEdit"/);
   const gallerySource = await fsp.readFile(path.join(root, "gallery.js"), "utf8");
   assert.match(gallerySource, /data-editor-item-field/);
 

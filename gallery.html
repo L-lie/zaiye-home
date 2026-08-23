@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="archive-page">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,21 +7,22 @@
     <title>作品档案 | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
     <script src="theme.js?v=20260723d"></script>
-    <link rel="stylesheet" href="styles.css?v=20260811b" />
+    <script>document.documentElement.dataset.theme = "dark";</script>
+    <link rel="stylesheet" href="styles.css?v=20260824k" />
     <link rel="stylesheet" href="theme.css?v=20260723d" />
     <script src="assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="supabase-config.js" defer></script>
     <script src="supabase-client.js" defer></script>
-    <script src="portfolio-publication.js?v=20260809a" defer></script>
-    <script src="gallery.js?v=20260811b" defer></script>
+    <script src="portfolio-publication.js?v=20260824b" defer></script>
+    <script src="gallery.js?v=20260824n" defer></script>
   </head>
   <body class="archive-body">
     <header class="site-header archive-header">
       <a class="brand" href="index.html" aria-label="返回再野文化工作室首页">
-        <img class="brand-logo" src="assets/site-logo.png" alt="" width="38" height="38" />
+        <img class="brand-logo" data-editor-page-element="brandLogo" data-editor-element-kind="icon" src="assets/site-logo.png" alt="" width="38" height="38" />
         <span class="brand-copy">
-          <span class="brand-mark">再野文化工作室</span>
-          <span class="brand-line">ZAIYE CULTURE</span>
+          <span class="brand-mark" data-editor-page-element="brandName" data-editor-element-kind="text">再野文化工作室</span>
+          <span class="brand-line" data-editor-page-element="brandLine" data-editor-element-kind="text">ZAIYE CULTURE</span>
         </span>
       </a>
       <nav class="site-nav" aria-label="Primary navigation">
@@ -35,6 +36,8 @@
       <div class="archive-header-search">
         <button
           class="archive-search-toggle"
+          data-editor-page-element="searchButton"
+          data-editor-element-kind="icon"
           type="button"
           data-gallery-search-toggle
           aria-controls="archive-search-panel"
@@ -105,18 +108,26 @@
       ></button>
 
       <section class="archive-main" aria-label="作品档案">
-        <section class="archive-hero">
-          <div class="archive-hero-copy">
-            <p class="eyebrow">Work Archive</p>
-            <h1>作品档案</h1>
-            <p>
-              从简历作品集中整理出的项目图和美术资料。可以按项目类型、图纸类型或关键词快速查看，后续再继续拆成更完整的项目详情。
-            </p>
+        <section class="archive-showcase" data-archive-showcase aria-labelledby="archive-showcase-title">
+          <div class="archive-showcase-head">
+            <h1 id="archive-showcase-title" data-editor-page-element="archiveTitle" data-editor-element-kind="text">Work Archive</h1>
+            <a class="archive-material-link" data-editor-page-element="materialLink" data-editor-element-kind="button" href="gallery.html?type=all#archive-browser">美术资料</a>
           </div>
-          <div class="archive-feature" data-feature-card></div>
+          <div class="archive-poster-marquee" data-poster-marquee aria-label="项目海报精选">
+            <div class="archive-poster-track" data-poster-track></div>
+          </div>
+          <nav class="archive-showcase-nav" aria-label="项目入口">
+            <button type="button" data-show-all-projects aria-expanded="false" aria-controls="archive-selected">全部作品</button>
+            <a href="gallery.html?project=stage#archive-selected">舞台剧</a>
+            <a href="gallery.html?project=feature#archive-selected">电影 / 网大</a>
+            <a href="gallery.html?project=series#archive-selected">剧集 / 短剧</a>
+            <a href="gallery.html?project=variety#archive-selected">综艺 / 晚会</a>
+            <a href="gallery.html?project=promo#archive-selected">广告 / 宣传片</a>
+            <a href="gallery.html?project=immersive#archive-selected">实景 / 沉浸</a>
+          </nav>
         </section>
 
-        <section id="archive-selected" class="archive-selected" aria-labelledby="archive-selected-title">
+        <section id="archive-selected" class="archive-selected" aria-labelledby="archive-selected-title" hidden>
           <div class="archive-section-head">
             <p class="eyebrow" data-case-eyebrow>Selected Cases</p>
             <h2 id="archive-selected-title" data-case-title>全部作品</h2>
@@ -126,7 +137,7 @@
 
         <section class="archive-material-threshold" data-material-threshold hidden aria-labelledby="archive-material-threshold-title">
           <div class="archive-material-threshold-sticky">
-            <p class="eyebrow">Materials</p>
+            <p class="eyebrow" data-editor-page-element="materialsEyebrow" data-editor-page-label="美术资料英文章节名" data-editor-element-kind="text">Materials</p>
             <h2 id="archive-material-threshold-title">美术资料</h2>
             <p class="archive-material-threshold-next">从气氛图继续</p>
           </div>
@@ -134,8 +145,8 @@
 
         <section id="archive-browser" class="archive-browser" aria-labelledby="archive-browser-title">
           <div class="archive-section-head compact">
-            <p class="eyebrow">Materials</p>
-            <h2 id="archive-browser-title" data-gallery-title>全部作品</h2>
+            <p class="eyebrow" data-editor-page-element="materialsEyebrow" data-editor-page-label="美术资料英文章节名" data-editor-element-kind="text">Materials</p>
+            <h2 id="archive-browser-title" data-gallery-title data-editor-page-element="materialsTitle" data-editor-page-label="美术资料主标题" data-editor-element-kind="text">全部作品</h2>
           </div>
           <div class="archive-chip-row" data-archive-chips></div>
           <div class="archive-subchip-row" data-archive-subchips hidden></div>

@@ -10,6 +10,9 @@
       version: 1,
       projects: value.projects,
       items: value.items,
+      pageElements: value.pageElements && typeof value.pageElements === "object" && !Array.isArray(value.pageElements)
+        ? value.pageElements
+        : {},
       media: value.media && typeof value.media === "object" && !Array.isArray(value.media)
         ? value.media
         : {},
@@ -71,6 +74,9 @@
       content: {
         version: 1,
         projects: Array.isArray(projectDocument.items) ? projectDocument.items : [],
+        pageElements: projectDocument.pageElements && typeof projectDocument.pageElements === "object" && !Array.isArray(projectDocument.pageElements)
+          ? projectDocument.pageElements
+          : {},
         items,
         media: mediaDocument.items || {},
       },

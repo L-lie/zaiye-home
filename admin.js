@@ -20,13 +20,24 @@ const TYPE_LABELS = {
   lineart: "线稿场景",
 };
 
+const PAGE_ELEMENT_LABELS = {
+  archiveTitle: "作品档案标题",
+  materialLink: "美术资料按钮",
+  brandLogo: "品牌图标",
+  brandName: "品牌名称",
+  brandLine: "品牌英文名",
+  searchButton: "搜索图标",
+  themeButton: "日夜模式图标",
+};
+
 const PUBLIC_CACHE_KEY = "zaiye-portfolio-publication-v2";
 const EDITOR_PREVIEW_KEY = "zaiye-portfolio-editor-preview-v1";
-const EMPTY_CONTENT = () => ({ version: 1, projects: [], items: [], media: {} });
+const EMPTY_CONTENT = () => ({ version: 1, projects: [], items: [], pageElements: {}, media: {} });
 
 const els = {
   editor: document.querySelector("[data-editor]"),
   connectionStatus: document.getElementById("connectionStatus"),
+  undoEdit: document.getElementById("undoEdit"),
   loadDefault: document.getElementById("loadDefault"),
   importJson: document.getElementById("importJson"),
   exportJson: document.getElementById("exportJson"),
@@ -45,11 +56,20 @@ const els = {
   visualFrame: document.getElementById("visualFrame"),
   visualHint: document.getElementById("visualHint"),
   viewportShell: document.querySelector("[data-viewport-shell]"),
+  visualEditorShell: document.querySelector(".visual-editor-shell"),
+  editorSplitter: document.querySelector("[data-editor-splitter]"),
   selectionLabel: document.getElementById("selectionLabel"),
   styleControls: document.querySelector("[data-style-controls]"),
+  styleTextControl: document.querySelector("[data-style-text-control]"),
+  styleText: document.getElementById("styleText"),
   styleFontSize: document.getElementById("styleFontSize"),
   styleColor: document.getElementById("styleColor"),
   styleWeight: document.getElementById("styleWeight"),
+  styleWidth: document.getElementById("styleWidth"),
+  styleHeight: document.getElementById("styleHeight"),
+  styleIconSize: document.getElementById("styleIconSize"),
+  iconControl: document.querySelector("[data-icon-control]"),
+  sizeControls: document.querySelectorAll("[data-size-control]"),
   resetStyle: document.getElementById("resetStyle"),
   captionName: document.getElementById("captionName"),
   captionDescription: document.getElementById("captionDescription"),
@@ -92,8 +112,14 @@ let publishedRevision = 0;
 let dirty = false;
 let uploading = false;
 let selectedVisualField = "";
+let selectedVisualElement = null;
 let previewTimer = 0;
 let draggedVisual = null;
+let undoHistory = [];
+let historySnapshot = "";
+let restoringHistory = false;
+let editorZoom = 1;
+let syncPreviewScale = () => {};
 
 function normalizeTextStyle(value) {
   if (!value || typeof value !== "object") return {};
@@ -103,6 +129,27 @@ function normalizeTextStyle(value) {
   if (/^#[0-9a-f]{6}$/i.test(value.color || "")) style.color = value.color;
   if ([400, 500, 600, 700, 800].includes(Number(value.fontWeight))) style.fontWeight = Number(value.fontWeight);
   return style;
+}
+
+function normalizePageElement(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const element = {};
+  if (typeof value.text === "string") element.text = value.text.slice(0, 1000);
+  const fontSize = Number(value.fontSize);
+  if (Number.isInteger(fontSize) && fontSize >= 8 && fontSize <= 240) element.fontSize = fontSize;
+  if (/^#[0-9a-f]{6}$/i.test(value.color || "")) element.color = value.color;
+  if ([400, 500, 600, 700, 800].includes(Number(value.fontWeight))) element.fontWeight = Number(value.fontWeight);
+  const width = Number(value.width);
+  const height = Number(value.height);
+  const iconSize = Number(value.iconSize);
+  const offsetX = Number(value.offsetX);
+  const offsetY = Number(value.offsetY);
+  if (Number.isInteger(width) && width >= 12 && width <= 1600) element.width = width;
+  if (Number.isInteger(height) && height >= 12 && height <= 800) element.height = height;
+  if (Number.isInteger(iconSize) && iconSize >= 8 && iconSize <= 160) element.iconSize = iconSize;
+  if (Number.isInteger(offsetX) && offsetX >= -2000 && offsetX <= 2000) element.offsetX = offsetX;
+  if (Number.isInteger(offsetY) && offsetY >= -2000 && offsetY <= 2000) element.offsetY = offsetY;
+  return element;
 }
 
 function cleanTitle(title = "") {
@@ -180,16 +227,31 @@ function normalizeContent(value) {
       };
     });
   }
+  const pageElements = {};
+  if (source.pageElements && typeof source.pageElements === "object" && !Array.isArray(source.pageElements)) {
+    Object.entries(source.pageElements).forEach(([key, value]) => {
+      if (/^[a-zA-Z][a-zA-Z0-9-]{0,79}$/.test(key)) pageElements[key] = normalizePageElement(value);
+    });
+  }
   return {
     version: 1,
     projects,
     items,
+    pageElements,
     media,
   };
 }
 
 function activeItem() {
   return content.items[selectedItemIndex];
+}
+
+function isVisiblePortfolioItem(item) {
+  return Number(item?.slide) > 1 || (item?.id && !Number(item?.slide));
+}
+
+function firstVisibleItemIndex() {
+  return content.items.findIndex(isVisiblePortfolioItem);
 }
 
 function activeProject() {
@@ -239,9 +301,45 @@ function makeEmptyProject() {
   };
 }
 
-function markDirty() {
+function currentHistorySnapshot() {
+  return JSON.stringify(content);
+}
+
+function resetHistory() {
+  undoHistory = [];
+  historySnapshot = currentHistorySnapshot();
+}
+
+function markDirty({ recordHistory = true } = {}) {
+  const nextSnapshot = currentHistorySnapshot();
+  if (recordHistory && !restoringHistory && historySnapshot && nextSnapshot !== historySnapshot) {
+    undoHistory.push(historySnapshot);
+    if (undoHistory.length > 60) undoHistory.shift();
+  }
+  if (recordHistory || !historySnapshot) historySnapshot = nextSnapshot;
   dirty = true;
   updateDraftState();
+}
+
+function undoLastEdit() {
+  const snapshot = undoHistory.pop();
+  if (!snapshot) return;
+  restoringHistory = true;
+  content = normalizeContent(JSON.parse(snapshot));
+  historySnapshot = snapshot;
+  restoringHistory = false;
+  selectedItemIndex = Math.min(Math.max(selectedItemIndex, 0), content.items.length - 1);
+  selectedProjectIndex = Math.min(Math.max(selectedProjectIndex, 0), content.projects.length - 1);
+  dirty = true;
+  render();
+  updateDraftState("已撤销上一步");
+}
+
+function adjustEditorZoom(deltaY) {
+  editorZoom = Math.max(0.65, Math.min(1.25, Math.round((editorZoom + (deltaY < 0 ? 0.05 : -0.05)) * 20) / 20));
+  document.documentElement.style.zoom = String(editorZoom);
+  syncPreviewScale();
+  els.visualHint.textContent = `编辑器缩放：${Math.round(editorZoom * 100)}% · 拖动文字框可直接改变位置。`;
 }
 
 function writePreviewContent() {
@@ -268,6 +366,7 @@ function updateDraftState(message = "") {
   const suffix = dirty ? " · 有未保存修改" : "";
   els.draftState.textContent = message || `草稿版本 ${draftRevision || "尚未创建"} · 正式版本 ${publishedRevision || "尚未发布"}${suffix}`;
   els.connectionStatus.textContent = uploading ? "图片处理中" : dirty ? "草稿未保存" : "本地服务已连接";
+  els.undoEdit.disabled = undoHistory.length === 0;
   els.saveDraft.disabled = uploading || !dirty;
   els.publishDraft.disabled = uploading;
 }
@@ -327,16 +426,19 @@ function renderProjectSelect() {
 
 function renderList() {
   const entries = mode === "items" ? content.items : content.projects;
+  const visibleEntries = mode === "items" ? entries.filter(isVisiblePortfolioItem) : entries;
   const query = els.searchItems.value.trim().toLowerCase();
   const selectedIndex = mode === "items" ? selectedItemIndex : selectedProjectIndex;
   els.itemList.replaceChildren();
-  els.itemCount.textContent = `${entries.length} 项`;
+  els.itemCount.textContent = `${visibleEntries.length} 项`;
   els.listEyebrow.textContent = mode === "items" ? "图片条目" : "项目入口";
 
   entries.forEach((entry, index) => {
+    if (mode === "items" && !isVisiblePortfolioItem(entry)) return;
     const haystack = [entry.title, entry.file, entry.meta, entry.id, entry.slide].join(" ").toLowerCase();
     if (query && !haystack.includes(query)) return;
     const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
+    row.dataset.entryId = entry.id;
     row.classList.toggle("is-active", index === selectedIndex);
     const image = row.querySelector("img");
     const imageSource = mode === "items" ? entry.file : entry.poster || entry.image;
@@ -535,9 +637,10 @@ async function loadDraft() {
   content = normalizeContent(result.content);
   draftRevision = Number(result.revision) || 0;
   publishedRevision = Number(result.publishedRevision) || 0;
-  selectedItemIndex = content.items.length ? 0 : -1;
+  selectedItemIndex = firstVisibleItemIndex();
   selectedProjectIndex = content.projects.length ? 0 : -1;
   dirty = false;
+  resetHistory();
   render();
   updateDraftState(result.source === "draft" ? "已读取本机草稿" : "已读取当前官网静态数据");
 }
@@ -565,6 +668,7 @@ async function publishDraft() {
   publishedRevision = Number(result.revision) || draftRevision;
   draftRevision = publishedRevision;
   dirty = false;
+  resetHistory();
   localStorage.removeItem(PUBLIC_CACHE_KEY);
   render();
   updateDraftState(`静态作品版本 ${publishedRevision} 已写入仓库`);
@@ -586,7 +690,7 @@ function importBackup(file) {
   reader.onload = () => {
     try {
       content = normalizeContent(JSON.parse(reader.result));
-      selectedItemIndex = content.items.length ? 0 : -1;
+      selectedItemIndex = firstVisibleItemIndex();
       selectedProjectIndex = content.projects.length ? 0 : -1;
       markDirty();
       render();
@@ -655,6 +759,12 @@ async function uploadImage(kind) {
 
 function selectedStyleTarget() {
   if (!selectedVisualField) return null;
+  if (selectedVisualField.startsWith("page:")) {
+    const key = selectedVisualField.slice(5);
+    content.pageElements ||= {};
+    content.pageElements[key] ||= {};
+    return content.pageElements[key];
+  }
   if (mode === "items") {
     const item = activeItem();
     if (!item) return null;
@@ -678,9 +788,53 @@ function updateStyleControls(element = null) {
   els.styleControls.hidden = !style;
   if (!style) return;
   const computed = element ? element.ownerDocument.defaultView.getComputedStyle(element) : null;
+  const pageElement = selectedVisualField.startsWith("page:");
+  const kind = element?.dataset.editorElementKind || "text";
+  els.styleTextControl.hidden = !pageElement || kind === "icon";
+  els.sizeControls.forEach((control) => { control.hidden = !pageElement; });
+  els.iconControl.hidden = !pageElement || kind !== "icon";
+  if (pageElement && kind !== "icon") els.styleText.value = style.text ?? element?.textContent?.trim() ?? "";
   els.styleFontSize.value = style.fontSize || Math.round(Number.parseFloat(computed?.fontSize || "16"));
   els.styleColor.value = style.color || cssColorToHex(computed?.color);
   els.styleWeight.value = String(style.fontWeight || Number(computed?.fontWeight) || 400);
+  if (pageElement) {
+    const rect = element?.getBoundingClientRect();
+    els.styleWidth.value = style.width || Math.round(rect?.width || 0);
+    els.styleHeight.value = style.height || Math.round(rect?.height || 0);
+    const icon = element?.matches("img,svg") ? element : element?.querySelector("img,svg");
+    els.styleIconSize.value = style.iconSize || Math.round(icon?.getBoundingClientRect().width || Number.parseFloat(computed?.fontSize || "16"));
+  }
+}
+
+function applyPageElementToPreview(key, element = selectedVisualElement) {
+  const style = content.pageElements?.[key];
+  if (!style || !element?.isConnected) return;
+  const kind = element.dataset.editorElementKind || "text";
+  if (kind !== "icon" && typeof style.text === "string") element.textContent = style.text;
+  element.style.fontSize = style.fontSize ? `${style.fontSize}px` : "";
+  element.style.color = style.color || "";
+  element.style.fontWeight = style.fontWeight || "";
+  element.style.width = style.width ? `${style.width}px` : "";
+  element.style.height = style.height ? `${style.height}px` : "";
+  element.style.translate = `${style.offsetX || 0}px ${style.offsetY || 0}px`;
+  const icon = element.matches("img,svg") ? element : element.querySelector("img,svg");
+  if (icon) {
+    icon.style.width = style.iconSize ? `${style.iconSize}px` : "";
+    icon.style.height = style.iconSize ? `${style.iconSize}px` : "";
+  } else if (kind === "icon") {
+    element.style.fontSize = style.iconSize ? `${style.iconSize}px` : (style.fontSize ? `${style.fontSize}px` : "");
+  }
+}
+
+function selectPageElement(element) {
+  const key = element?.dataset.editorPageElement;
+  if (!key || !/^[a-zA-Z][a-zA-Z0-9-]{0,79}$/.test(key)) return;
+  selectedVisualElement?.classList.remove("is-editor-selected");
+  selectedVisualField = `page:${key}`;
+  selectedVisualElement = element;
+  selectedVisualElement.classList.add("is-editor-selected");
+  els.selectionLabel.textContent = element.dataset.editorPageLabel || PAGE_ELEMENT_LABELS[key] || "页面文字";
+  updateStyleControls(element);
 }
 
 function selectItemById(id, field = "", element = null) {
@@ -692,6 +846,7 @@ function selectItemById(id, field = "", element = null) {
   selectedVisualField = field;
   renderItemEditor();
   renderList();
+  els.itemList.querySelector(`[data-entry-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
   els.selectionLabel.textContent = field
     ? `${activeItem().captionName || cleanTitle(activeItem().title) || "作品"} · ${field === "captionName" ? "作品名" : "说明"}`
     : `${activeItem().captionName || cleanTitle(activeItem().title) || "作品"} · 图片`;
@@ -707,6 +862,7 @@ function selectProjectById(id, field = "", element = null) {
   selectedVisualField = field;
   renderProjectEditor();
   renderList();
+  els.itemList.querySelector(`[data-entry-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
   els.selectionLabel.textContent = `${cleanTitle(activeProject().title) || "项目"}${field ? ` · ${field}` : " · 封面"}`;
   updateStyleControls(element);
 }
@@ -743,10 +899,99 @@ function bindVisualEditing() {
     .is-portfolio-editor-preview [data-editor-project-id]:hover { outline-color: #c99854; }
     .is-portfolio-editor-preview [contenteditable="true"] { cursor: text; outline: 1px solid rgba(201,152,84,.8); outline-offset: 3px; }
     .is-portfolio-editor-preview [data-editor-item-id] { cursor: pointer; }
+    .is-portfolio-editor-preview [data-editor-page-element] { cursor: pointer; outline: 1px dashed transparent; outline-offset: 5px; }
+    .is-portfolio-editor-preview [data-editor-page-element]:hover { outline-color: rgba(201,152,84,.85); }
+    .is-portfolio-editor-preview [data-editor-page-element].is-editor-selected { cursor: move; outline: 2px solid #c99854; touch-action: none; user-select: none; }
     .is-portfolio-editor-preview .archive-work-card[draggable="true"]:active,
     .is-portfolio-editor-preview .archive-case-card[draggable="true"]:active { cursor: grabbing; }
   `;
   doc.head.append(style);
+
+  doc.addEventListener("click", (event) => {
+    if (event.target.closest("[data-editor-item-ids], [data-editor-project-id]")) return;
+    const pageElement = event.target.closest("[data-editor-page-element]");
+    const interactive = event.target.closest("a[href], button, [role='button']");
+    if (pageElement) selectPageElement(pageElement);
+    if (pageElement || interactive) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+  doc.addEventListener("wheel", (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    adjustEditorZoom(event.deltaY);
+  }, { passive: false });
+
+  doc.querySelectorAll("[data-editor-page-element]").forEach((element) => {
+    const kind = element.dataset.editorElementKind || "text";
+    const key = element.dataset.editorPageElement;
+    if (kind !== "icon") {
+      element.contentEditable = "true";
+      element.addEventListener("input", () => {
+        content.pageElements ||= {};
+        content.pageElements[key] ||= {};
+        content.pageElements[key].text = element.textContent.trim();
+        selectedVisualElement = element;
+        els.styleText.value = content.pageElements[key].text;
+        markDirty();
+        writePreviewContent();
+      });
+    }
+    let drag = null;
+    let suppressClick = false;
+    element.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      selectPageElement(element);
+      const saved = content.pageElements?.[key] || {};
+      drag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        offsetX: Number(saved.offsetX) || 0,
+        offsetY: Number(saved.offsetY) || 0,
+        moved: false,
+      };
+      try {
+        element.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Synthetic preview checks do not register an active browser pointer.
+      }
+    });
+    element.addEventListener("pointermove", (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+      if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+      drag.moved = true;
+      suppressClick = true;
+      doc.getSelection()?.removeAllRanges();
+      content.pageElements ||= {};
+      content.pageElements[key] ||= {};
+      content.pageElements[key].offsetX = Math.max(-2000, Math.min(2000, Math.round(drag.offsetX + dx)));
+      content.pageElements[key].offsetY = Math.max(-2000, Math.min(2000, Math.round(drag.offsetY + dy)));
+      applyPageElementToPreview(key, element);
+      markDirty({ recordHistory: false });
+      event.preventDefault();
+    });
+    const finishDrag = (event) => {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const moved = drag.moved;
+      drag = null;
+      if (moved) {
+        markDirty();
+        writePreviewContent();
+      }
+    };
+    element.addEventListener("pointerup", finishDrag);
+    element.addEventListener("pointercancel", finishDrag);
+    element.addEventListener("click", (event) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  });
 
   doc.querySelectorAll("[data-editor-item-ids]").forEach((card) => {
     const ids = card.dataset.editorItemIds.split(",").filter(Boolean);
@@ -857,15 +1102,28 @@ function bindVisualEditing() {
       });
     });
   });
-  els.visualHint.textContent = "现在可以直接点文字修改；拖动整张作品卡或项目卡调整顺序；点击图片后在右侧替换。";
+  els.visualHint.textContent = "链接不会跳转。点文字直接修改；拖动选中的文字框改变位置；Ctrl + 滚轮缩放编辑器。";
 }
 
 function applySelectedStyle() {
   const style = selectedStyleTarget();
   if (!style) return;
-  style.fontSize = Math.max(8, Math.min(72, Math.round(Number(els.styleFontSize.value) || 16)));
+  const pageElement = selectedVisualField.startsWith("page:");
+  style.fontSize = Math.max(8, Math.min(pageElement ? 240 : 72, Math.round(Number(els.styleFontSize.value) || 16)));
   style.color = els.styleColor.value;
   style.fontWeight = Number(els.styleWeight.value) || 400;
+  if (pageElement) {
+    const key = selectedVisualField.slice(5);
+    const kind = selectedVisualElement?.dataset.editorElementKind || "text";
+    if (kind !== "icon") style.text = els.styleText.value;
+    style.width = Math.max(12, Math.min(1600, Math.round(Number(els.styleWidth.value) || 12)));
+    style.height = Math.max(12, Math.min(800, Math.round(Number(els.styleHeight.value) || 12)));
+    if (kind === "icon") style.iconSize = Math.max(8, Math.min(160, Math.round(Number(els.styleIconSize.value) || 16)));
+    applyPageElementToPreview(key);
+    writePreviewContent();
+    markDirty();
+    return;
+  }
   markDirty();
   schedulePreview({ immediate: true });
 }
@@ -891,14 +1149,64 @@ function bindFormEvents() {
 
 function bindEditorEvents() {
   els.visualFrame.addEventListener("load", bindVisualEditing);
+  syncPreviewScale = () => {
+    const designWidth = els.viewportShell.classList.contains("is-mobile") ? 390 : 1440;
+    const availableWidth = els.viewportShell.clientWidth;
+    if (availableWidth < 1) return;
+    const scale = Math.max(0.1, Math.min(1, availableWidth / designWidth));
+    els.visualFrame.style.width = `${designWidth}px`;
+    els.visualFrame.style.height = `${Math.ceil(els.viewportShell.clientHeight / Math.max(scale, 0.1))}px`;
+    els.visualFrame.style.transform = `scale(${scale})`;
+  };
+  new ResizeObserver(syncPreviewScale).observe(els.viewportShell);
+  els.visualFrame.addEventListener("load", syncPreviewScale);
+
+  document.addEventListener("wheel", (event) => {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    adjustEditorZoom(event.deltaY);
+  }, { passive: false });
+  document.addEventListener("keydown", (event) => {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "z" || event.shiftKey) return;
+    if (!undoHistory.length) return;
+    event.preventDefault();
+    undoLastEdit();
+  });
+  els.undoEdit.addEventListener("click", undoLastEdit);
+
+  let resizingPanels = false;
+  const finishPanelResize = () => {
+    resizingPanels = false;
+    els.editorSplitter.classList.remove("is-dragging");
+  };
+  els.editorSplitter.addEventListener("pointerdown", (event) => {
+    resizingPanels = true;
+    els.editorSplitter.classList.add("is-dragging");
+    els.editorSplitter.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  els.editorSplitter.addEventListener("pointermove", (event) => {
+    if (!resizingPanels) return;
+    const rect = els.visualEditorShell.getBoundingClientRect();
+    const maxWidth = Math.min(620, rect.width - 240);
+    const width = Math.max(220, Math.min(maxWidth, rect.right - event.clientX));
+    els.visualEditorShell.style.setProperty("--inspector-width", `${Math.round(width)}px`);
+    syncPreviewScale();
+  });
+  els.editorSplitter.addEventListener("pointerup", finishPanelResize);
+  els.editorSplitter.addEventListener("pointercancel", finishPanelResize);
+
   document.querySelectorAll("[data-viewport]").forEach((button) => {
     button.addEventListener("click", () => {
       const mobile = button.dataset.viewport === "mobile";
       els.viewportShell.classList.toggle("is-mobile", mobile);
       document.querySelectorAll("[data-viewport]").forEach((entry) => entry.classList.toggle("is-active", entry === button));
+      syncPreviewScale();
     });
   });
-  [els.styleFontSize, els.styleColor, els.styleWeight].forEach((field) => field.addEventListener("input", applySelectedStyle));
+  syncPreviewScale();
+  [els.styleText, els.styleFontSize, els.styleColor, els.styleWeight, els.styleWidth, els.styleHeight, els.styleIconSize]
+    .forEach((field) => field.addEventListener("input", applySelectedStyle));
   els.resetStyle.addEventListener("click", () => {
     const style = selectedStyleTarget();
     if (!style) return;
@@ -984,7 +1292,7 @@ function bindEditorEvents() {
     if (!confirm("用当前官网静态数据替换本机草稿内容？尚未发布的草稿修改会被覆盖。")) return;
     try {
       content = await readStaticContent();
-      selectedItemIndex = content.items.length ? 0 : -1;
+      selectedItemIndex = firstVisibleItemIndex();
       selectedProjectIndex = -1;
       markDirty();
       render();

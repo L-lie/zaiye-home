@@ -6,10 +6,8 @@
     <meta name="robots" content="noindex, nofollow" />
     <title>作品编辑 | 再野文化工作室</title>
     <link rel="icon" href="favicon.png" type="image/png" sizes="192x192" />
-    <script src="theme.js"></script>
-    <link rel="stylesheet" href="admin.css?v=20260809a" />
-    <link rel="stylesheet" href="theme.css" />
-    <script src="admin.js?v=20260808d" defer></script>
+    <link rel="stylesheet" href="admin.css?v=20260824f" />
+    <script src="admin.js?v=20260824f" defer></script>
   </head>
   <body>
     <header class="admin-header">
@@ -22,6 +20,7 @@
       </a>
       <div class="header-actions">
         <span class="status-pill" id="connectionStatus">正在连接本地服务</span>
+        <button id="undoEdit" type="button" disabled>撤销上一步</button>
         <button id="loadDefault" type="button">恢复静态数据</button>
         <button id="importJson" type="button">导入备份</button>
         <button id="exportJson" type="button">导出备份</button>
@@ -40,7 +39,7 @@
               <button class="is-active" type="button" data-mode="items">美术资料</button>
               <button type="button" data-mode="projects">项目入口</button>
             </div>
-            <span>直接点击文字编辑 · 拖动卡片或图片调整顺序 · 点击图片后可替换</span>
+            <span>点击文字直接修改 · 拖动文字框改变位置 · Ctrl + 滚轮缩放编辑器</span>
             <div class="viewport-buttons" aria-label="预览宽度">
               <button class="is-active" type="button" data-viewport="desktop">电脑</button>
               <button type="button" data-viewport="mobile">手机</button>
@@ -52,14 +51,20 @@
           <p class="visual-hint" id="visualHint">载入真实作品页面后，点击任意作品文字或图片开始编辑。</p>
         </section>
 
+        <div class="editor-splitter" data-editor-splitter role="separator" aria-orientation="vertical" aria-label="调整预览与编辑区宽度"></div>
+
         <aside class="inspector-panel">
           <section class="inspector-section selection-toolbar">
             <p class="eyebrow">当前选择</p>
             <strong id="selectionLabel">尚未选择网页内容</strong>
             <div class="style-controls" data-style-controls hidden>
+              <label class="style-text-control" data-style-text-control>
+                文字内容
+                <input id="styleText" type="text" />
+              </label>
               <label>
                 字号
-                <input id="styleFontSize" type="number" min="8" max="72" step="1" />
+                <input id="styleFontSize" type="number" min="8" max="240" step="1" />
               </label>
               <label>
                 颜色
@@ -74,6 +79,18 @@
                   <option value="700">粗体</option>
                   <option value="800">特粗</option>
                 </select>
+              </label>
+              <label data-size-control>
+                宽度
+                <input id="styleWidth" type="number" min="12" max="1600" step="1" />
+              </label>
+              <label data-size-control>
+                高度
+                <input id="styleHeight" type="number" min="12" max="800" step="1" />
+              </label>
+              <label data-icon-control hidden>
+                图标大小
+                <input id="styleIconSize" type="number" min="8" max="160" step="1" />
               </label>
               <button id="resetStyle" type="button">恢复网页默认</button>
             </div>

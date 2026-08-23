@@ -121,10 +121,49 @@ function assertTextStyle(value, label) {
   }
 }
 
+function validatePageElements(value) {
+  if (value == null) return {};
+  if (typeof value !== "object" || Array.isArray(value)) throw new Error("页面元素设置格式不正确");
+  const result = {};
+  Object.entries(value).forEach(([key, element]) => {
+    if (!/^[a-zA-Z][a-zA-Z0-9-]{0,79}$/.test(key) || !element || typeof element !== "object" || Array.isArray(element)) return;
+    const next = {};
+    if (element.text != null) {
+      assertSafeText(String(element.text), `${key} 文字`, 1000);
+      next.text = String(element.text);
+    }
+    if (element.fontSize != null) {
+      if (!Number.isInteger(element.fontSize) || element.fontSize < 8 || element.fontSize > 240) throw new Error(`${key} 字号不正确`);
+      next.fontSize = element.fontSize;
+    }
+    if (element.color != null) {
+      if (!/^#[0-9a-f]{6}$/i.test(element.color)) throw new Error(`${key} 颜色不正确`);
+      next.color = element.color;
+    }
+    if (element.fontWeight != null) {
+      if (![400, 500, 600, 700, 800].includes(Number(element.fontWeight))) throw new Error(`${key} 字重不正确`);
+      next.fontWeight = Number(element.fontWeight);
+    }
+    for (const [property, min, max] of [["width", 12, 1600], ["height", 12, 800], ["iconSize", 8, 160]]) {
+      if (element[property] == null) continue;
+      if (!Number.isInteger(element[property]) || element[property] < min || element[property] > max) throw new Error(`${key} 尺寸不正确`);
+      next[property] = element[property];
+    }
+    for (const property of ["offsetX", "offsetY"]) {
+      if (element[property] == null) continue;
+      if (!Number.isInteger(element[property]) || element[property] < -2000 || element[property] > 2000) throw new Error(`${key} 位置不正确`);
+      next[property] = element[property];
+    }
+    result[key] = next;
+  });
+  return result;
+}
+
 function validateContent(input) {
   const content = input && typeof input === "object" && !Array.isArray(input) ? structuredClone(input) : null;
   if (!content || !Array.isArray(content.items) || !Array.isArray(content.projects)) throw new Error("作品数据结构不正确");
   if (!content.media || typeof content.media !== "object" || Array.isArray(content.media)) content.media = {};
+  content.pageElements = validatePageElements(content.pageElements);
   if (content.items.length > 2000 || content.projects.length > 250 || Object.keys(content.media).length > 5000) {
     throw new Error("作品数据数量异常");
   }
@@ -183,6 +222,7 @@ async function currentContent() {
     version: 1,
     items: Array.isArray(items) ? items : [],
     projects: Array.isArray(projectDocument.items) ? projectDocument.items : [],
+    pageElements: projectDocument.pageElements || {},
     media: mediaDocument.items || {},
   });
 }
@@ -245,7 +285,7 @@ async function publishContent(content) {
   await Promise.all([
     atomicJson(indexPath, content.items),
     atomicJson(mediaPath, { version: 1, items: content.media }),
-    atomicJson(projectsPath, { version: 1, items: content.projects }),
+    atomicJson(projectsPath, { version: 1, items: content.projects, pageElements: content.pageElements || {} }),
   ]);
   await Promise.all([
     atomicJson(draftPath, { revision, savedAt: new Date().toISOString(), content }),

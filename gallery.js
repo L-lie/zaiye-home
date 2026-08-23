@@ -20,6 +20,30 @@ const PROJECT_LABELS = {
   immersive: "实景 / 沉浸",
 };
 
+const POSTER_YEARS = {
+  "ai-qing-gong-yu": 2018,
+  "monkey-king": 2026,
+  "di-xin-wei-ji": 2023,
+  "mi-hang-kun-lun-xu": 2025,
+  "da-mao-xian-wang": 2024,
+  "chao-shen-bao-biao": 2021,
+  "ren-yu": 2022,
+  "ying-zi-xing-dong": 2021,
+  "da-she-3": 2022,
+  "da-mo-shen-long": 2021,
+  "hei-shui-ling": 2024,
+  "jiang-long-zhuo-yao": 2020,
+  "jiang-long-lie-long": 2020,
+  "jiang-long-mo-long": 2020,
+  "yi-zhai-jia-zu": 2021,
+  "su-ji-guan-cai-pu": 2021,
+  "feng-du-guai-tan": 2022,
+  "xin-xin-yu": 2023,
+  "cheng-feng-po-lang": 2020,
+  "qing-chun-zai-da-di": 2020,
+  "jin-ying-jie": 2020,
+};
+
 const TYPE_RULES = {
   atmosphere: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 42, 83, 84, 85, 86, 87],
   dressing: [18, 19, 20],
@@ -336,18 +360,20 @@ const PROJECT_ENTRY_ORDER = [
 ];
 
 const params = new URLSearchParams(window.location.search);
-const activeType = params.get("type");
-const activeProject = params.get("project");
+let activeType = params.get("type");
+let activeProject = params.get("project");
 const activeCaseId = params.get("case");
 const editorPreview = params.get("editor") === "1";
 let activeCase = PROJECTS.find((item) => item.id === activeCaseId);
 let showingProjectList = !activeType && !activeCase;
+let projectGridExpanded = params.get("view") === "all" || Boolean(activeProject) || window.location.hash === "#archive-selected";
 const PORTFOLIO_DATA_VERSION = "20260808a";
 
 let allItems = [];
 let filteredItems = [];
 let renderedGroups = [];
 let portfolioMedia = {};
+let pageElements = {};
 let lightboxState = {
   scale: 1,
   x: 0,
@@ -376,6 +402,32 @@ function textStyle(value) {
   if (/^#[0-9a-f]{6}$/i.test(value.color || "")) declarations.push(`color:${value.color}`);
   if ([400, 500, 600, 700, 800].includes(Number(value.fontWeight))) declarations.push(`font-weight:${Number(value.fontWeight)}`);
   return declarations.length ? ` style="${declarations.join(";")}"` : "";
+}
+
+function applyPageElementOverrides() {
+  document.querySelectorAll("[data-editor-page-element]").forEach((element) => {
+    const override = pageElements[element.dataset.editorPageElement];
+    if (!override || typeof override !== "object") return;
+    const kind = element.dataset.editorElementKind || "text";
+    if (kind !== "icon" && typeof override.text === "string") element.textContent = override.text;
+    if (Number.isInteger(override.fontSize)) element.style.fontSize = `${override.fontSize}px`;
+    if (/^#[0-9a-f]{6}$/i.test(override.color || "")) element.style.color = override.color;
+    if ([400, 500, 600, 700, 800].includes(Number(override.fontWeight))) element.style.fontWeight = String(override.fontWeight);
+    if (Number.isInteger(override.width)) element.style.width = `${override.width}px`;
+    if (Number.isInteger(override.height)) element.style.height = `${override.height}px`;
+    if (Number.isInteger(override.offsetX) || Number.isInteger(override.offsetY)) {
+      element.style.translate = `${override.offsetX || 0}px ${override.offsetY || 0}px`;
+    }
+    if (Number.isInteger(override.iconSize)) {
+      const icon = element.matches("img,svg") ? element : element.querySelector("img,svg");
+      if (icon) {
+        icon.style.width = `${override.iconSize}px`;
+        icon.style.height = `${override.iconSize}px`;
+      } else if (kind === "icon") {
+        element.style.fontSize = `${override.iconSize}px`;
+      }
+    }
+  });
 }
 
 function mediaFor(file) {
@@ -489,23 +541,345 @@ function setActiveLinks() {
   });
 }
 
-function renderFeature() {
-  const feature = document.querySelector("[data-feature-card]");
-  const hero = feature.closest(".archive-hero");
-  hero.hidden = Boolean(activeType);
-  if (hero.hidden) {
-    feature.replaceChildren();
+function createPosterMotion(marquee, track, enabled) {
+  marquee._posterMotion?.destroy();
+  marquee.scrollLeft = 0;
+
+  let offset = 0;
+  let frame = 0;
+  let previousTime = performance.now();
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const speed = window.matchMedia("(max-width: 760px)").matches ? 13 : 18;
+
+  const cycleWidth = () => track.firstElementChild?.getBoundingClientRect().width || track.scrollWidth / 2;
+  const normalize = (value) => {
+    const width = cycleWidth();
+    return width > 0 ? ((value % width) + width) % width : 0;
+  };
+  const render = () => {
+    offset = normalize(offset);
+    track.style.transform = `translate3d(${-offset}px, 0, 0)`;
+  };
+  const shiftBy = (distance) => {
+    offset += distance;
+    render();
+  };
+  const tick = (now) => {
+    const elapsed = Math.min(32, Math.max(0, now - previousTime));
+    previousTime = now;
+    if (!marquee.classList.contains("is-middle-dragging") && !marquee.matches(":focus-within")) {
+      offset += speed * elapsed / 1000;
+      render();
+    }
+    frame = window.requestAnimationFrame(tick);
+  };
+
+  render();
+  if (enabled && !reducedMotion) frame = window.requestAnimationFrame(tick);
+
+  return {
+    shiftBy,
+    setOffset(value) {
+      offset = value;
+      render();
+    },
+    getCycleWidth: cycleWidth,
+    destroy() {
+      window.cancelAnimationFrame(frame);
+      track.style.transform = "";
+    },
+  };
+}
+
+function renderPosterShowcase() {
+  const showcase = document.querySelector("[data-archive-showcase]");
+  const marquee = document.querySelector("[data-poster-marquee]");
+  const track = document.querySelector("[data-poster-track]");
+  const showAll = document.querySelector("[data-show-all-projects]");
+  if (!showcase || !marquee || !track || !showAll) return;
+
+  showcase.hidden = Boolean(activeCase && !activeType);
+  if (showcase.hidden) {
+    marquee._posterMotion?.destroy();
+    marquee._posterMotion = null;
+    track.replaceChildren();
     return;
   }
-  const project = activeCase || PROJECTS.find((item) => projectHasType(item, activeProject)) || PROJECTS[0];
-  feature.innerHTML = `
-    <a class="archive-feature-card" href="gallery.html?case=${project.id}#archive-browser">
-      ${portfolioImageMarkup(project.image, project.title, { loading: "eager", priority: true })}
-      <span>${project.meta}</span>
-      <strong>${displayTitle(project.title)}</strong>
-      <em>查看项目</em>
-    </a>
-  `;
+
+  const projects = visibleProjects().filter((project) => project.poster || project.image);
+  const tilts = [-7, -4, -2, 3, 6, 2, -5, 4];
+  const makeGroup = (duplicate = false) => {
+    const group = document.createElement("div");
+    group.className = "archive-poster-group";
+    if (duplicate) group.setAttribute("aria-hidden", "true");
+    projects.forEach((project, index) => {
+      const card = document.createElement("a");
+      const projectYear = POSTER_YEARS[project.id];
+      const paperAge = Number.isInteger(projectYear)
+        ? Math.max(0, Math.min(1, (2026 - projectYear) / 8))
+        : 0.32;
+      card.className = "archive-poster-card";
+      card.href = `gallery.html?case=${project.id}#archive-browser`;
+      card.style.setProperty("--poster-tilt", `${tilts[index % tilts.length]}deg`);
+      card.style.setProperty("--paper-age", paperAge.toFixed(3));
+      card.style.setProperty("--paper-overlay-turn", index % 3 === 0 ? "180deg" : "0deg");
+      card.style.setProperty("--paper-overlay-flip", index % 4 === 0 ? "-1" : "1");
+      card.style.zIndex = String(duplicate ? Math.max(1, projects.length - 1 + index) : index + 1);
+      if (projectYear) card.dataset.projectYear = String(projectYear);
+      card.setAttribute("aria-label", `查看项目：${displayTitle(project.title)}`);
+      if (duplicate) card.tabIndex = -1;
+      card.innerHTML = `
+        <span class="archive-poster-visual">
+          ${portfolioImageMarkup(project.poster || project.image, project.title, {
+            loading: "eager",
+            priority: index < 3 && !duplicate,
+          })}
+          <span class="archive-poster-label">${displayTitle(project.title)}</span>
+        </span>
+      `;
+      group.appendChild(card);
+    });
+    return group;
+  };
+
+  track.replaceChildren(makeGroup(), makeGroup(true));
+  track.classList.toggle("is-static", projects.length < 7);
+  marquee._posterMotion = createPosterMotion(marquee, track, projects.length >= 7);
+  showAll.setAttribute("aria-expanded", String(projectGridExpanded));
+  if (!marquee.dataset.middleDragBound) {
+    marquee.dataset.middleDragBound = "true";
+    let middleDragging = false;
+    let lastPointerX = 0;
+    let lastMoveTime = 0;
+    let scrollVelocity = 0;
+    let inertiaFrame = 0;
+
+    const shiftMarquee = (distance) => {
+      marquee._posterMotion?.shiftBy(distance);
+    };
+
+    const startInertia = (onFinish = () => {}) => {
+      let velocity = scrollVelocity;
+      let previousTime = performance.now();
+      const glide = (now) => {
+        const elapsed = Math.min(32, now - previousTime);
+        previousTime = now;
+        shiftMarquee(velocity * elapsed);
+        velocity *= Math.pow(0.86, elapsed / 16.67);
+        if (Math.abs(velocity) >= 0.035) inertiaFrame = window.requestAnimationFrame(glide);
+        else {
+          inertiaFrame = 0;
+          onFinish();
+        }
+      };
+      if (Math.abs(velocity) >= 0.035) inertiaFrame = window.requestAnimationFrame(glide);
+      else onFinish();
+    };
+
+    const endMiddleDrag = (withInertia = false) => {
+      if (!middleDragging) return;
+      middleDragging = false;
+      if (withInertia) startInertia(() => marquee.classList.remove("is-middle-dragging"));
+      else marquee.classList.remove("is-middle-dragging");
+    };
+
+    marquee.addEventListener("mousedown", (event) => {
+      if (event.button !== 1) return;
+      event.preventDefault();
+      window.cancelAnimationFrame(inertiaFrame);
+      inertiaFrame = 0;
+      middleDragging = true;
+      lastPointerX = event.clientX;
+      lastMoveTime = event.timeStamp;
+      scrollVelocity = 0;
+      marquee.classList.add("is-middle-dragging");
+    });
+
+    window.addEventListener("mousemove", (event) => {
+      if (!middleDragging) return;
+      event.preventDefault();
+      const deltaX = event.clientX - lastPointerX;
+      const elapsed = Math.max(8, event.timeStamp - lastMoveTime);
+      lastPointerX = event.clientX;
+      lastMoveTime = event.timeStamp;
+      const instantVelocity = Math.max(-2.2, Math.min(2.2, (-deltaX * 4.5) / elapsed));
+      scrollVelocity = scrollVelocity * 0.55 + instantVelocity * 0.45;
+      shiftMarquee(-deltaX * 4.5);
+    }, { passive: false });
+
+    window.addEventListener("mouseup", (event) => {
+      if (event.button === 1) endMiddleDrag(true);
+    });
+    window.addEventListener("blur", () => endMiddleDrag(false));
+    marquee.addEventListener("auxclick", (event) => {
+      if (event.button === 1) event.preventDefault();
+    });
+
+    let touchDrag = null;
+    let suppressTouchClick = false;
+    marquee.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "touch") return;
+      window.cancelAnimationFrame(inertiaFrame);
+      inertiaFrame = 0;
+      touchDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastX: event.clientX,
+        lastTime: event.timeStamp,
+        moved: false,
+      };
+      scrollVelocity = 0;
+      marquee.setPointerCapture?.(event.pointerId);
+    });
+    marquee.addEventListener("pointermove", (event) => {
+      if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+      const totalX = event.clientX - touchDrag.startX;
+      const totalY = event.clientY - touchDrag.startY;
+      if (!touchDrag.moved) {
+        if (Math.hypot(totalX, totalY) < 7) return;
+        if (Math.abs(totalY) > Math.abs(totalX)) {
+          touchDrag = null;
+          return;
+        }
+        touchDrag.moved = true;
+        suppressTouchClick = true;
+        marquee.classList.add("is-middle-dragging");
+      }
+      const deltaX = event.clientX - touchDrag.lastX;
+      const elapsed = Math.max(8, event.timeStamp - touchDrag.lastTime);
+      touchDrag.lastX = event.clientX;
+      touchDrag.lastTime = event.timeStamp;
+      const instantVelocity = Math.max(-2.6, Math.min(2.6, (-deltaX * 2.6) / elapsed));
+      scrollVelocity = scrollVelocity * 0.5 + instantVelocity * 0.5;
+      shiftMarquee(-deltaX * 2.6);
+      event.preventDefault();
+    });
+    const endTouchDrag = (event) => {
+      if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+      const moved = touchDrag.moved;
+      touchDrag = null;
+      if (moved) startInertia(() => marquee.classList.remove("is-middle-dragging"));
+    };
+    marquee.addEventListener("pointerup", endTouchDrag);
+    marquee.addEventListener("pointercancel", (event) => {
+      if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+      touchDrag = null;
+      marquee.classList.remove("is-middle-dragging");
+    });
+    marquee.addEventListener("click", (event) => {
+      if (!suppressTouchClick) return;
+      suppressTouchClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  }
+  if (!showAll.dataset.bound) {
+    showAll.dataset.bound = "true";
+    showAll.addEventListener("click", () => {
+      const url = new URL(window.location.href);
+      const collapseProjects = projectGridExpanded && !activeType && !activeCase;
+      if (!collapseProjects) {
+        activeType = null;
+        activeCase = null;
+        showingProjectList = true;
+        projectGridExpanded = true;
+        url.searchParams.delete("type");
+        url.searchParams.delete("case");
+        url.searchParams.set("view", "all");
+        url.hash = "archive-selected";
+        window.history.replaceState({}, "", url);
+        renderProjectNavigationState();
+      } else {
+        projectGridExpanded = false;
+        url.searchParams.delete("view");
+        url.hash = "";
+        window.history.replaceState({}, "", url);
+        renderProjects();
+        document.querySelector(".archive-showcase")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
+}
+
+function preloadProjectPosters() {
+  const sources = new Set(PROJECTS.map((project) => {
+    const file = project.poster || project.image;
+    return file ? (mediaFor(file).preview || file) : "";
+  }).filter(Boolean));
+  sources.forEach((source) => {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = source;
+  });
+}
+
+function renderProjectNavigationState({ scroll = true } = {}) {
+  activeCase = null;
+  showingProjectList = true;
+  projectGridExpanded = true;
+  setActiveLinks();
+  renderChips();
+  filteredItems = baseFilteredItems();
+  renderPosterShowcase();
+  renderProjects();
+  renderSubChips();
+  renderItems(filteredItems);
+  if (scroll) document.querySelector("#archive-selected")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function bindProjectNavigation() {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a[href]");
+    if (!link || event.defaultPrevented || editorPreview || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const url = new URL(link.href, window.location.href);
+    const project = url.searchParams.get("project");
+    if (url.origin !== window.location.origin || !project || !Object.hasOwn(PROJECT_LABELS, project)) return;
+    event.preventDefault();
+    activeType = null;
+    activeProject = project;
+    url.searchParams.set("view", "all");
+    url.hash = "archive-selected";
+    window.history.pushState({}, "", url);
+    renderProjectNavigationState();
+  });
+  window.addEventListener("popstate", () => {
+    const url = new URL(window.location.href);
+    activeType = url.searchParams.get("type");
+    activeProject = url.searchParams.get("project");
+    renderProjectNavigationState({ scroll: false });
+  });
+}
+
+function bindMaterialJump() {
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest(".archive-material-link, .archive-chip[href*='type=all']");
+    if (!link || event.defaultPrevented || editorPreview || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    activeType = "all";
+    activeProject = null;
+    activeCase = null;
+    showingProjectList = false;
+    const browser = document.querySelector("#archive-browser");
+    const threshold = document.querySelector("[data-material-threshold]");
+    const title = document.querySelector("[data-gallery-title]");
+    if (browser) {
+      browser.hidden = false;
+      browser.classList.add("is-filtered");
+      browser.classList.remove("is-after-projects");
+    }
+    if (threshold) threshold.hidden = true;
+    if (title) title.textContent = currentLabel();
+    document.querySelector("[data-gallery-count]").textContent = `共 ${renderedGroups.length} 项`;
+    const url = new URL(window.location.href);
+    url.search = "?type=all";
+    url.hash = "archive-browser";
+    window.history.pushState({}, "", url);
+    setActiveLinks();
+    renderChips();
+    applyPageElementOverrides();
+    browser?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 }
 
 function renderChips() {
@@ -520,14 +894,19 @@ function renderChips() {
     })),
   ];
 
-  wrap.replaceChildren(...chips.map((chip) => {
+  wrap.replaceChildren(...chips.map((chip, index) => {
     const link = document.createElement("a");
     link.className = "archive-chip";
     link.href = chip.href;
     link.textContent = chip.label;
+    const key = index === 0 ? "all" : index === 1 ? "project" : Object.keys(TYPE_LABELS)[index - 2];
+    link.dataset.editorPageElement = `materialChip-${key}`;
+    link.dataset.editorPageLabel = `${chip.label}分类按钮`;
+    link.dataset.editorElementKind = "button";
     link.classList.toggle("is-active", chip.active);
     return link;
   }));
+  applyPageElementOverrides();
 }
 
 function projectsForActiveType() {
@@ -606,11 +985,15 @@ function renderProjects() {
   const count = document.querySelector("[data-gallery-count]");
   const projects = visibleProjects();
   const browsingWorks = Boolean(activeCase || activeType);
+  const revealProjects = !browsingWorks && projectGridExpanded;
 
-  selected.hidden = browsingWorks;
-  grid.hidden = browsingWorks;
-  eyebrow.textContent = activeProject ? "Project Type" : "Selected Cases";
-  title.textContent = activeProject ? currentLabel() : "项目入口";
+  selected.hidden = !revealProjects;
+  grid.hidden = !revealProjects;
+  eyebrow.textContent = activeProject ? "Project Type" : "All Projects";
+  title.textContent = activeProject ? currentLabel() : "全部作品";
+  const showAll = document.querySelector("[data-show-all-projects]");
+  showAll?.setAttribute("aria-expanded", String(revealProjects));
+  if (showAll) showAll.textContent = revealProjects ? "收起作品" : "全部作品";
   if (browsingWorks) return;
 
   count.textContent = `共 ${projects.length} 个项目`;
@@ -693,7 +1076,7 @@ function baseFilteredItems() {
   const continuousTypes = activeTypeIndex >= 0 ? typeOrder.slice(activeTypeIndex) : [];
 
   return allItems
-    .filter((item) => Number(item.slide) > 1 || item.id)
+    .filter((item) => Number(item.slide) > 1 || (item.id && !Number(item.slide)))
     .filter((item) => {
       if (!continuousTypes.length) return matchesRule(item, TYPE_RULES, activeType, "types");
       return continuousTypes.some((type) => matchesRule(item, TYPE_RULES, type, "types"));
@@ -889,6 +1272,7 @@ function renderItems(items) {
     });
   });
   grid.replaceChildren(...cards);
+  applyPageElementOverrides();
 }
 
 function updateLightboxImage(viewer) {
@@ -1067,6 +1451,8 @@ function applySearch() {
   const value = document.querySelector("[data-gallery-search]").value.trim().toLowerCase();
 
   if (showingProjectList) {
+    if (value) projectGridExpanded = true;
+    renderProjects();
     const projects = visibleProjects().filter((project) => {
       const projectTypes = [project.project, ...(project.projects || [])];
       const text = [project.title, project.meta, project.copy, ...projectTypes.map((type) => PROJECT_LABELS[type] || "")].join(" ").toLowerCase();
@@ -1107,7 +1493,7 @@ function bindMenu() {
 }
 
 function scrollToResults() {
-  if (!(activeType || activeProject || activeCase)) return;
+  if (!(activeType || activeProject || activeCase || projectGridExpanded)) return;
   const target = document.querySelector(showingProjectList ? "#archive-selected" : "#archive-browser");
   if (!target) return;
   window.requestAnimationFrame(() => {
@@ -1123,10 +1509,9 @@ function bindArchiveSidebar() {
   if (!sidebar || !shell || !toggle || !scrim) return;
   const mobileQuery = window.matchMedia("(max-width: 1180px)");
   const desktopHoverQuery = window.matchMedia("(min-width: 1181px) and (hover: hover) and (pointer: fine)");
-  const sidebarPreferenceKey = "zaiyeArchiveSidebar";
   let hoverTimer = 0;
   let leaveTimer = 0;
-  let desktopPinned = window.localStorage.getItem(sidebarPreferenceKey) !== "collapsed";
+  let desktopPinned = false;
 
   const setMobileOpen = (open) => {
     const nextOpen = mobileQuery.matches && open;
@@ -1172,7 +1557,6 @@ function bindArchiveSidebar() {
       return;
     }
     desktopPinned = !desktopPinned;
-    window.localStorage.setItem(sidebarPreferenceKey, desktopPinned ? "open" : "collapsed");
     renderDesktopSidebar(false);
   });
   sidebar.addEventListener("pointerenter", () => {
@@ -1237,6 +1621,8 @@ async function initGallery() {
   bindMenu();
   bindArchiveSidebar();
   bindArchiveSearch();
+  bindProjectNavigation();
+  bindMaterialJump();
   bindLightbox();
   bindPortfolioImageFallbacks();
   registerPortfolioCache();
@@ -1247,15 +1633,18 @@ async function initGallery() {
     `assets/portfolio/portfolio-projects.json?v=${PORTFOLIO_DATA_VERSION}`,
   );
   portfolioMedia = publication.content.media || {};
+  pageElements = publication.content.pageElements || {};
   allItems = publication.content.items || [];
   PROJECTS = mergeProjects(publication.content.projects || []);
+  applyPageElementOverrides();
+  preloadProjectPosters();
   if (editorPreview) window.__portfolioEditorProjects = structuredClone(PROJECTS);
   activeCase = PROJECTS.find((item) => item.id === activeCaseId);
   showingProjectList = !activeType && !activeCase;
   setActiveLinks();
   renderChips();
   filteredItems = baseFilteredItems();
-  renderFeature();
+  renderPosterShowcase();
   renderProjects();
   renderSubChips();
   renderItems(filteredItems);
