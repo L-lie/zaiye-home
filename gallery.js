@@ -624,7 +624,7 @@ function renderPosterShowcase() {
       card.style.setProperty("--paper-age", paperAge.toFixed(3));
       card.style.setProperty("--paper-overlay-turn", index % 3 === 0 ? "180deg" : "0deg");
       card.style.setProperty("--paper-overlay-flip", index % 4 === 0 ? "-1" : "1");
-      card.style.zIndex = String(duplicate ? Math.max(1, projects.length - 1 + index) : index + 1);
+      card.style.zIndex = String(index % 2 === 0 ? 2 : 1);
       if (projectYear) card.dataset.projectYear = String(projectYear);
       card.setAttribute("aria-label", `查看项目：${displayTitle(project.title)}`);
       if (duplicate) card.tabIndex = -1;

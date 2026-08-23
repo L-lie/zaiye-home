@@ -1211,9 +1211,8 @@ html[data-theme="light"] .archive-showcase-nav button[aria-expanded="true"] {
 }
 
 .archive-case-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
+  column-width: 240px;
+  column-gap: 18px;
 }
 
 .archive-case-card,
@@ -1228,12 +1227,14 @@ html[data-theme="light"] .archive-showcase-nav button[aria-expanded="true"] {
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  display: block;
-  margin: 0;
+  display: inline-block;
+  margin: 0 0 18px;
+  break-inside: avoid;
+  vertical-align: top;
 }
 
 .archive-case-grid.is-single {
-  grid-template-columns: minmax(0, 320px);
+  column-width: 320px;
 }
 
 .archive-case-grid.is-single .archive-case-card {
