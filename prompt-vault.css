@@ -428,11 +428,18 @@
 }
 
 .vault-api-provider-body {
-  max-width: 760px;
+  max-width: 860px;
   padding: 0 0 32px;
   color: var(--muted);
   font-size: 1.03rem;
   line-height: 1.85;
+}
+
+.vault-api-provider-body h3 {
+  margin: 28px 0 10px;
+  color: var(--ink);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
 }
 
 .vault-api-provider-body ol {
@@ -442,6 +449,10 @@
 
 .vault-api-provider-body li {
   padding: 7px 0 7px 6px;
+}
+
+.vault-api-provider-body li strong {
+  color: var(--ink);
 }
 
 .vault-api-provider-body a {
@@ -455,6 +466,23 @@
   background: var(--paper);
   color: var(--ink);
   font-size: 0.86em;
+}
+
+.vault-api-cost {
+  margin-bottom: 26px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.vault-api-cost > strong {
+  color: var(--amber);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.vault-api-cost p {
+  margin: 8px 0 0;
 }
 
 .vault-api-troubleshoot {

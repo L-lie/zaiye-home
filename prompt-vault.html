@@ -24,7 +24,7 @@
     <script src="theme.js"></script>
     <script defer src="prompt-vault-cache.js?v=20260802-1"></script>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="prompt-vault.css?v=20260824-2" />
+    <link rel="stylesheet" href="prompt-vault.css?v=20260824-3" />
     <link rel="stylesheet" href="theme.css?v=20260721-2" />
     <link rel="stylesheet" href="tools/product-nav.css?v=20260816-1" />
   </head>
@@ -147,81 +147,134 @@
           <div class="vault-api-providers">
             <details class="vault-api-provider" id="api-gemini" open>
               <summary>
-                <span><strong>Gemini</strong><small>推荐先设置</small></span>
+                <span><strong>Gemini</strong><small>推荐先设置 · 有免费层，也可付费</small></span>
                 <span aria-hidden="true">展开步骤</span>
               </summary>
               <div class="vault-api-provider-body">
+                <div class="vault-api-cost">
+                  <strong>费用先说清楚</strong>
+                  <p>Gemini API 目前有免费层，但只适用于部分模型并受额度限制；需要更高额度时可以为项目启用付费。免费额度、价格和可用模型可能调整，请以 <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer">Gemini 官方价格页</a>和 <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer">计费说明</a>为准。</p>
+                </div>
+                <h3>申请 Gemini API Key</h3>
                 <ol>
-                  <li>注册或登录 Google 账号。</li>
+                  <li><strong>登录账号：</strong>先登录你的 Google 账号；第一次进入 Google AI Studio 时，按页面提示同意使用条款。</li>
                   <li>
-                    打开
+                    <strong>进入 Key 页面：</strong>打开
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Gemini 官方 API Key 页面</a>。
                   </li>
-                  <li>按页面提示创建 API Key，并立即复制到可信的密码管理器；部分 Key 在页面关闭后无法再次完整查看。</li>
-                  <li>回到 Prompt Vault，打开“AI 设置”。</li>
-                  <li>服务商选择“Gemini”，粘贴刚复制的 Key。</li>
-                  <li>点击保存，完成配置。</li>
+                  <li><strong>找到或新建 Key：</strong>新账号可能已经自动建立默认项目和 Key，直接点复制即可。没有 Key 时，点击页面里的“Create API key”；如果看不到项目，先按提示导入或创建 Google Cloud 项目。</li>
+                  <li><strong>马上妥善保存：</strong>复制完整 Key，立即存入可信的密码管理器。部分服务商的 Key 只在创建时完整显示一次，关掉页面后可能无法再次查看。</li>
+                </ol>
+                <h3>填入 Prompt Vault</h3>
+                <ol start="5">
+                  <li><strong>打开设置：</strong>回到 Prompt Vault，点击右上角太阳／月亮图标打开“主题设置”，再点击“AI 设置”。</li>
+                  <li><strong>选择服务：</strong>在“AI 服务设置”中选择“使用自己的 API”，服务商选择“Gemini”。也可以点击“使用 Gemini 免费额度”快速选中该预设。</li>
+                  <li><strong>粘贴并保存：</strong>官方 API 地址和模型会自动填写；只需把 Key 粘贴进“API Key”，再点“保存”。看到“AI 设置已保存。”就表示设置已经写入当前浏览器。</li>
+                  <li><strong>做一次测试：</strong>打开 AI 助手或图析，发送一条简单请求。能正常返回内容，就表示配置完成；提示额度不足时，到 Google AI Studio 的 Usage 查看使用量或计费状态。</li>
                 </ol>
                 <p class="vault-api-troubleshoot">
-                  如果 Gemini API 页面打不开，可尝试把科学上网／网络代理节点切换到美国后重新打开。
+                  <strong>页面打不开：</strong>请把科学上网／网络代理节点切换到美国，再重新打开 Gemini API 页面。如果仍无法创建 Key，通常需要检查当前 Google 账号、项目权限或所在地区是否可用。
                 </p>
               </div>
             </details>
 
             <details class="vault-api-provider" id="api-deepseek">
               <summary>
-                <span><strong>DeepSeek</strong><small>使用 DeepSeek 官方服务</small></span>
+                <span><strong>DeepSeek</strong><small>按量计费 · 从账户余额扣费</small></span>
                 <span aria-hidden="true">展开步骤</span>
               </summary>
               <div class="vault-api-provider-body">
+                <div class="vault-api-cost">
+                  <strong>费用先说清楚</strong>
+                  <p>DeepSeek API 按实际用量计费，费用从充值余额或服务商发放的余额中扣除；不能把赠送余额当作长期免费保证。具体单价以 <a href="https://api-docs.deepseek.com/quick_start/pricing/" target="_blank" rel="noopener noreferrer">DeepSeek 官方价格页</a>为准。</p>
+                </div>
+                <h3>申请 DeepSeek API Key</h3>
                 <ol>
-                  <li>注册或登录 DeepSeek 开放平台。</li>
-                  <li>前往 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">DeepSeek 官方 API Keys 页面</a>创建并复制 Key。</li>
-                  <li>回到 Prompt Vault 的“AI 设置”，选择“DeepSeek”。</li>
-                  <li>粘贴 Key 后保存。</li>
+                  <li><strong>登录平台：</strong>注册或登录 DeepSeek 开放平台。这里是 API 平台，不是普通的 DeepSeek 对话页面。</li>
+                  <li><strong>新建 Key：</strong>进入 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">DeepSeek 官方 API Keys 页面</a>，找到创建／新建 API Key 的按钮，可取名为“Prompt Vault”。</li>
+                  <li><strong>复制并保存：</strong>创建后立即复制完整 Key，存入可信的密码管理器；不要截图、公开或保存成 Prompt 条目。</li>
+                  <li><strong>检查余额：</strong>在开放平台查看当前余额。没有可用余额时，即使 Key 正确也可能无法调用。</li>
                 </ol>
+                <h3>填入 Prompt Vault</h3>
+                <ol start="5">
+                  <li><strong>打开设置：</strong>点击 Prompt Vault 右上角“主题设置”图标，再进入“AI 设置”。</li>
+                  <li><strong>选择服务：</strong>选择“使用自己的 API”，服务商选“DeepSeek”；官方地址和模型会自动填写。</li>
+                  <li><strong>保存并测试：</strong>粘贴 Key，点“保存”，看到“AI 设置已保存。”后，到 AI 助手或图析发送一条简单请求。</li>
+                </ol>
+                <p class="vault-api-troubleshoot"><strong>报错怎么看：</strong><code>401</code> 通常表示 Key 错误、失效或已撤销；<code>402</code> 表示余额不足，需要在 DeepSeek 平台充值或等待可用余额；<code>429</code> 表示请求过快，请稍后再试。</p>
               </div>
             </details>
 
             <details class="vault-api-provider" id="api-groq">
               <summary>
-                <span><strong>Groq</strong><small>使用 Groq 官方服务</small></span>
+                <span><strong>Groq</strong><small>有免费层 · 付费层按量计费</small></span>
                 <span aria-hidden="true">展开步骤</span>
               </summary>
               <div class="vault-api-provider-body">
+                <div class="vault-api-cost">
+                  <strong>费用先说清楚</strong>
+                  <p>Groq 目前提供受速率和用量限制的免费层；需要更高限制时，可添加付款方式升级到按量计费的 Developer 层。免费限制和付费规则可能变化，请查看 <a href="https://console.groq.com/docs/billing-faqs" target="_blank" rel="noopener noreferrer">Groq 官方计费说明</a>。</p>
+                </div>
+                <h3>申请 Groq API Key</h3>
                 <ol>
-                  <li>注册或登录 Groq Console。</li>
-                  <li>前往 <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq 官方 API Keys 页面</a>创建并复制 Key。</li>
-                  <li>回到 Prompt Vault 的“AI 设置”，选择“Groq”。</li>
-                  <li>粘贴 Key 后保存。</li>
+                  <li><strong>登录控制台：</strong>注册或登录 Groq Console。</li>
+                  <li><strong>确认项目：</strong>如果控制台要求选择项目，可在左上角“Organization / Projects”中选择现有项目或创建一个新项目。API Key 会归属于当前项目。</li>
+                  <li><strong>新建 Key：</strong>打开 <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq 官方 API Keys 页面</a>，创建一个新 Key，可取名为“Prompt Vault”。</li>
+                  <li><strong>复制并保存：</strong>立即复制完整 Key 并存入可信的密码管理器；页面关闭后如果找不回完整内容，就撤销旧 Key 再新建。</li>
+                </ol>
+                <h3>填入 Prompt Vault</h3>
+                <ol start="5">
+                  <li><strong>打开设置：</strong>点击 Prompt Vault 右上角“主题设置”图标，再进入“AI 设置”。</li>
+                  <li><strong>选择预设：</strong>选择“使用自己的 API”，再根据想用的模型选择“Groq Qwen”或“Groq GPT-OSS”；官方地址和模型会自动填写。</li>
+                  <li><strong>保存并测试：</strong>粘贴 Key，保存后到 AI 助手或图析发送一条简单请求。免费层提示达到速率／额度限制时，可以稍后再试，或按需查看付费升级。</li>
                 </ol>
               </div>
             </details>
 
             <details class="vault-api-provider" id="api-openai">
               <summary>
-                <span><strong>OpenAI</strong><small>使用 OpenAI 官方服务</small></span>
+                <span><strong>OpenAI</strong><small>API 单独计费 · 不包含在 ChatGPT 订阅里</small></span>
                 <span aria-hidden="true">展开步骤</span>
               </summary>
               <div class="vault-api-provider-body">
+                <div class="vault-api-cost">
+                  <strong>费用先说清楚</strong>
+                  <p>OpenAI API 与 ChatGPT 是两套独立的计费系统。即使已经订阅 ChatGPT Plus／Pro，也不代表 API 已有额度；API 通常需要在 OpenAI Platform 单独设置付款方式或购买额度。请查看 <a href="https://help.openai.com/en/articles/9039756-billing-settings-in-chatgpt-vs-platform" target="_blank" rel="noopener noreferrer">OpenAI 官方计费说明</a>。</p>
+                </div>
+                <h3>申请 OpenAI API Key</h3>
                 <ol>
-                  <li>注册或登录 OpenAI Platform。</li>
-                  <li>前往 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI 官方 API Keys 页面</a>创建并复制 Key。</li>
-                  <li>回到 Prompt Vault 的“AI 设置”，选择“OpenAI”。</li>
-                  <li>粘贴 Key 后保存。</li>
+                  <li><strong>登录 API 平台：</strong>登录 OpenAI Platform；它与平时使用的 ChatGPT 对话页面不同。</li>
+                  <li><strong>确认项目：</strong>在平台中选择准备给 Prompt Vault 使用的项目。个人第一次使用时，使用默认项目即可。</li>
+                  <li><strong>创建 Key：</strong>进入 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI 官方 API Keys 页面</a>，点击“Create new secret key”，可取名为“Prompt Vault”。小白用户可先使用默认权限；如果自行改成 Restricted，需要确保相关模型接口有调用权限。</li>
+                  <li><strong>只显示一次：</strong>创建后马上复制完整 Secret Key 并存入可信的密码管理器。OpenAI 不会再次显示这段完整 Key；遗失后只能撤销旧 Key 并新建。</li>
+                  <li><strong>检查 API 计费：</strong>到 OpenAI Platform 的 Billing 页面确认 API 账户是否已有可用额度或付款方式，不要把 ChatGPT 订阅状态当成 API 余额。</li>
+                </ol>
+                <h3>填入 Prompt Vault</h3>
+                <ol start="6">
+                  <li><strong>打开设置：</strong>点击 Prompt Vault 右上角“主题设置”图标，再进入“AI 设置”。</li>
+                  <li><strong>选择服务：</strong>选择“使用自己的 API”，服务商选“OpenAI”；官方地址和模型会自动填写。</li>
+                  <li><strong>保存并测试：</strong>粘贴 Key，保存后到 AI 助手或图析发送一条简单请求。提示 Key 无效时重新复制或新建；提示额度／计费问题时检查 OpenAI Platform 的 API Billing。</li>
                 </ol>
               </div>
             </details>
 
             <details class="vault-api-provider" id="api-compatible">
               <summary>
-                <span><strong>自定义兼容接口</strong><small>连接其他兼容服务</small></span>
+                <span><strong>自定义兼容接口</strong><small>费用和额度由实际服务商决定</small></span>
                 <span aria-hidden="true">展开步骤</span>
               </summary>
               <div class="vault-api-provider-body">
-                <p>
-                  请向你实际使用的服务商索取 <code>endpoint</code>、<code>model</code> 和 <code>key</code>，再填入 Prompt Vault 对应位置。自定义接口没有统一的申请入口，不要混用其他服务商的地址或 Key。
-                </p>
+                <div class="vault-api-cost">
+                  <strong>费用先说清楚</strong>
+                  <p>自定义兼容接口没有统一的免费或付费规则，费用、额度、退款和模型可用性都由你实际选择的服务商决定。使用前请先阅读该服务商自己的价格与隐私说明。</p>
+                </div>
+                <ol>
+                  <li><strong>先向服务商确认三项资料：</strong><code>endpoint</code>（API 地址）、<code>model</code>（模型名称）和 <code>key</code>（API Key）。三项必须来自同一家服务商，不能混用。</li>
+                  <li><strong>打开设置：</strong>点击 Prompt Vault 右上角“主题设置”图标，再进入“AI 设置”，选择“使用自己的 API”和“自定义 OpenAI-compatible”。</li>
+                  <li><strong>逐项填写：</strong>把服务商提供的 API 地址、模型名称和 Key 填入对应输入框，再点击“保存”。</li>
+                  <li><strong>做一次测试：</strong>到 AI 助手或图析发送一条简单请求。失败时，把错误提示和所填的 endpoint／model 交给该服务商核对，但不要把完整 Key 发给任何人。</li>
+                </ol>
+                <p class="vault-api-troubleshoot">这里没有一个适用于所有兼容接口的申请链接。若服务商只给了聊天网址，没有提供 API 文档、endpoint、model 和 key，就不能直接当作兼容接口使用。</p>
               </div>
             </details>
           </div>
