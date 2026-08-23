@@ -137,8 +137,8 @@
             <ul>
               <li>部分服务商只在创建时完整显示一次 API Key；创建后请立即复制，并存入可信的密码管理器。</li>
               <li>不要公开、截图分享或发送自己的 API Key。</li>
-              <li>如果你选择把 Key 保存成 Prompt 条目并“设为隐私 Prompt”，请记住：隐私功能只隐藏界面显示，Key 仍然属于这条 Prompt 的正文。</li>
-              <li>“导出全部”、完整备份和同步都会包含所有 Prompt 条目，因此也会包含这条 Key。准备把 JSON 发给别人时，请改用“导出当前筛选”或“导出选择”，并确认已经排除保存 Key 的条目。</li>
+              <li>如果你把 Key 保存成 Prompt 条目，请将它“设为隐私 Prompt”。隐私 Prompt 会自动从“导出全部”“导出当前筛选”和“导出选择”中排除，不会进入分享用的导出 JSON。</li>
+              <li>隐私 Prompt 仍会进入备份和同步，方便恢复数据或跨设备使用。因此备份与同步文件仍可能包含你的 Key，属于敏感数据，请勿发送给别人。</li>
               <li>如果 Key 遗失或怀疑已经泄露，请在服务商控制台撤销旧 Key，再新建一个。</li>
               <li>不同服务可能产生费用；额度、价格和可用模型以服务商当前说明为准。</li>
               <li>填写在“AI 设置”里的 Key 才会单独保存在当前浏览器，不会进入 Prompt 的导出、备份或同步内容。</li>
@@ -193,7 +193,7 @@
                 <ol>
                   <li><strong>登录平台：</strong>注册或登录 DeepSeek 开放平台。这里是 API 平台，不是普通的 DeepSeek 对话页面。</li>
                   <li><strong>新建 Key：</strong>进入 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">DeepSeek 官方 API Keys 页面</a>，找到创建／新建 API Key 的按钮，可取名为“Prompt Vault”。</li>
-                  <li><strong>复制并保存：</strong>创建后立即复制完整 Key，优先存入可信的密码管理器，不要截图或公开。如果也保存成 Prompt 条目，请设为隐私，并在分享导出的 JSON 前确认这条 Prompt 已被排除。</li>
+                  <li><strong>复制并保存：</strong>创建后立即复制完整 Key，优先存入可信的密码管理器，不要截图或公开。如果也保存成 Prompt 条目，请设为隐私；它不会进入导出 JSON，但仍会进入备份和同步，因此备份文件不要外传。</li>
                   <li><strong>检查余额：</strong>在开放平台查看当前余额。没有可用余额时，即使 Key 正确也可能无法调用。</li>
                 </ol>
                 <h3>填入 Prompt Vault</h3>
