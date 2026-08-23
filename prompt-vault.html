@@ -24,7 +24,7 @@
     <script src="theme.js"></script>
     <script defer src="prompt-vault-cache.js?v=20260802-1"></script>
     <link rel="stylesheet" href="styles.css" />
-    <link rel="stylesheet" href="prompt-vault.css?v=20260802-1" />
+    <link rel="stylesheet" href="prompt-vault.css?v=20260823-1" />
     <link rel="stylesheet" href="theme.css?v=20260721-2" />
     <link rel="stylesheet" href="tools/product-nav.css?v=20260816-1" />
   </head>
@@ -65,6 +65,7 @@
               rel="noopener noreferrer"
             >Microsoft Edge 安装</a>
             <a class="button secondary" href="#features">查看功能</a>
+            <a class="button secondary" href="#api-guide">API 配置教程</a>
           </div>
           <p class="vault-platform">当前版本 1.1.71 · Google Chrome、豆包浏览器与 Microsoft Edge 均可从对应商店安装</p>
         </div>
@@ -105,6 +106,122 @@
             <h3>导入与导出</h3>
             <p>支持 JSON 导入导出，也可以只导出当前筛选结果，便于备份和迁移。</p>
           </article>
+        </div>
+      </section>
+
+      <section class="vault-api-guide" id="api-guide">
+        <div class="vault-section-heading vault-api-heading">
+          <div>
+            <p class="eyebrow">API 配置教程</p>
+            <p class="vault-api-kicker">第一次设置也可以跟着完成</p>
+          </div>
+          <div>
+            <h2>先从 Gemini 开始</h2>
+            <p class="vault-api-intro">
+              API Key 可以理解为服务商发给你的专用访问凭证。Prompt Vault 用它连接你选择的 AI 服务；Key 需要由你本人在对应服务商处申请。
+            </p>
+          </div>
+        </div>
+
+        <nav class="vault-api-jump" aria-label="快速查看不同 API 服务的配置步骤">
+          <a href="#api-gemini">Gemini</a>
+          <a href="#api-deepseek">DeepSeek</a>
+          <a href="#api-groq">Groq</a>
+          <a href="#api-openai">OpenAI</a>
+          <a href="#api-compatible">自定义兼容接口</a>
+        </nav>
+
+        <div class="vault-api-layout">
+          <aside class="vault-api-notice" aria-label="API Key 使用须知">
+            <p class="eyebrow">设置前先知道</p>
+            <ul>
+              <li>不要公开、截图分享或发送自己的 API Key。</li>
+              <li>不同服务可能产生费用；额度、价格和可用模型以服务商当前说明为准。</li>
+              <li>Prompt Vault 的 Key 只保存在当前浏览器，不会进入 Prompt 的导出、备份或同步内容。</li>
+            </ul>
+          </aside>
+
+          <div class="vault-api-providers">
+            <details class="vault-api-provider" id="api-gemini" open>
+              <summary>
+                <span><strong>Gemini</strong><small>推荐先设置</small></span>
+                <span aria-hidden="true">展开步骤</span>
+              </summary>
+              <div class="vault-api-provider-body">
+                <ol>
+                  <li>注册或登录 Google 账号。</li>
+                  <li>
+                    打开
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Gemini 官方 API Key 页面</a>。
+                  </li>
+                  <li>按页面提示创建 API Key，并立即复制保存。</li>
+                  <li>回到 Prompt Vault，打开“AI 设置”。</li>
+                  <li>服务商选择“Gemini”，粘贴刚复制的 Key。</li>
+                  <li>点击保存，完成配置。</li>
+                </ol>
+                <p class="vault-api-troubleshoot">
+                  如果 Gemini API 页面打不开，可尝试把科学上网／网络代理节点切换到美国后重新打开。
+                </p>
+              </div>
+            </details>
+
+            <details class="vault-api-provider" id="api-deepseek">
+              <summary>
+                <span><strong>DeepSeek</strong><small>使用 DeepSeek 官方服务</small></span>
+                <span aria-hidden="true">展开步骤</span>
+              </summary>
+              <div class="vault-api-provider-body">
+                <ol>
+                  <li>注册或登录 DeepSeek 开放平台。</li>
+                  <li>前往 <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener noreferrer">DeepSeek 官方 API Keys 页面</a>创建并复制 Key。</li>
+                  <li>回到 Prompt Vault 的“AI 设置”，选择“DeepSeek”。</li>
+                  <li>粘贴 Key 后保存。</li>
+                </ol>
+              </div>
+            </details>
+
+            <details class="vault-api-provider" id="api-groq">
+              <summary>
+                <span><strong>Groq</strong><small>使用 Groq 官方服务</small></span>
+                <span aria-hidden="true">展开步骤</span>
+              </summary>
+              <div class="vault-api-provider-body">
+                <ol>
+                  <li>注册或登录 Groq Console。</li>
+                  <li>前往 <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Groq 官方 API Keys 页面</a>创建并复制 Key。</li>
+                  <li>回到 Prompt Vault 的“AI 设置”，选择“Groq”。</li>
+                  <li>粘贴 Key 后保存。</li>
+                </ol>
+              </div>
+            </details>
+
+            <details class="vault-api-provider" id="api-openai">
+              <summary>
+                <span><strong>OpenAI</strong><small>使用 OpenAI 官方服务</small></span>
+                <span aria-hidden="true">展开步骤</span>
+              </summary>
+              <div class="vault-api-provider-body">
+                <ol>
+                  <li>注册或登录 OpenAI Platform。</li>
+                  <li>前往 <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">OpenAI 官方 API Keys 页面</a>创建并复制 Key。</li>
+                  <li>回到 Prompt Vault 的“AI 设置”，选择“OpenAI”。</li>
+                  <li>粘贴 Key 后保存。</li>
+                </ol>
+              </div>
+            </details>
+
+            <details class="vault-api-provider" id="api-compatible">
+              <summary>
+                <span><strong>自定义兼容接口</strong><small>连接其他兼容服务</small></span>
+                <span aria-hidden="true">展开步骤</span>
+              </summary>
+              <div class="vault-api-provider-body">
+                <p>
+                  请向你实际使用的服务商索取 <code>endpoint</code>、<code>model</code> 和 <code>key</code>，再填入 Prompt Vault 对应位置。自定义接口没有统一的申请入口，不要混用其他服务商的地址或 Key。
+                </p>
+              </div>
+            </details>
+          </div>
         </div>
       </section>
 
