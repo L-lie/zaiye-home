@@ -339,7 +339,7 @@
   border-radius: 999px;
   background: var(--paper);
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.86rem;
 }
 
 .vault-api-jump a:hover,
@@ -350,7 +350,7 @@
 
 .vault-api-layout {
   display: grid;
-  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  grid-template-columns: clamp(260px, 24vw, 360px) minmax(0, 1fr);
   gap: clamp(32px, 6vw, 88px);
   align-items: start;
 }
@@ -367,10 +367,10 @@
 }
 
 .vault-api-notice li {
-  margin-top: 10px;
+  margin-top: 12px;
   color: var(--muted);
-  font-size: 0.86rem;
-  line-height: 1.7;
+  font-size: 0.95rem;
+  line-height: 1.8;
 }
 
 .vault-api-providers {
@@ -412,7 +412,7 @@
 .vault-api-provider summary small,
 .vault-api-provider summary > span:last-child {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .vault-api-provider summary > span:last-child::before {
@@ -431,7 +431,8 @@
   max-width: 760px;
   padding: 0 0 32px;
   color: var(--muted);
-  line-height: 1.75;
+  font-size: 1.03rem;
+  line-height: 1.85;
 }
 
 .vault-api-provider-body ol {
@@ -440,7 +441,7 @@
 }
 
 .vault-api-provider-body li {
-  padding: 5px 0 5px 6px;
+  padding: 7px 0 7px 6px;
 }
 
 .vault-api-provider-body a {
@@ -462,7 +463,8 @@
   border-left: 2px solid var(--amber);
   background: var(--paper);
   color: var(--ink);
-  font-size: 0.86rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
 }
 
 @media (max-width: 720px) {
