@@ -135,9 +135,12 @@
           <aside class="vault-api-notice" aria-label="API Key 使用须知">
             <p class="eyebrow">设置前先知道</p>
             <ul>
+              <li>部分服务商只在创建时完整显示一次 API Key；创建后请立即复制，并存入可信的密码管理器。</li>
               <li>不要公开、截图分享或发送自己的 API Key。</li>
+              <li>不要把 Key 保存成 Prompt 条目；“设为隐私 Prompt”目前只隐藏界面显示，并不会把正文排除在导出、备份或同步之外。</li>
+              <li>如果 Key 遗失或怀疑已经泄露，请在服务商控制台撤销旧 Key，再新建一个。</li>
               <li>不同服务可能产生费用；额度、价格和可用模型以服务商当前说明为准。</li>
-              <li>Prompt Vault 的 Key 只保存在当前浏览器，不会进入 Prompt 的导出、备份或同步内容。</li>
+              <li>填写在“AI 设置”里的 Key 才会单独保存在当前浏览器，不会进入 Prompt 的导出、备份或同步内容。</li>
             </ul>
           </aside>
 
@@ -154,7 +157,7 @@
                     打开
                     <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Gemini 官方 API Key 页面</a>。
                   </li>
-                  <li>按页面提示创建 API Key，并立即复制保存。</li>
+                  <li>按页面提示创建 API Key，并立即复制到可信的密码管理器；部分 Key 在页面关闭后无法再次完整查看。</li>
                   <li>回到 Prompt Vault，打开“AI 设置”。</li>
                   <li>服务商选择“Gemini”，粘贴刚复制的 Key。</li>
                   <li>点击保存，完成配置。</li>
