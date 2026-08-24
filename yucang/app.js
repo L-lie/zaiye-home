@@ -8,6 +8,11 @@ import {
   renderPromptTemplate,
   snapshotToViewModel,
 } from "./core.mjs";
+import {
+  bindLoginShowcase,
+  loginControlsMarkup,
+  loginExperienceMarkup,
+} from "../auth/login-experience.js";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
@@ -226,50 +231,50 @@ async function renderLogin() {
     return;
   }
   const lastMethod = localStorage.getItem("yucangLastAuthMethod") || "";
-  const recent = (method) => lastMethod === method ? '<span class="pill accent">最近使用</span>' : "";
-  app.innerHTML = `
-    <section class="panel narrow auth-panel">
-      <div class="auth-brand">
-        <img src="assets/prompt-vault-logo.png" alt="" width="58" height="58" />
-        <div><p class="eyebrow">PROMPT VAULT ACCOUNT</p><h1>登录语藏</h1><p>使用同一个 Prompt Vault 账号进入社区。</p></div>
-      </div>
-      <div class="auth-providers">
-        <button class="button" type="button" data-oauth="github">使用 GitHub 登录 ${recent("github")}</button>
-        <button class="button" type="button" data-oauth="google">使用 Google 登录 ${recent("google")}</button>
-      </div>
-      <div class="auth-divider">或使用邮箱验证码</div>
-      <form id="emailCodeLogin" class="form-grid">
-        <label class="field full"><span>邮箱</span><input name="email" type="email" required autocomplete="email" /></label>
-        <label class="field full"><span>邮箱验证码</span><input name="token" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="发送后填写验证码" /></label>
-        <div class="actions field full">
-          <button class="button" type="button" data-send-code>发送验证码</button>
-          <button class="button primary" type="submit">登录</button>
-          ${recent("email")}
-        </div>
-      </form>
-      <p class="privacy-note">登录不会自动上传或公开你扩展中的任何 Prompt。云同步需要单独开启；公开发布仍必须由你主动选择内容、查看预览并再次确认。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a> · <a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a></p>
-    </section>`;
+  app.innerHTML = loginExperienceMarkup({
+    assetRoot: "..",
+    logoSrc: "assets/prompt-vault-logo.png",
+    title: "登录语藏",
+    description: "使用同一个 Prompt Vault 账号进入社区。",
+    controls: loginControlsMarkup({ assetRoot: ".." }),
+    footer: '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
+  });
+  bindLoginShowcase(app);
 
-  const emailForm = app.querySelector("#emailCodeLogin");
-  emailForm.querySelector("[data-send-code]").addEventListener("click", async (event) => {
-    if (!emailForm.reportValidity()) return;
-    const button = event.currentTarget;
-    const form = new FormData(emailForm);
-    setBusy(button, true, "正在发送…");
-    const { error } = await getClient().auth.signInWithOtp({
-      email: form.get("email"), options: { shouldCreateUser: true },
-    });
-    setBusy(button, false);
-    notify(error ? error.message : "验证码已发送，请检查邮箱。");
+  app.querySelectorAll("[data-oauth]").forEach((button) => {
+    if (button.dataset.oauth === lastMethod) {
+      button.classList.add("is-recent");
+      button.setAttribute("aria-label", `${button.getAttribute("aria-label")}，最近使用`);
+      button.title = `${button.title}，最近使用`;
+    }
   });
 
-  emailForm.addEventListener("submit", async (event) => {
+  let pendingEmail = "";
+  const emailRequestForm = app.querySelector("#emailRequestForm");
+  const emailVerifyForm = app.querySelector("#emailVerifyForm");
+  emailRequestForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = event.submitter;
-    setBusy(button, true, "正在验证…");
+    pendingEmail = new FormData(event.currentTarget).get("email").trim();
+    setBusy(button, true, "正在发送...");
+    const { error } = await getClient().auth.signInWithOtp({
+      email: pendingEmail, options: { shouldCreateUser: true },
+    });
+    setBusy(button, false);
+    if (error) return notify(error.message);
+    emailRequestForm.hidden = true;
+    emailVerifyForm.hidden = false;
+    emailVerifyForm.querySelector("input").focus();
+    notify("验证码已发送，请检查邮箱。");
+  });
+
+  emailVerifyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.submitter;
+    setBusy(button, true, "正在验证...");
     const form = new FormData(event.currentTarget);
     const { data, error } = await getClient().auth.verifyOtp({
-      email: form.get("email"),
+      email: pendingEmail,
       token: form.get("token"),
       type: "email",
     });

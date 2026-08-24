@@ -1,3 +1,28 @@
+import {
+  bindLoginShowcase,
+  loginControlsMarkup,
+  loginExperienceMarkup,
+} from "../login-experience.js";
+
+const extensionLoginRoot = document.querySelector("#extensionLoginRoot");
+extensionLoginRoot.innerHTML = loginExperienceMarkup({
+  assetRoot: "../..",
+  logoSrc: "../../yucang/assets/prompt-vault-logo.png",
+  title: "登录语藏",
+  description: "登录后安全返回 Prompt Vault 扩展。",
+  controls: `${loginControlsMarkup({ assetRoot: "../..", showStatus: true })}
+    <section id="consentPanel" class="login-consent" hidden>
+      <p>当前账号：<strong id="accountLabel"></strong></p>
+      <p id="actionDescription">确认后将返回 Prompt Vault 扩展。</p>
+      <div class="login-consent-actions">
+        <button id="continueButton" type="button">继续</button>
+        <button id="cancelButton" type="button" class="secondary">取消</button>
+      </div>
+    </section>`,
+  footer: "登录只建立账号会话，不会上传、同步或公开你的本地 Prompt。",
+});
+bindLoginShowcase(extensionLoginRoot);
+
 const statusBox = document.querySelector("#status");
 const loginPanel = document.querySelector("#loginPanel");
 const oauthButtons = document.querySelector("#oauthButtons");
@@ -57,9 +82,9 @@ function showLogin() {
   loginPanel.hidden = false;
   consentPanel.hidden = true;
   oauthButtons.querySelectorAll("[data-provider]").forEach((button) => {
-    button.hidden = Boolean(flow.provider && button.dataset.provider !== flow.provider);
+    button.hidden = Boolean(flow.action === "link" && flow.provider && button.dataset.provider !== flow.provider);
   });
-  emailPanel.hidden = Boolean(flow.provider && flow.provider !== "email");
+  emailPanel.hidden = Boolean(flow.action === "link" && flow.provider && flow.provider !== "email");
   setStatus("请选择登录方式。网站登录不会读取扩展中的本地 Prompt。");
 }
 

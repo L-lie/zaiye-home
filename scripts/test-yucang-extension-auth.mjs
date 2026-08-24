@@ -78,12 +78,17 @@ assert.equal(encrypted.includes("access"), false);
 assert.deepEqual(await decryptJson(encrypted, key), session);
 await assert.rejects(() => decryptJson(encrypted, Buffer.alloc(32, 8).toString("base64")));
 
-const [pageSource, authorizeSource, tokenSource, migration, netlify] = await Promise.all([
+const [pageSource, authorizeSource, tokenSource, migration, netlify, sharedLogin, sharedStyles, extensionPage, websitePage, websiteApp] = await Promise.all([
   readFile(new URL("../auth/extension/app.js", import.meta.url), "utf8"),
   readFile(new URL("../supabase/functions/yucang-extension-authorize/index.ts", import.meta.url), "utf8"),
   readFile(new URL("../supabase/functions/yucang-extension-token/index.ts", import.meta.url), "utf8"),
   readFile(new URL("../supabase/migrations/20260825000200_yucang_extension_auth.sql", import.meta.url), "utf8"),
   readFile(new URL("../netlify.toml", import.meta.url), "utf8"),
+  readFile(new URL("../auth/login-experience.js", import.meta.url), "utf8"),
+  readFile(new URL("../auth/login-experience.css", import.meta.url), "utf8"),
+  readFile(new URL("../auth/extension/index.html", import.meta.url), "utf8"),
+  readFile(new URL("../yucang/index.html", import.meta.url), "utf8"),
+  readFile(new URL("../yucang/app.js", import.meta.url), "utf8"),
 ]);
 
 assert.match(pageSource, /location\.replace\(callbackUrl\(\{ code: result\.code, state: result\.state \}\)\)/);
@@ -97,5 +102,16 @@ assert.match(migration, /code\.expires_at > now\(\)/);
 assert.match(migration, /revoke all on table public\.yucang_extension_auth_codes from public, anon, authenticated/);
 assert.match(migration, /grant execute on function public\.yucang_consume_extension_auth_code\(text, text, text\)[\s\S]*to service_role/);
 assert.match(netlify, /from = "\/auth\/extension"/);
+assert.match(extensionPage, /\.\.\/login-experience\.css/);
+assert.match(websitePage, /\.\.\/auth\/login-experience\.css/);
+assert.match(pageSource, /from "\.\.\/login-experience\.js"/);
+assert.match(websiteApp, /from "\.\.\/auth\/login-experience\.js"/);
+assert.match(sharedLogin, /prompt-vault-desktop\.png/);
+assert.match(sharedLogin, /prompt-vault-mobile\.png/);
+assert.match(sharedLogin, /prompt-vault-product\.jpg/);
+assert.match(sharedLogin, /aria-label="使用 GitHub 登录" title="使用 GitHub 登录"/);
+assert.match(sharedLogin, /aria-label="使用 Google 登录" title="使用 Google 登录"/);
+assert.match(sharedStyles, /@media \(max-width: 820px\)/);
+assert.match(sharedStyles, /prefers-reduced-motion/);
 
 console.log("Yucang extension auth contract tests passed.");
