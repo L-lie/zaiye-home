@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="语藏 Prompt 社区，为视觉创作者发现、发布和复用高质量 Prompt。" />
+    <title>语藏 Prompt 社区</title>
+    <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
+    <link rel="stylesheet" href="app.css" />
+    <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
+    <script src="../supabase-config.js" defer></script>
+    <script src="../supabase-client.js" defer></script>
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="#/discover" aria-label="语藏发现首页">
+        <img class="brand-mark" src="assets/prompt-vault-logo.png" alt="" width="38" height="38" />
+        <span><strong>语藏</strong><small>Prompt Community</small></span>
+      </a>
+      <nav class="main-nav" aria-label="主导航">
+        <a href="#/discover" data-nav="discover">发现</a>
+        <a href="#/publish/new" data-creator-link hidden>新建作品</a>
+        <a href="#/my-publications" data-creator-link hidden>我的发布</a>
+        <a href="#/admin/review" data-staff-link hidden>审核</a>
+      </nav>
+      <div class="account-actions" id="accountActions">
+        <a class="button ghost" href="#/login">登录</a>
+      </div>
+    </header>
+
+    <main id="app" class="app-main" tabindex="-1">
+      <section class="loading-state" aria-live="polite">
+        <span class="spinner"></span>
+        <p>正在进入语藏…</p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <template id="errorTemplate">
+      <section class="state-card error-card">
+        <p class="eyebrow">暂时无法完成</p>
+        <h1 data-error-title>发生错误</h1>
+        <p data-error-message></p>
+        <a class="button primary" href="#/discover">返回发现</a>
+      </section>
+    </template>
+  </body>
+</html>

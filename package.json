@@ -6,7 +6,8 @@
     "editor:portfolio": "node scripts/portfolio-editor-server.cjs",
     "test:portfolio-editor": "node scripts/test-portfolio-editor.cjs",
     "vendor:supabase": "node scripts/vendor-supabase.cjs",
-    "test:supabase": "node scripts/test-supabase-integration.cjs"
+    "test:supabase": "node scripts/test-supabase-integration.cjs",
+    "test:yucang": "node scripts/test-yucang-slice1.mjs"
   },
   "devDependencies": {
     "sharp": "^0.34.3"
