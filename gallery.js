@@ -717,6 +717,14 @@ function renderPosterShowcase() {
 
     let touchDrag = null;
     let suppressTouchClick = false;
+    let clearTouchClickTimer = 0;
+    const suppressFollowingTouchClick = () => {
+      suppressTouchClick = true;
+      window.clearTimeout(clearTouchClickTimer);
+      clearTouchClickTimer = window.setTimeout(() => {
+        suppressTouchClick = false;
+      }, 500);
+    };
     marquee.addEventListener("pointerdown", (event) => {
       if (event.pointerType !== "touch") return;
       window.cancelAnimationFrame(inertiaFrame);
@@ -739,11 +747,12 @@ function renderPosterShowcase() {
       if (!touchDrag.moved) {
         if (Math.hypot(totalX, totalY) < 7) return;
         if (Math.abs(totalY) > Math.abs(totalX)) {
+          suppressFollowingTouchClick();
           touchDrag = null;
           return;
         }
         touchDrag.moved = true;
-        suppressTouchClick = true;
+        suppressFollowingTouchClick();
         marquee.classList.add("is-middle-dragging");
       }
       const deltaX = event.clientX - touchDrag.lastX;
@@ -764,12 +773,14 @@ function renderPosterShowcase() {
     marquee.addEventListener("pointerup", endTouchDrag);
     marquee.addEventListener("pointercancel", (event) => {
       if (!touchDrag || event.pointerId !== touchDrag.pointerId) return;
+      suppressFollowingTouchClick();
       touchDrag = null;
       marquee.classList.remove("is-middle-dragging");
     });
     marquee.addEventListener("click", (event) => {
       if (!suppressTouchClick) return;
       suppressTouchClick = false;
+      window.clearTimeout(clearTouchClickTimer);
       event.preventDefault();
       event.stopImmediatePropagation();
     }, true);

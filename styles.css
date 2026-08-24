@@ -2109,6 +2109,16 @@ body.is-lightbox-open {
     transform: perspective(900px) rotateY(-3deg) rotateZ(0) translateY(-12px) scale(1.035);
   }
 
+  .archive-poster-card:hover .archive-poster-visual {
+    box-shadow: -12px 14px 18px rgba(0, 0, 0, 0.52), -4px 28px 42px rgba(0, 0, 0, 0.6);
+    transform: perspective(900px) rotateY(-16deg) rotateZ(var(--poster-tilt));
+  }
+
+  .archive-poster-card:hover .archive-poster-label {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
   .archive-showcase-nav {
     justify-content: flex-start;
     overflow-x: auto;
@@ -2133,7 +2143,7 @@ body.is-lightbox-open {
   .archive-case-grid,
   .archive-case-grid.is-single {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     column-width: auto;
     column-gap: 6px;
     row-gap: 8px;
