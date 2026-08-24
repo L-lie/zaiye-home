@@ -247,7 +247,7 @@ async function renderLogin() {
           ${recent("email")}
         </div>
       </form>
-      <p class="privacy-note">登录不会自动上传或公开你扩展中的任何 Prompt。云同步需要单独开启；公开发布仍必须由你主动选择内容、查看预览并再次确认。</p>
+      <p class="privacy-note">登录不会自动上传或公开你扩展中的任何 Prompt。云同步需要单独开启；公开发布仍必须由你主动选择内容、查看预览并再次确认。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a> · <a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a></p>
     </section>`;
 
   const emailForm = app.querySelector("#emailCodeLogin");
