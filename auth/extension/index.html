@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>连接语藏 Prompt Vault</title>
+    <link rel="icon" href="../../yucang/assets/prompt-vault-logo.png" type="image/png" />
+    <link rel="stylesheet" href="./style.css" />
+    <script src="../../assets/vendor/supabase-2.111.0.js" defer></script>
+    <script src="../../supabase-config.js" defer></script>
+    <script src="../../supabase-client.js" defer></script>
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <main class="auth-shell">
+      <section class="auth-card" aria-labelledby="pageTitle">
+        <header class="brand">
+          <img src="../../yucang/assets/prompt-vault-logo.png" alt="" width="52" height="52" />
+          <div><strong>语藏</strong><span>Prompt Vault</span></div>
+        </header>
+        <p class="eyebrow">SECURE EXTENSION SIGN-IN</p>
+        <h1 id="pageTitle">连接 Prompt Vault</h1>
+        <p class="lede">使用语藏网站账号安全登录扩展。本流程不会上传、同步或公开你的本地 Prompt。</p>
+
+        <div id="status" class="status" role="status" aria-live="polite">正在检查登录状态…</div>
+
+        <section id="loginPanel" hidden>
+          <div id="oauthButtons" class="button-stack">
+            <button type="button" data-provider="github">使用 GitHub 登录</button>
+            <button type="button" data-provider="google">使用 Google 登录</button>
+          </div>
+          <div id="emailPanel" class="email-panel">
+            <p class="divider"><span>或使用邮箱验证码</span></p>
+            <form id="emailRequestForm">
+              <label>邮箱<input name="email" type="email" autocomplete="email" required /></label>
+              <button type="submit">发送验证码</button>
+            </form>
+            <form id="emailVerifyForm" hidden>
+              <label>验证码<input name="token" inputmode="numeric" autocomplete="one-time-code" minlength="6" required /></label>
+              <button type="submit">验证并继续</button>
+            </form>
+          </div>
+        </section>
+
+        <section id="consentPanel" class="consent" hidden>
+          <p>当前账号：<strong id="accountLabel"></strong></p>
+          <p id="actionDescription">确认后将返回 Prompt Vault 扩展。</p>
+          <div class="button-row">
+            <button id="continueButton" type="button" class="primary">继续</button>
+            <button id="cancelButton" type="button" class="secondary">取消</button>
+          </div>
+        </section>
+
+        <p class="security-note">扩展回跳只包含短时一次性 code 和 state；Supabase access token 与 refresh token 不进入 URL。</p>
+      </section>
+    </main>
+  </body>
+</html>

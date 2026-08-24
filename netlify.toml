@@ -1,0 +1,23 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/"
+  to = "/yucang/"
+  status = 302
+
+[[redirects]]
+  from = "/auth/extension"
+  to = "/auth/extension/index.html"
+  status = 200
+  force = true
+
+[[headers]]
+  for = "/auth/extension/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    Referrer-Policy = "no-referrer"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://zbcdmtjmqpwtevjaewtl.supabase.co; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"

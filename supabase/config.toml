@@ -1,0 +1,5 @@
+[functions.yucang-extension-authorize]
+verify_jwt = false
+
+[functions.yucang-extension-token]
+verify_jwt = false
