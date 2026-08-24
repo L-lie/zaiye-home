@@ -220,7 +220,7 @@ language sql
 immutable
 set search_path = ''
 as $$
-  select encode(digest(convert_to(p_snapshot::text, 'UTF8'), 'sha256'), 'hex');
+  select encode(extensions.digest(convert_to(p_snapshot::text, 'UTF8'), 'sha256'), 'hex');
 $$;
 
 revoke all on function private.yucang_snapshot(public.yucang_versions) from public, anon, authenticated;
