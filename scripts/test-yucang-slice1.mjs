@@ -12,6 +12,7 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const migration = readFileSync(join(root, "supabase/migrations/20260825000100_yucang_slice1.sql"), "utf8");
 const app = readFileSync(join(root, "yucang/app.js"), "utf8");
+const appCss = readFileSync(join(root, "yucang/app.css"), "utf8");
 const html = readFileSync(join(root, "yucang/index.html"), "utf8");
 const resources = JSON.parse(readFileSync(join(root, "prompt-vault-resources.json"), "utf8"));
 
@@ -99,6 +100,10 @@ assert.match(app, /yucangLocale/);
 assert.match(app, /data-locale-toggle/);
 assert.match(app, /home-login-layer/);
 assert.match(app, /loginExperienceMarkup/);
+assert.match(app, /loginControlsMarkup\(\{ assetRoot: "\.\.", showStatus: true \}\)/);
+assert.match(app, /发送太频繁，请等待 60 秒后再试/);
+assert.match(app, /验证码已发送，请在下方输入/);
+assert.match(appCss, /\.toast \{[^}]*z-index: 150/);
 for (const asset of [
   "yucang/assets/yucang-text-figure.png",
   "yucang/assets/featured/mushroom-city-1.webp",

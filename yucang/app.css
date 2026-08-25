@@ -312,7 +312,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
 .confirm-box input { width: auto; margin-top: 4px; }
 .setup-note { margin: 18px 0; padding: 16px; border: 1px solid rgba(221,121,109,.35); border-radius: 12px; color: #ffd7d2; background: rgba(221,121,109,.08); line-height: 1.6; }
 .empty-state { padding: 48px 20px; border: 1px dashed var(--line); border-radius: var(--radius); text-align: center; color: var(--muted); }
-.toast { position: fixed; right: 24px; bottom: 24px; z-index: 50; max-width: min(420px, calc(100vw - 48px)); padding: 13px 17px; border: 1px solid var(--line); border-radius: 12px; background: #252820; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+.toast { position: fixed; right: 24px; bottom: 24px; z-index: 150; max-width: min(420px, calc(100vw - 48px)); padding: 13px 17px; border: 1px solid var(--line); border-radius: 12px; background: #252820; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
 .error-card { width: min(680px, 100%); margin: 60px auto; }
 .error-card h1 { font-size: 38px; }
 

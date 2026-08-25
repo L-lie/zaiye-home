@@ -384,6 +384,19 @@ function bindWebsiteLogin(root) {
   });
 
   let pendingEmail = "";
+  const loginStatus = root.querySelector("#status");
+  const setLoginStatus = (message, isError = false) => {
+    if (!loginStatus) return notify(message);
+    loginStatus.textContent = message;
+    loginStatus.classList.toggle("error", isError);
+  };
+  const emailErrorMessage = (error) => {
+    if (Number(error?.status) === 429 || /rate limit|too many|60 seconds/i.test(String(error?.message || ""))) {
+      return tr("发送太频繁，请等待 60 秒后再试。之前收到的验证码在有效期内仍可使用。", "Too many requests. Wait 60 seconds and try again. Your previous code remains valid until it expires.");
+    }
+    return error?.message || tr("验证码发送失败，请稍后重试。", "Could not send the verification code. Try again later.");
+  };
+  setLoginStatus(tr("选择一种方式登录，或填写邮箱获取验证码。", "Choose a sign-in method or enter your email to get a verification code."));
   const emailRequestForm = root.querySelector("#emailRequestForm");
   const emailVerifyForm = root.querySelector("#emailVerifyForm");
   emailRequestForm.addEventListener("submit", async (event) => {
@@ -395,11 +408,11 @@ function bindWebsiteLogin(root) {
       email: pendingEmail, options: { shouldCreateUser: true },
     });
     setBusy(button, false);
-    if (error) return notify(error.message);
+    if (error) return setLoginStatus(emailErrorMessage(error), true);
     emailRequestForm.hidden = true;
     emailVerifyForm.hidden = false;
     emailVerifyForm.querySelector("input").focus();
-    notify(tr("验证码已发送，请检查邮箱。", "Verification code sent. Check your email."));
+    setLoginStatus(tr("验证码已发送，请在下方输入。若收件箱没有，请检查垃圾邮箱。", "Verification code sent. Enter it below. Check spam if it is not in your inbox."));
   });
 
   emailVerifyForm.addEventListener("submit", async (event) => {
@@ -411,7 +424,7 @@ function bindWebsiteLogin(root) {
       email: pendingEmail, token: form.get("token"), type: "email",
     });
     setBusy(button, false);
-    if (error) return notify(error.message);
+    if (error) return setLoginStatus(error.message, true);
     localStorage.setItem("yucangLastAuthMethod", "email");
     state.session = data.session;
     await loadAccess();
@@ -425,7 +438,7 @@ function bindWebsiteLogin(root) {
       provider: button.dataset.oauth,
       options: { redirectTo: `${location.origin}${location.pathname}#/home` },
     });
-    if (error) notify(error.message);
+    if (error) setLoginStatus(error.message, true);
   }));
 }
 
@@ -700,7 +713,7 @@ function renderHome({ showLogin = false } = {}) {
             logoSrc: "assets/prompt-vault-logo.png",
             title: tr("登录语藏", "Sign in to Yucang"),
             description: tr("使用同一个 Prompt Vault 账号进入社区。", "Use your Prompt Vault account to enter the community."),
-            controls: loginControlsMarkup({ assetRoot: ".." }),
+            controls: loginControlsMarkup({ assetRoot: "..", showStatus: true }),
             footer: tr(
               '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
               'Signing in does not upload, sync, or publish local Prompts from your extension.<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">Privacy</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">Terms</a>',
