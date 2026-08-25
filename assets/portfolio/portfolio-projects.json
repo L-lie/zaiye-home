@@ -1,4 +1,657 @@
 {
   "version": 1,
-  "items": []
+  "items": [
+    {
+      "id": "ai-qing-gong-yu",
+      "project": "feature",
+      "projects": [],
+      "title": "《爱情公寓》",
+      "meta": "电影 / 网大",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/ai-qing-gong-yu.jpg",
+      "poster": "assets/portfolio/posters/ai-qing-gong-yu.jpg",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 0,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "monkey-king",
+      "project": "stage",
+      "projects": [],
+      "title": "《美猴王·一念齐天》美术设计",
+      "meta": "舞台剧 / 古装奇幻",
+      "copy": "悬浮城市、花果山、多屏场景、特效设计和角色视觉方案。",
+      "image": "assets/portfolio/slide-04-01.jpeg",
+      "poster": "assets/portfolio/posters/monkey-king.jpg",
+      "slides": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        41,
+        42,
+        58,
+        59,
+        67,
+        68,
+        71
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 22,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "di-xin-wei-ji",
+      "project": "feature",
+      "projects": [],
+      "title": "《地心危机》",
+      "meta": "电影 / 网大",
+      "copy": "科幻空间气氛图、道具资产、实验设备和戏用文字资料。",
+      "image": "assets/portfolio/slide-11-01.jpeg",
+      "poster": "assets/portfolio/posters/di-xin-wei-ji.jpg",
+      "slides": [
+        11,
+        16,
+        44,
+        45,
+        46,
+        48,
+        65
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 6,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "qian-nv-you-hun",
+      "project": "feature",
+      "projects": [],
+      "title": "《倩女幽魂》",
+      "meta": "电影 / 网大",
+      "copy": "古装奇幻场景气氛图、树形资产、转生门和地台设计。",
+      "image": "assets/portfolio/slide-13-01.jpeg",
+      "poster": "",
+      "slides": [
+        13,
+        14,
+        43,
+        49,
+        57,
+        84
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 7,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "mi-hang-kun-lun-xu",
+      "project": "feature",
+      "projects": [],
+      "title": "《迷航昆仑墟》",
+      "meta": "电影 / 网大",
+      "copy": "船舱、实验室、改造人舱、顶灯和昆仑瓶道具资料。",
+      "image": "assets/portfolio/slide-24-01.jpeg",
+      "poster": "assets/portfolio/posters/mi-hang-kun-lun-xu.jpg",
+      "slides": [
+        24,
+        25,
+        29,
+        47,
+        50,
+        56
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 8,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "bao-lian-deng",
+      "project": "feature",
+      "projects": [],
+      "title": "《宝莲灯》",
+      "meta": "电影 / 网大",
+      "copy": "天宫场景气氛图与空间视觉方案。",
+      "image": "assets/portfolio/slide-12-01.jpeg",
+      "poster": "",
+      "slides": [
+        12,
+        83
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 9,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "da-mao-xian-wang",
+      "project": "feature",
+      "projects": [],
+      "title": "《大冒险王》",
+      "meta": "电影 / 网大",
+      "copy": "基地空间、吧台、休闲区和仓库谈判场景。",
+      "image": "assets/portfolio/slide-17-01.jpeg",
+      "poster": "assets/portfolio/posters/da-mao-xian-wang.jpg",
+      "slides": [
+        17,
+        85,
+        86
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 10,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "chao-shen-bao-biao",
+      "project": "feature",
+      "projects": [],
+      "title": "《超神保镖》",
+      "meta": "电影 / 网大",
+      "copy": "警察局空间模型与渲染方案。",
+      "image": "assets/portfolio/slide-21-01.jpeg",
+      "poster": "assets/portfolio/posters/chao-shen-bao-biao.jpg",
+      "slides": [
+        21
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 2,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "qi-men-yi-shi",
+      "project": "feature",
+      "projects": [],
+      "title": "《奇门异事》",
+      "meta": "电影 / 网大",
+      "copy": "极乐城空间模型与渲染方案。",
+      "image": "assets/portfolio/slide-22-01.jpeg",
+      "poster": "",
+      "slides": [
+        22
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 25,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "ren-yu",
+      "project": "feature",
+      "projects": [],
+      "title": "《人鱼》",
+      "meta": "电影 / 网大",
+      "copy": "再田号船体与制作图资料。",
+      "image": "assets/portfolio/slide-52-01.png",
+      "poster": "assets/portfolio/posters/ren-yu.jpg",
+      "slides": [
+        52
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 13,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "ying-zi-xing-dong",
+      "project": "feature",
+      "projects": [],
+      "title": "《影子行动之血封喉》",
+      "meta": "电影 / 网大",
+      "copy": "天机阁模型、渲染与后期资料。",
+      "image": "assets/portfolio/slide-55-05.png",
+      "poster": "assets/portfolio/posters/ying-zi-xing-dong.jpg",
+      "slides": [
+        55
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 14,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "da-she-3",
+      "project": "feature",
+      "projects": [],
+      "title": "《大蛇3》",
+      "meta": "电影 / 网大",
+      "copy": "动物札记与道具画资料。",
+      "image": "assets/portfolio/slide-61-04.jpeg",
+      "poster": "assets/portfolio/posters/da-she-3.png",
+      "slides": [
+        61
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 15,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "da-mo-shen-long",
+      "project": "feature",
+      "projects": [],
+      "title": "《大漠神龙》",
+      "meta": "电影 / 网大",
+      "copy": "沙漠、磐石镇等分镜和线稿场景。",
+      "image": "assets/portfolio/slide-72-01.png",
+      "poster": "assets/portfolio/posters/da-mo-shen-long.webp",
+      "slides": [
+        72,
+        74
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 3,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "mo-wang-bie-hei-hua",
+      "project": "feature",
+      "projects": [],
+      "title": "《魔王别黑化》",
+      "meta": "电影 / 网大",
+      "copy": "医院病房场景气氛图。",
+      "image": "assets/portfolio/slide-87-01.jpeg",
+      "poster": "assets/portfolio/posters/mo-wang-bie-hei-hua.jpg",
+      "slides": [
+        87
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 24,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "hei-shui-ling",
+      "project": "feature",
+      "projects": [],
+      "title": "《黑水岭》",
+      "meta": "电影 / 网大",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/hei-shui-ling.jpg",
+      "poster": "assets/portfolio/posters/hei-shui-ling.jpg",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 19,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "jiang-long-zhuo-yao",
+      "project": "feature",
+      "projects": [],
+      "title": "《降龙大师之捉妖榜》",
+      "meta": "电影 / 网大",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/jiang-long-zhuo-yao.webp",
+      "poster": "assets/portfolio/posters/jiang-long-zhuo-yao.webp",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 16,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "jiang-long-lie-long",
+      "project": "feature",
+      "projects": [],
+      "title": "《降龙大师：猎龙队》",
+      "meta": "电影 / 网大",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/jiang-long-lie-long.jpg",
+      "poster": "assets/portfolio/posters/jiang-long-lie-long.jpg",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 20,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "jiang-long-mo-long",
+      "project": "feature",
+      "projects": [],
+      "title": "《降龙大师：魔龙咒》",
+      "meta": "电影 / 网大",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/jiang-long-mo-long.jpg",
+      "poster": "assets/portfolio/posters/jiang-long-mo-long.jpg",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 21,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "yi-zhai-jia-zu",
+      "project": "series",
+      "projects": [],
+      "title": "《一宅家族》",
+      "meta": "剧集 / 情景剧",
+      "copy": "客厅、卧室等空间模型、渲染图和实景陈设资料。",
+      "image": "assets/portfolio/slide-20-01.png",
+      "poster": "assets/portfolio/posters/yi-zhai-jia-zu.png",
+      "slides": [
+        18,
+        19,
+        20
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 11,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "su-ji-guan-cai-pu",
+      "project": "series",
+      "projects": [],
+      "title": "《苏记棺材铺》",
+      "meta": "剧集 / 古装",
+      "copy": "木船、玉璇玑、马车等模型和资产资料。",
+      "image": "assets/portfolio/slide-51-02.png",
+      "poster": "assets/portfolio/posters/su-ji-guan-cai-pu.jpg",
+      "slides": [
+        51,
+        53,
+        54
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 1,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "feng-du-guai-tan",
+      "project": "series",
+      "projects": [],
+      "title": "《阴阳镇怪谈》",
+      "meta": "剧集 / 民国",
+      "copy": "政府文件、平面图等戏用平面资料。",
+      "image": "assets/portfolio/slide-77-01.png",
+      "poster": "assets/portfolio/posters/yin-yang-zhen-guai-tan.jpg",
+      "slides": [
+        77,
+        78
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 23,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "xin-xin-yu",
+      "project": "series",
+      "projects": [],
+      "title": "《倒数三秒爱上我》",
+      "meta": "剧集 / 现代",
+      "copy": "应援物、海报易拉宝、药类平面和生活痕迹资料。",
+      "image": "assets/portfolio/slide-80-01.jpeg",
+      "poster": "assets/portfolio/posters/dao-shu-san-miao.jpg",
+      "slides": [
+        79,
+        80,
+        81
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 4,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "miss",
+      "project": "series",
+      "projects": [],
+      "title": "《Miss》",
+      "meta": "短片 / 分镜",
+      "copy": "第一幕钥匙段落分镜资料。",
+      "image": "assets/portfolio/slide-73-01.png",
+      "poster": "",
+      "slides": [
+        73
+      ],
+      "showInProjectEntry": false,
+      "assetId": "",
+      "order": 27,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "cheng-feng-po-lang",
+      "project": "variety",
+      "projects": [],
+      "title": "《乘风破浪的姐姐第一季》",
+      "meta": "综艺 / 晚会",
+      "copy": "直播夜揭晓台模型、渲染和现场空间参考。",
+      "image": "assets/portfolio/slide-40-01.jpeg",
+      "poster": "assets/portfolio/posters/cheng-feng-po-lang.jpg",
+      "slides": [
+        40
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 5,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "qing-chun-zai-da-di",
+      "project": "variety",
+      "projects": [
+        "stage",
+        "variety"
+      ],
+      "title": "《青春在大地》",
+      "meta": "舞台剧 / 综艺",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/qing-chun-zai-da-di.png",
+      "poster": "assets/portfolio/posters/qing-chun-zai-da-di.png",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 18,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "jin-ying-jie",
+      "project": "variety",
+      "projects": [],
+      "title": "《第十三届中国金鹰电视艺术节》",
+      "meta": "综艺 / 晚会",
+      "copy": "项目海报已归档，项目图后续补充。",
+      "image": "assets/portfolio/posters/jin-ying-jie.jpg",
+      "poster": "assets/portfolio/posters/jin-ying-jie.jpg",
+      "slides": [],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 17,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "jin-cheng-zha-lan",
+      "project": "promo",
+      "projects": [],
+      "title": "《金城栅栏宣传片》",
+      "meta": "广告 / 宣传片",
+      "copy": "广告分镜节选和镜头调度资料。",
+      "image": "assets/portfolio/slide-70-01.jpeg",
+      "poster": "assets/portfolio/posters/jin-cheng-zha-lan.jpg",
+      "slides": [
+        70
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 12,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "hai-zhi-sheng",
+      "project": "promo",
+      "projects": [],
+      "title": "《海之声》",
+      "meta": "广告 / 宣传片",
+      "copy": "三组镜头分镜与画面方案。",
+      "image": "assets/portfolio/slide-75-01.jpeg",
+      "poster": "",
+      "slides": [
+        75
+      ],
+      "showInProjectEntry": false,
+      "assetId": "",
+      "order": 28,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    },
+    {
+      "id": "ming-guo-immersive",
+      "project": "immersive",
+      "projects": [],
+      "title": "民国剧本杀",
+      "meta": "实景 / 沉浸",
+      "copy": "百乐门、证券交易所等沉浸式空间模型和实景资料。",
+      "image": "assets/portfolio/slide-27-02.png",
+      "poster": "assets/portfolio/posters/ming-guo-immersive.jpg",
+      "slides": [
+        26,
+        27,
+        28
+      ],
+      "showInProjectEntry": true,
+      "assetId": "",
+      "order": 26,
+      "textStyles": {
+        "title": {},
+        "meta": {},
+        "copy": {}
+      }
+    }
+  ],
+  "pageElements": {
+    "themeButton": {},
+    "searchButton": {}
+  }
 }
