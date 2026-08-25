@@ -404,6 +404,7 @@ function bindTextFigure(canvas) {
   const glyphs = "语藏提示词灵感创作想象光影构图镜头场景叙事节奏色彩质感空间细节图像语言模型参数风格结构生成变化重组流动";
   const particles = [];
   const motes = [];
+  const pointer = { active: false, x: 0, y: 0 };
   let frame = 0;
   let start = performance.now();
   let seed = 24681357;
@@ -412,12 +413,12 @@ function bindTextFigure(canvas) {
     return (seed - 1) / 2147483646;
   };
   const insideFigure = (x, y) => {
-    const head = (x / .235) ** 2 + ((y - .285) / .23) ** 2 <= 1;
-    const neckHalf = .09 + Math.max(0, y - .48) * .22;
-    const neck = y >= .43 && y <= .68 && Math.abs(x) <= neckHalf;
-    const shoulderY = (y - .79) / .24;
-    const shoulders = y >= .59 && y <= 1.03 && (x / .58) ** 2 + shoulderY ** 2 <= 1;
-    const torso = y >= .7 && y <= 1.03 && Math.abs(x) <= .34 - (y - .7) * .1;
+    const head = (x / .17) ** 2 + ((y - .19) / .145) ** 2 <= 1;
+    const neckHalf = .075 + Math.max(0, y - .31) * .25;
+    const neck = y >= .3 && y <= .49 && Math.abs(x) <= neckHalf;
+    const shoulderY = (y - .62) / .23;
+    const shoulders = y >= .43 && y <= .86 && (x / .59) ** 2 + shoulderY ** 2 <= 1;
+    const torso = y >= .58 && y <= 1.02 && Math.abs(x) <= .37 - (y - .58) * .12;
     return head || neck || shoulders || torso;
   };
   for (let index = 0; index < 760; index += 1) {
@@ -433,8 +434,8 @@ function bindTextFigure(canvas) {
       y,
       depth,
       glyph: glyphs[Math.floor(random() * glyphs.length)],
-      size: 7 + depth * 12 + random() * 5,
-      alpha: .18 + depth * .58,
+      size: 5 + depth ** 2 * 24 + random() * 6,
+      alpha: .14 + depth * .64,
       phase: random() * Math.PI * 2,
       speed: .18 + random() * .32,
       rotation: (random() - .5) * .22,
@@ -450,6 +451,18 @@ function bindTextFigure(canvas) {
       phase: random(),
     });
   }
+  particles.sort((a, b) => a.depth - b.depth);
+
+  const updatePointer = (event) => {
+    if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+    const bounds = canvas.getBoundingClientRect();
+    pointer.active = true;
+    pointer.x = event.clientX - bounds.left;
+    pointer.y = event.clientY - bounds.top;
+  };
+  const clearPointer = () => { pointer.active = false; };
+  canvas.addEventListener("pointermove", updatePointer);
+  canvas.addEventListener("pointerleave", clearPointer);
 
   const draw = (now = start) => {
     const cssWidth = canvas.clientWidth;
@@ -467,22 +480,32 @@ function bindTextFigure(canvas) {
     const centerX = cssWidth / 2;
     const scaleX = cssWidth * .77;
     const scaleY = cssHeight * .9;
-    particles
-      .slice()
-      .sort((a, b) => a.depth - b.depth)
-      .forEach((particle) => {
+    particles.forEach((particle) => {
         const drift = reducedMotion ? 0 : Math.sin(time * particle.speed + particle.phase) * (1.2 + particle.depth * 1.8);
-        const x = centerX + particle.x * scaleX + drift;
-        const y = particle.y * scaleY + Math.cos(time * particle.speed * .7 + particle.phase) * 1.4;
+        let x = centerX + particle.x * scaleX + drift;
+        let y = particle.y * scaleY + Math.cos(time * particle.speed * .7 + particle.phase) * 1.4;
+        let interaction = 0;
+        if (pointer.active && !reducedMotion) {
+          const deltaX = x - pointer.x;
+          const deltaY = y - pointer.y;
+          const distance = Math.hypot(deltaX, deltaY);
+          const radius = 72;
+          if (distance < radius) {
+            interaction = 1 - distance / radius;
+            const force = interaction * 16;
+            x += (deltaX / Math.max(distance, 1)) * force;
+            y += (deltaY / Math.max(distance, 1)) * force;
+          }
+        }
         context.save();
         context.translate(x, y);
         context.rotate(particle.rotation + Math.sin(time * .12 + particle.phase) * .025);
         context.font = `${Math.round(particle.size)}px "Songti SC", SimSun, STSong, serif`;
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillStyle = `rgba(239, 239, 232, ${particle.alpha})`;
-        context.shadowColor = `rgba(239, 239, 232, ${.08 + particle.depth * .22})`;
-        context.shadowBlur = 2 + particle.depth * 5;
+        context.fillStyle = `rgba(239, 239, 232, ${Math.min(1, particle.alpha + interaction * .42)})`;
+        context.shadowColor = `rgba(239, 239, 232, ${.08 + particle.depth * .22 + interaction * .58})`;
+        context.shadowBlur = 2 + particle.depth * 5 + interaction * 14;
         context.fillText(particle.glyph, 0, 0);
         context.restore();
       });
@@ -499,7 +522,11 @@ function bindTextFigure(canvas) {
     if (!reducedMotion) frame = requestAnimationFrame(draw);
   };
   draw();
-  return () => cancelAnimationFrame(frame);
+  return () => {
+    cancelAnimationFrame(frame);
+    canvas.removeEventListener("pointermove", updatePointer);
+    canvas.removeEventListener("pointerleave", clearPointer);
+  };
 }
 
 function localizeLoginExperience(root) {
