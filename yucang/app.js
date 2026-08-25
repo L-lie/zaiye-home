@@ -414,18 +414,26 @@ function bindTextFigure(canvas) {
     return (seed - 1) / 2147483646;
   };
   const insideFigure = (x, y) => {
-    const head = (x / .16) ** 2 + ((y - .18) / .15) ** 2 <= 1;
-    const neck = y >= .31 && y <= .48 && Math.abs(x) <= .066 + (y - .31) * .17;
+    let head = false;
+    if (y >= .03 && y <= .38) {
+      if (y <= .22) {
+        head = (x / .18) ** 2 + ((y - .2) / .17) ** 2 <= 1;
+      } else {
+        const jawProgress = (y - .22) / .16;
+        head = Math.abs(x) <= .18 - jawProgress * .075;
+      }
+    }
+    const neck = y >= .37 && y <= .52 && Math.abs(x) <= .07 + (y - .37) * .16;
     let bust = false;
-    if (y >= .45 && y <= 1.02) {
-      const progress = (y - .45) / .57;
-      const shoulderRise = Math.sin(Math.min(1, progress / .24) * Math.PI / 2);
-      const halfWidth = .09 + shoulderRise * .43 - Math.max(0, progress - .24) * .16;
+    if (y >= .48 && y <= .9) {
+      const progress = (y - .48) / .42;
+      const shoulderRise = Math.sin(progress * Math.PI / 2);
+      const halfWidth = .09 + shoulderRise * .44;
       bust = Math.abs(x) <= halfWidth;
     }
     return head || neck || bust;
   };
-  for (let index = 0; index < 760; index += 1) {
+  for (let index = 0; index < 900; index += 1) {
     let x;
     let y;
     do {
