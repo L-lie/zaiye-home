@@ -48,11 +48,12 @@ const authorize = validateAuthorizeBody({
   code_challenge: challenge,
   code_challenge_method: "S256",
   state,
-  refresh_token: "refresh-token-value-that-is-long-enough",
+  refresh_token: "short-token",
   expires_at: Math.floor(Date.now() / 1000) + 3600,
 }, allowlist);
 assert.equal(authorize.redirectUri, chromeStoreRedirect);
 assert.equal(authorize.provider, "github");
+assert.equal(authorize.refreshToken, "short-token");
 assert.throws(
   () => validateAuthorizeBody({
     ...authorize,

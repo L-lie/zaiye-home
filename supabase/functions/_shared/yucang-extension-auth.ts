@@ -168,7 +168,7 @@ export function validateWebsiteSessionAuthorizeBody(
     throw new OAuthError(401, "invalid_session", "The extension session is expired.");
   }
   const refreshToken = requiredString(body, "refresh_token");
-  if (refreshToken.length < 20 || refreshToken.length > 4096) {
+  if (refreshToken.length > 4096) {
     throw new OAuthError(400, "invalid_request", "refresh_token is invalid.");
   }
   return {
@@ -243,7 +243,7 @@ export function validateAuthorizeBody(body: Record<string, unknown>, allowlistVa
     throw new OAuthError(401, "invalid_session", "The website session is expired.");
   }
   const refreshToken = requiredString(body, "refresh_token");
-  if (refreshToken.length < 20 || refreshToken.length > 4096) {
+  if (refreshToken.length > 4096) {
     throw new OAuthError(400, "invalid_request", "refresh_token is invalid.");
   }
   return {

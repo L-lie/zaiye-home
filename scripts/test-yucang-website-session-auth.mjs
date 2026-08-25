@@ -27,11 +27,12 @@ const authorize = validateWebsiteSessionAuthorizeBody({
   code_challenge_method: "S256",
   state,
   nonce,
-  refresh_token: "refresh-token-value-that-is-long-enough",
+  refresh_token: "short-token",
   expires_at: Math.floor(Date.now() / 1000) + 3600,
 }, extensionOrigin, targetOrigin);
 assert.equal(authorize.extensionId, extensionId);
 assert.equal(authorize.targetOrigin, targetOrigin);
+assert.equal(authorize.refreshToken, "short-token");
 assert.throws(
   () => validateWebsiteSessionAuthorizeBody({
     extension_id: extensionId,
