@@ -84,7 +84,7 @@ assert.equal(
   ], { 主体: "飞船" }),
   "飞船位于城市，画幅为16:9。",
 );
-assert.equal(resources.items.length, 24, "official prompt library must contain 24 real resources");
+assert.equal(resources.items.length, 36, "official prompt library must contain 36 real resources");
 assert.deepEqual(
   [...new Set(resources.items.map((item) => item.category))].sort(),
   ["coding", "image", "office", "video", "writing"],
@@ -93,6 +93,14 @@ assert.match(app, /fetch\("\.\.\/prompt-vault-resources\.json"/);
 assert.match(app, /data-resource-search/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /HOME_FEATURED_ART/);
+const featuredPromptIds = [...app.matchAll(/src: "assets\/featured\/[^"]+", promptId: "([^"]+)"/g)].map((match) => match[1]);
+assert.equal(featuredPromptIds.length, 12, "homepage must link all 12 featured images");
+assert.equal(new Set(featuredPromptIds).size, 12, "each homepage image must link to its own Prompt");
+for (const promptId of featuredPromptIds) {
+  const resource = resources.items.find((item) => item.id === promptId);
+  assert(resource, `missing featured Prompt ${promptId}`);
+  assert(resource.featuredImage, `featured Prompt ${promptId} must show its matching image`);
+}
 assert.match(app, /bindHomeOrbit/);
 assert.match(app, /bindTextFigure/);
 assert.match(app, /navigator\.language/);

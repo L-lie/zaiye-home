@@ -33,18 +33,18 @@ const RESOURCE_CATEGORY_LABELS = Object.freeze({
 });
 const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
 const HOME_FEATURED_ART = Object.freeze([
-  { src: "assets/featured/mushroom-city-1.webp", promptId: "image-environment-concept", title: "蘑菇城", titleEn: "Mushroom City", likes: 0, size: 1.18, phase: .03, speed: .082, lane: 1.02, lift: -12 },
-  { src: "assets/featured/mushroom-city-2.webp", promptId: "image-environment-concept", title: "蘑菇城秘境", titleEn: "Mushroom Realm", likes: 0, size: .82, phase: .10, speed: .112, lane: .9, lift: 14 },
-  { src: "assets/featured/abstract-expression.webp", promptId: "image-visual-critique", title: "抽象表现主义", titleEn: "Abstract Expression", likes: 0, size: .78, phase: .17, speed: .11, lane: .91, lift: 18 },
-  { src: "assets/featured/knight-medieval.webp", promptId: "image-cinematic-key-art", title: "骑士回中世纪", titleEn: "Medieval Knight", likes: 0, size: 1.04, phase: .29, speed: .094, lane: 1.05, lift: -20 },
-  { src: "assets/featured/watercolor-dessert.webp", promptId: "image-product-photography", title: "钢笔水彩手绘", titleEn: "Ink & Watercolor", likes: 0, size: .72, phase: .44, speed: .122, lane: .87, lift: 8 },
-  { src: "assets/featured/embroidered-mountain.webp", promptId: "image-environment-concept", title: "刺绣山水", titleEn: "Embroidered Landscape", likes: 0, size: 1.22, phase: .57, speed: .086, lane: 1, lift: -8 },
-  { src: "assets/featured/litian-demon.webp", promptId: "image-character-turnaround", title: "庶天妖", titleEn: "Celestial Demon", likes: 0, size: .84, phase: .69, speed: .106, lane: .92, lift: 22 },
-  { src: "assets/featured/dark-gothic.webp", promptId: "image-environment-concept", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
-  { src: "assets/featured/particle-poster.webp", promptId: "image-cinematic-key-art", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
-  { src: "assets/featured/neon-action.webp", promptId: "image-storyboard-shot", title: "霓虹动作场景", titleEn: "Neon Action", likes: 0, size: .9, phase: .37, speed: .098, lane: .96, lift: 24 },
-  { src: "assets/featured/cosmic-eye.webp", promptId: "image-cinematic-key-art", title: "宇宙之眼", titleEn: "Cosmic Eye", likes: 0, size: .7, phase: .63, speed: .126, lane: .86, lift: -6 },
-  { src: "assets/featured/ink-character.webp", promptId: "image-character-turnaround", title: "黑白人物", titleEn: "Ink Character", likes: 0, size: .8, phase: .75, speed: .102, lane: 1.04, lift: 6 },
+  { src: "assets/featured/mushroom-city-1.webp", promptId: "image-mushroom-city", title: "蘑菇城", titleEn: "Mushroom City", likes: 0, size: 1.18, phase: .03, speed: .082, lane: 1.02, lift: -12 },
+  { src: "assets/featured/mushroom-city-2.webp", promptId: "image-mushroom-realm", title: "蘑菇城秘境", titleEn: "Mushroom Realm", likes: 0, size: .82, phase: .10, speed: .112, lane: .9, lift: 14 },
+  { src: "assets/featured/abstract-expression.webp", promptId: "image-abstract-expression", title: "抽象表现主义", titleEn: "Abstract Expression", likes: 0, size: .78, phase: .17, speed: .11, lane: .91, lift: 18 },
+  { src: "assets/featured/knight-medieval.webp", promptId: "image-medieval-knight", title: "骑士回中世纪", titleEn: "Medieval Knight", likes: 0, size: 1.04, phase: .29, speed: .094, lane: 1.05, lift: -20 },
+  { src: "assets/featured/watercolor-dessert.webp", promptId: "image-ink-watercolor-dessert", title: "钢笔水彩手绘", titleEn: "Ink & Watercolor", likes: 0, size: .72, phase: .44, speed: .122, lane: .87, lift: 8 },
+  { src: "assets/featured/embroidered-mountain.webp", promptId: "image-embroidered-landscape", title: "刺绣山水", titleEn: "Embroidered Landscape", likes: 0, size: 1.22, phase: .57, speed: .086, lane: 1, lift: -8 },
+  { src: "assets/featured/litian-demon.webp", promptId: "image-celestial-demon", title: "庶天妖", titleEn: "Celestial Demon", likes: 0, size: .84, phase: .69, speed: .106, lane: .92, lift: 22 },
+  { src: "assets/featured/dark-gothic.webp", promptId: "image-dark-gothic", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
+  { src: "assets/featured/particle-poster.webp", promptId: "image-particle-poster", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
+  { src: "assets/featured/neon-action.webp", promptId: "image-neon-action", title: "霓虹动作场景", titleEn: "Neon Action", likes: 0, size: .9, phase: .37, speed: .098, lane: .96, lift: 24 },
+  { src: "assets/featured/cosmic-eye.webp", promptId: "image-cosmic-eye", title: "宇宙之眼", titleEn: "Cosmic Eye", likes: 0, size: .7, phase: .63, speed: .126, lane: .86, lift: -6 },
+  { src: "assets/featured/ink-character.webp", promptId: "image-ink-character", title: "黑白人物", titleEn: "Ink Character", likes: 0, size: .8, phase: .75, speed: .102, lane: 1.04, lift: 6 },
 ]);
 
 const state = {
@@ -165,7 +165,7 @@ function officialPromptPayload(item) {
     basicParams: item.basicParams || {},
     license: item.license || "",
     sourceWorkId: `official:${item.id}`,
-    sourceVersionId: "official-library-v2",
+    sourceVersionId: "official-library-v3",
     sourceUrl: publicPromptUrl(item.id),
     usageInstruction: item.usage || "",
     negative: item.negative || "",
@@ -1126,6 +1126,7 @@ function renderOfficialResource(item) {
   app.innerHTML = `
     <section class="resource-detail-head">
       <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
+      ${item.featuredImage ? `<figure class="resource-featured-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)}" /></figure>` : ""}
       <div class="detail-meta">
         <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
         <span class="pill">${tr("站方模板", "Official template")}</span>

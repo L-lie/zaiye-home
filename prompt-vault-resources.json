@@ -1,7 +1,139 @@
 {
-  "version": 2,
-  "updatedAt": "2026-07-29",
+  "version": 3,
+  "updatedAt": "2026-08-26",
   "items": [
+    {
+      "id": "image-mushroom-city",
+      "title": "蘑菇城",
+      "summary": "以复古童书线描和彩色套印表现一座层次丰富的蘑菇城。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/mushroom-city-1.webp",
+      "prompt": "一幅@画幅的复古童书插画：密集的巨型彩色蘑菇构成一座可探索的小城，前景有蜿蜒小路、草叶与小动物，中景是层叠菌伞和微型建筑，远景被浅雾柔化。使用细密钢笔线描、旧纸颗粒、青绿与砖红套色，画面丰富但主次清晰，温柔、奇异、具有手工印刷感。避免摄影质感、3D 塑料感、文字和水印。",
+      "variables": [{ "name": "画幅", "label": "画面比例", "default": "4:5", "placeholder": "例如：4:5" }],
+      "usage": "适合生成复古绘本式奇幻环境。", "tags": ["蘑菇城", "复古插画", "童书", "线描"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-mushroom-city", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-mushroom-realm",
+      "title": "蘑菇城秘境",
+      "summary": "从低矮植物间进入蘑菇秘境的复古平面插画。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/mushroom-city-2.webp",
+      "prompt": "从@视角望进一片蘑菇秘境：高大的蓝绿色叶片形成前景框景，红白菌伞在林间错落生长，小径向画面深处延伸。采用十九世纪植物图谱与复古童书结合的细线描，米黄色旧纸底，有限色套印，青绿、靛蓝、赭红相互平衡，空间幽深而安静。避免现代城市、照片写实、霓虹色和文字。",
+      "variables": [{ "name": "视角", "label": "观察视角", "default": "贴近地面的低机位", "placeholder": "例如：贴近地面的低机位" }],
+      "usage": "适合生成具有前景遮挡和探索感的绘本环境。", "tags": ["蘑菇秘境", "植物图谱", "绘本", "环境"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-mushroom-realm", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-abstract-expression",
+      "title": "抽象表现主义",
+      "summary": "用强烈红蓝色块与飞溅笔触表现静坐人物。",
+      "category": "image", "type": "character", "model": "通用图像模型",
+      "featuredImage": "assets/featured/abstract-expression.webp",
+      "prompt": "一位@人物独自坐在留白画面中，身体以概括的黑灰线条与破碎笔触表现，鲜艳钴蓝色块从右侧切入，朱红色衣袍形成视觉中心。抽象表现主义绘画，粗粝纸张、颜料飞溅、刮擦与未完成边缘，人物姿态沉静，构图克制而有张力。避免照片写实、精细五官、平滑数字涂鸦、文字和边框。",
+      "variables": [{ "name": "人物", "label": "人物身份", "default": "沉思的年长创作者", "placeholder": "例如：沉思的年长创作者" }],
+      "usage": "适合生成抽象人物海报和绘画感角色图。", "tags": ["抽象表现主义", "人物", "红蓝", "飞溅"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-abstract-expression", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-medieval-knight",
+      "title": "骑士回中世纪",
+      "summary": "红色帷幕之间通向白色哥特殿堂的中世纪幻想场景。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/knight-medieval.webp",
+      "prompt": "宏大的白色哥特式殿堂内部，阶梯向高耸尖拱与雕花穹顶延伸，极小的@角色站在中央强调尺度。画面两侧由厚重暗红天鹅绒帷幕框住，冷白建筑与深红织物形成强烈对比，柔雾体积光从上方落下，庄严、寂静、超现实的中世纪幻想概念设计，纵向对称构图。避免现代物件、拥挤人群、文字和水印。",
+      "variables": [{ "name": "角色", "label": "中心角色", "default": "披甲骑士", "placeholder": "例如：披甲骑士" }],
+      "usage": "适合生成宏大中世纪空间与叙事主视觉。", "tags": ["中世纪", "骑士", "哥特建筑", "红色帷幕"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-medieval-knight", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-ink-watercolor-dessert",
+      "title": "钢笔水彩手绘",
+      "summary": "以钢笔淡彩食谱手帐表现英式下午茶。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/watercolor-dessert.webp",
+      "prompt": "俯视一张铺有白色桌布的@主题餐桌，茶壶、茶杯、莓果蛋糕、司康、三明治与小花错落摆放。钢笔速写结合透明水彩，线条轻松不完全闭合，淡粉、奶油黄、鼠尾草绿与浅蓝自然晕染，保留纸张留白和手帐式注释布局感，但不出现可读文字。温暖、精致、略带童趣，避免摄影写实和3D渲染。",
+      "variables": [{ "name": "主题", "label": "餐桌主题", "default": "英式下午茶", "placeholder": "例如：英式下午茶" }],
+      "usage": "适合菜单插画、生活方式手帐和食物绘本。", "tags": ["钢笔水彩", "下午茶", "食物插画", "手帐"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-ink-watercolor-dessert", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-embroidered-landscape",
+      "title": "刺绣山水",
+      "summary": "用金线与蓝色丝线构成的悬浮东方山水。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/embroidered-mountain.webp",
+      "prompt": "深靛蓝夜色中，一座@山体从云海升起，山石、松树、瀑布与流云全部由细密丝线和金线刺绣形成。蓝金配色，针脚纹理清晰，金属丝在边缘微微发光，层叠山势具有东方山水画的留白与纵深，像悬浮在暗色织物上的高级刺绣艺术品。避免真实照片、塑料材质、文字和印章。",
+      "variables": [{ "name": "山体", "label": "主体山势", "default": "陡峭而层叠的东方仙山", "placeholder": "例如：陡峭而层叠的东方仙山" }],
+      "usage": "适合东方纹样、刺绣海报和材质化山水。", "tags": ["刺绣", "山水", "蓝金", "东方"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-embroidered-landscape", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-celestial-demon",
+      "title": "庶天妖",
+      "summary": "东方暗黑神话中的巨大妖神角色主视觉。",
+      "category": "image", "type": "character", "model": "通用图像模型",
+      "featuredImage": "assets/featured/litian-demon.webp",
+      "prompt": "@妖神端坐在幽暗古殿中央，身形高大、轮廓威严，黑色层叠甲胄与破碎织物向外延展，骨质与金属装饰具有古老东方仪式感。背景是深黑石壁、残火与薄雾，少量暗红飘带穿过画面，低饱和黑红配色，电影级暗黑神话概念设计，正面近对称构图。避免现代服装、可爱化、欧美恶魔角和文字。",
+      "variables": [{ "name": "妖神", "label": "角色身份", "default": "庶天妖", "placeholder": "例如：庶天妖" }],
+      "usage": "适合东方暗黑神话角色与游戏主视觉。", "tags": ["东方神话", "妖神", "暗黑", "角色"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-celestial-demon", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-dark-gothic",
+      "title": "暗黑哥特风",
+      "summary": "苍白细线描绘的幽暗哥特城堡与孤独人物。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/dark-gothic.webp",
+      "prompt": "一座极其高耸、细节繁复的@建筑占据纵向画面，尖塔、飞扶壁、玫瑰窗与密集雕刻由纤细钢笔线描构成；一个极小的人影沿中央阶梯走向入口。米白旧纸底，黑灰与淡褐墨线，局部淡蓝阴影，暗黑哥特但保持大量留白，像古老建筑手稿与梦境插画的结合。避免摄影、彩色霓虹、粗重黑块和文字。",
+      "variables": [{ "name": "建筑", "label": "建筑主体", "default": "被遗忘的哥特大教堂", "placeholder": "例如：被遗忘的哥特大教堂" }],
+      "usage": "适合哥特建筑插画和高密度线描场景。", "tags": ["哥特", "建筑", "线描", "暗黑"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-dark-gothic", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-particle-poster",
+      "title": "粒子海报",
+      "summary": "由金色粒子与丝状轨迹组成的局部眼睛海报。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/particle-poster.webp",
+      "prompt": "超近景@主体海报：一只眼睛从由数百万金色微粒、丝状流线和闪烁尘埃组成的面部轮廓中显现。深暖棕背景，琥珀金光从粒子内部发出，前后景粒子大小与虚实不同，局部清晰、边缘逐渐消散，具有高级时尚海报和生成艺术质感。避免完整写实人脸、可读文字、对称复制和廉价亮片效果。",
+      "variables": [{ "name": "主体", "label": "局部主体", "default": "抽象人物的眼部", "placeholder": "例如：抽象人物的眼部" }],
+      "usage": "适合粒子视觉、眼部特写和抽象海报。", "tags": ["粒子", "海报", "眼睛", "金色"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-particle-poster", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-neon-action",
+      "title": "霓虹动作场景",
+      "summary": "红蓝霓虹切割出的高速战斗动漫画面。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/neon-action.webp",
+      "prompt": "@角色在黑暗城市空间中高速跃起挥出武器，动作轨迹形成锐利的蓝白能量弧，深红霓虹从反方向切入，碎片和粒子沿运动方向飞散。强烈斜线构图、夸张透视、黑红蓝高反差、动漫电影关键帧，主体轮廓清晰，运动感凌厉但画面不混乱。避免可读文字、静止站姿、重复肢体和糊成一团的光效。",
+      "variables": [{ "name": "角色", "label": "动作角色", "default": "持刀的未来战士", "placeholder": "例如：持刀的未来战士" }],
+      "usage": "适合动漫战斗关键帧与霓虹动作海报。", "tags": ["霓虹", "动作", "动漫", "战斗"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-neon-action", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-cosmic-eye",
+      "title": "宇宙之眼",
+      "summary": "漂浮在黑暗宇宙中的发光巨眼。",
+      "category": "image", "type": "scene", "model": "通用图像模型",
+      "featuredImage": "assets/featured/cosmic-eye.webp",
+      "prompt": "纯黑宇宙中悬浮着一只巨大的@眼睛，虹膜像星云与旋转星系，瞳孔深处具有无限空间感，眼白边缘由细小星尘和雾状粒子逐渐消散。中心冷白光、周围极暗，微弱蓝灰与银色高光，超现实、神秘、庄严，电影概念艺术。避免真人脸部、血腥眼球、文字、多个眼睛和明亮背景。",
+      "variables": [{ "name": "眼睛", "label": "眼睛设定", "default": "注视宇宙的古老巨眼", "placeholder": "例如：注视宇宙的古老巨眼" }],
+      "usage": "适合宇宙恐惧、超现实象征和神秘主视觉。", "tags": ["宇宙", "眼睛", "超现实", "星云"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-cosmic-eye", "license": "允许收藏、修改并用于个人或商业项目"
+    },
+    {
+      "id": "image-ink-character",
+      "title": "黑白人物",
+      "summary": "以大面积黑白留白表现冷峻动漫人物侧影。",
+      "category": "image", "type": "character", "model": "通用图像模型",
+      "featuredImage": "assets/featured/ink-character.webp",
+      "prompt": "@人物的黑白半身侧面插画，头部微低，一只手靠近面部，短发以锋利碎线表现。大面积纯黑衣物与洁白背景形成强烈负形，面部只保留少量克制线条，墨笔、干刷和漫画网点质感，情绪疏离、安静、冷峻。避免彩色、复杂背景、写实皮肤、文字和过度细碎的五官。",
+      "variables": [{ "name": "人物", "label": "人物设定", "default": "神情冷淡的短发人物", "placeholder": "例如：神情冷淡的短发人物" }],
+      "usage": "适合黑白角色头像、漫画人物和极简海报。", "tags": ["黑白人物", "墨笔", "漫画", "留白"],
+      "sourceName": "语藏首发精选", "sourceUrl": "https://zaiye.art/yucang/#/prompt/image-ink-character", "license": "允许收藏、修改并用于个人或商业项目"
+    },
     {
       "id": "writing-structured-article",
       "title": "结构化文章起草",
