@@ -114,6 +114,8 @@
 .login-method-row { display: flex; justify-content: space-between; align-items: center; gap: 18px; }
 .login-method-row > span { color: rgba(23, 33, 31, .62); font-size: 13px; }
 .login-oauth-icons { display: flex; gap: 10px; }
+.login-provider-option { display: grid; justify-items: center; gap: 4px; }
+.login-last-used-marker { color: var(--login-teal); font-size: 10px; font-weight: 700; line-height: 1.2; white-space: nowrap; }
 .login-policy-consent {
   display: flex;
   align-items: flex-start;
@@ -149,6 +151,7 @@
 .login-form { display: grid; gap: 9px; margin: 0; }
 .login-form + .login-form { margin-top: 18px; }
 .login-form label { color: var(--login-ink); font-size: 13px; font-weight: 700; }
+.login-form label .login-last-used-marker { margin-left: 5px; }
 .login-input-action { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
 .login-input-action input {
   min-width: 0;

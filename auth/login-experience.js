@@ -18,18 +18,24 @@ export function loginControlsMarkup({ assetRoot, showStatus = false } = {}) {
       <div class="login-method-row">
         <span>其他登录方式</span>
         <div id="oauthButtons" class="login-oauth-icons">
-          <button class="login-provider-icon" type="button" data-provider="github" data-oauth="github" data-login-action disabled aria-label="使用 GitHub 登录" title="使用 GitHub 登录">
-            <img src="${root}/auth/assets/github.svg" alt="" width="20" height="20" />
-          </button>
-          <button class="login-provider-icon" type="button" data-provider="google" data-oauth="google" data-login-action disabled aria-label="使用 Google 登录" title="使用 Google 登录">
-            <img src="${root}/auth/assets/google.svg" alt="" width="20" height="20" />
-          </button>
+          <span class="login-provider-option">
+            <button class="login-provider-icon" type="button" data-provider="github" data-oauth="github" data-login-action disabled aria-label="使用 GitHub 登录" title="使用 GitHub 登录">
+              <img src="${root}/auth/assets/github.svg" alt="" width="20" height="20" />
+            </button>
+            <small class="login-last-used-marker" data-last-used-method="github" hidden>上次使用</small>
+          </span>
+          <span class="login-provider-option">
+            <button class="login-provider-icon" type="button" data-provider="google" data-oauth="google" data-login-action disabled aria-label="使用 Google 登录" title="使用 Google 登录">
+              <img src="${root}/auth/assets/google.svg" alt="" width="20" height="20" />
+            </button>
+            <small class="login-last-used-marker" data-last-used-method="google" hidden>上次使用</small>
+          </span>
         </div>
       </div>
       <div id="emailPanel" class="login-email-panel">
         <div class="login-divider"><span>邮箱验证码</span></div>
         <form id="emailRequestForm" class="login-form">
-          <label for="loginEmail">邮箱</label>
+          <label for="loginEmail">邮箱 <small class="login-last-used-marker" data-last-used-method="email" hidden>上次使用</small></label>
           <div class="login-input-action">
             <input id="loginEmail" name="email" type="email" autocomplete="email" required />
             <button type="submit" data-login-action disabled>发送验证码</button>
@@ -113,6 +119,14 @@ export function bindLoginConsent(root) {
   checkbox?.addEventListener("change", refresh);
   refresh();
   return { allowed, refresh, setBusy };
+}
+
+export function applyLastLoginHint(root, { method = "", email = "" } = {}) {
+  root.querySelectorAll("[data-last-used-method]").forEach((marker) => {
+    marker.hidden = marker.dataset.lastUsedMethod !== method;
+  });
+  const emailInput = root.querySelector("#loginEmail");
+  if (emailInput && email) emailInput.value = email;
 }
 
 export function bindLoginShowcase(root) {

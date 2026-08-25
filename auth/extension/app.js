@@ -1,4 +1,5 @@
 import {
+  applyLastLoginHint,
   bindLoginConsent,
   bindLoginShowcase,
   loginControlsMarkup,
@@ -45,6 +46,13 @@ const cancelButton = document.querySelector("#cancelButton");
 const closePageButton = document.querySelector("#closePageButton");
 
 const FLOW_STORAGE_KEY = "yucangExtensionPendingAuth";
+const LAST_AUTH_METHOD_KEY = "yucangLastAuthMethod";
+const LAST_AUTH_EMAIL_KEY = "yucangLastAuthEmail";
+const PENDING_AUTH_METHOD_KEY = "yucangExtensionPendingAuthMethod";
+applyLastLoginHint(extensionLoginRoot, {
+  method: localStorage.getItem(LAST_AUTH_METHOD_KEY) || "",
+  email: localStorage.getItem(LAST_AUTH_EMAIL_KEY) || "",
+});
 const EXTENSION_AUTH_API_BASE = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1";
 const EXTENSION_CALLBACK_PROTOCOL = Object.freeze({
   type: "prompt-vault-extension-auth-result",
@@ -130,7 +138,7 @@ function showLogin() {
   loginPanel.hidden = false;
   consentPanel.hidden = true;
   oauthButtons.querySelectorAll("[data-provider]").forEach((button) => {
-    button.hidden = Boolean(flow.action === "link" && flow.provider && button.dataset.provider !== flow.provider);
+    button.closest(".login-provider-option").hidden = Boolean(flow.action === "link" && flow.provider && button.dataset.provider !== flow.provider);
   });
   emailPanel.hidden = Boolean(flow.action === "link" && flow.provider && flow.provider !== "email");
   setStatus("请选择登录方式。网站登录不会读取扩展中的本地 Prompt。");
@@ -195,12 +203,16 @@ async function authorizeExtension() {
 }
 
 async function startOAuth(provider) {
+  sessionStorage.setItem(PENDING_AUTH_METHOD_KEY, provider);
   setStatus(`正在前往 ${provider === "github" ? "GitHub" : "Google"}…`);
   const { error } = await client.auth.signInWithOAuth({
     provider,
     options: { redirectTo: `${location.origin}${location.pathname}` },
   });
-  if (error) throw error;
+  if (error) {
+    sessionStorage.removeItem(PENDING_AUTH_METHOD_KEY);
+    throw error;
+  }
 }
 
 async function initialize() {
@@ -211,6 +223,11 @@ async function initialize() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     session = data.session;
+    const pendingAuthMethod = sessionStorage.getItem(PENDING_AUTH_METHOD_KEY) || "";
+    if (session && ["github", "google"].includes(pendingAuthMethod)) {
+      localStorage.setItem(LAST_AUTH_METHOD_KEY, pendingAuthMethod);
+      sessionStorage.removeItem(PENDING_AUTH_METHOD_KEY);
+    }
     history.replaceState(null, "", `${location.pathname}?${new URLSearchParams(flow)}`);
     if (flow.action === "signin" && ["github", "google"].includes(flow.provider)
       && loginConsent.allowed()
@@ -249,6 +266,7 @@ emailRequestForm.addEventListener("submit", async (event) => {
   if (!loginConsent.allowed()) return setStatus("请先阅读并同意用户协议和隐私政策。", true);
   const button = event.submitter;
   loginConsent.setBusy(button, true);
+  sessionStorage.removeItem(PENDING_AUTH_METHOD_KEY);
   pendingEmail = new FormData(event.currentTarget).get("email").trim();
   try {
     const { error } = await client.auth.signInWithOtp({
@@ -276,6 +294,10 @@ emailVerifyForm.addEventListener("submit", async (event) => {
     if (error) throw error;
     session = data.session;
     if (!session) throw new Error("登录会话未建立。");
+    const normalizedEmail = pendingEmail.toLowerCase();
+    localStorage.setItem(LAST_AUTH_METHOD_KEY, "email");
+    localStorage.setItem(LAST_AUTH_EMAIL_KEY, normalizedEmail);
+    applyLastLoginHint(extensionLoginRoot, { method: "email", email: normalizedEmail });
     showConsent();
   } catch (error) {
     setStatus(error.message, true);
@@ -290,6 +312,7 @@ switchAccountButton.addEventListener("click", async () => {
     const { error } = await client.auth.signOut({ scope: "local" });
     if (error) throw error;
     session = null;
+    sessionStorage.removeItem(PENDING_AUTH_METHOD_KEY);
     sessionStorage.removeItem(providerStartMarker());
     flow = { ...flow, provider: "" };
     sessionStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(flow));

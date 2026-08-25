@@ -9,6 +9,7 @@ import {
   snapshotToViewModel,
 } from "./core.mjs?v=20260825-library1";
 import {
+  applyLastLoginHint,
   bindLoginConsent,
   bindLoginShowcase,
   loginControlsMarkup,
@@ -375,8 +376,14 @@ function requireStaff() {
 }
 
 function bindWebsiteLogin(root) {
+  const lastAuthEmailKey = "yucangLastAuthEmail";
+  const pendingAuthMethodKey = "yucangPendingAuthMethod";
   const loginConsent = bindLoginConsent(root);
   const lastMethod = localStorage.getItem("yucangLastAuthMethod") || "";
+  applyLastLoginHint(root, {
+    method: lastMethod,
+    email: localStorage.getItem(lastAuthEmailKey) || "",
+  });
   root.querySelectorAll("[data-oauth]").forEach((button) => {
     if (button.dataset.oauth === lastMethod) {
       button.classList.add("is-recent");
@@ -405,6 +412,7 @@ function bindWebsiteLogin(root) {
     event.preventDefault();
     if (!loginConsent.allowed()) return setLoginStatus(tr("请先阅读并同意用户协议和隐私政策。", "Please agree to the Terms and Privacy Policy first."), true);
     const button = event.submitter;
+    sessionStorage.removeItem(pendingAuthMethodKey);
     pendingEmail = new FormData(event.currentTarget).get("email").trim();
     setBusy(button, true, tr("正在发送...", "Sending..."));
     loginConsent.setBusy(button, true);
@@ -433,7 +441,10 @@ function bindWebsiteLogin(root) {
     setBusy(button, false);
     loginConsent.setBusy(button, false);
     if (error) return setLoginStatus(error.message, true);
+    const normalizedEmail = pendingEmail.toLowerCase();
     localStorage.setItem("yucangLastAuthMethod", "email");
+    localStorage.setItem(lastAuthEmailKey, normalizedEmail);
+    applyLastLoginHint(root, { method: "email", email: normalizedEmail });
     state.session = data.session;
     await loadAccess();
     renderHeader();
@@ -443,12 +454,13 @@ function bindWebsiteLogin(root) {
   root.querySelectorAll("[data-oauth]").forEach((button) => button.addEventListener("click", async () => {
     if (!loginConsent.allowed()) return setLoginStatus(tr("请先阅读并同意用户协议和隐私政策。", "Please agree to the Terms and Privacy Policy first."), true);
     loginConsent.setBusy(button, true);
-    localStorage.setItem("yucangLastAuthMethod", button.dataset.oauth);
+    sessionStorage.setItem(pendingAuthMethodKey, button.dataset.oauth);
     const { error } = await getClient().auth.signInWithOAuth({
       provider: button.dataset.oauth,
       options: { redirectTo: `${location.origin}${location.pathname}#/home` },
     });
     if (error) {
+      sessionStorage.removeItem(pendingAuthMethodKey);
       loginConsent.setBusy(button, false);
       setLoginStatus(error.message, true);
     }
@@ -680,6 +692,8 @@ function localizeLoginExperience(root) {
     setText(`[data-login-slide]:nth-child(${index + 1}) figcaption span`, copy);
   });
   setText(".login-method-row > span", "Other sign-in methods");
+  root.querySelectorAll(".login-last-used-marker").forEach((marker) => { marker.textContent = "Last used"; });
+  setHtml(".login-policy-consent span", 'I have read and agree to the <a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">Terms of Service</a> and <a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>');
   setText(".login-divider span", "Email verification code");
   setText('label[for="loginEmail"]', "Email");
   setText("#emailRequestForm button", "Send code");
@@ -1368,6 +1382,11 @@ async function initialize() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     state.session = data.session;
+    const pendingAuthMethod = sessionStorage.getItem("yucangPendingAuthMethod") || "";
+    if (state.session && ["github", "google"].includes(pendingAuthMethod)) {
+      localStorage.setItem("yucangLastAuthMethod", pendingAuthMethod);
+      sessionStorage.removeItem("yucangPendingAuthMethod");
+    }
     if (!state.session) {
       const extensionSession = await promptVaultWebsiteAuthBridge.signInFromExtension();
       if (extensionSession) {
