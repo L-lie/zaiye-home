@@ -109,6 +109,7 @@ a { color: inherit; text-decoration: none; }
 .home-copy h1 { margin-bottom: 14px; font-family: "Songti SC", SimSun, STSong, serif; font-size: clamp(42px, 5.6vw, 82px); font-weight: 650; line-height: 1.02; letter-spacing: -.035em; text-shadow: 0 4px 28px rgba(0,0,0,.62); }
 .home-copy > p:not(:first-child) { max-width: 620px; margin: 0 auto; color: rgba(240,238,230,.7); font-size: 16px; line-height: 1.7; }
 .home-actions { display: flex; justify-content: center; gap: 10px; margin-top: 22px; pointer-events: auto; }
+.home-library-cta { position: absolute; left: 50%; bottom: 30px; z-index: 14; min-width: 150px; transform: translateX(-50%); box-shadow: 0 12px 42px rgba(0,0,0,.42), 0 0 24px rgba(213,166,91,.12); }
 .home-orbit { position: absolute; inset: 0; z-index: 2; }
 .home-text-figure {
   position: absolute;
@@ -132,21 +133,20 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid rgba(239,239,232,.2);
   border-radius: 12px;
   opacity: var(--orbit-opacity, .36);
-  background: #121411;
-  box-shadow: 0 18px 45px rgba(0,0,0,.38);
-  filter: saturate(.7) contrast(.94);
-  cursor: default;
+  background: rgba(14,18,16,.32);
+  box-shadow: 0 18px 45px rgba(0,0,0,.38), 0 0 24px rgba(175,214,197,.12), inset 0 0 18px rgba(233,239,225,.05);
+  filter: blur(var(--orbit-blur, 0)) saturate(.72) contrast(.96) brightness(.9);
+  cursor: pointer;
   transform: translate3d(var(--orbit-x, 0), var(--orbit-y, 0), 0) scale(var(--orbit-scale, 1));
   will-change: transform, opacity;
   transition: opacity .25s ease, filter .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 .home-art-card img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
-.home-art-card footer { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; color: rgba(240,238,230,.76); font-size: 11px; background: rgba(12,14,12,.88); }
-.home-art-card footer span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-art-like { position: absolute; right: 8px; bottom: 7px; z-index: 2; color: rgba(247,245,237,.9); font-size: 11px; font-weight: 700; line-height: 1; text-shadow: 0 1px 5px rgba(0,0,0,.95), 0 0 10px rgba(0,0,0,.72); }
 .home-art-card:hover, .home-art-card:focus-visible {
   z-index: 20;
   opacity: 1;
-  filter: none;
+  filter: brightness(1.04) saturate(.96);
   border-color: rgba(215,182,74,.78);
   box-shadow: 0 24px 70px rgba(0,0,0,.72), 0 0 0 1px rgba(215,182,74,.14);
   outline: none;
