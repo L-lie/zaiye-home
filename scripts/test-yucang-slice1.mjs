@@ -14,6 +14,7 @@ const migration = readFileSync(join(root, "supabase/migrations/20260825000100_yu
 const app = readFileSync(join(root, "yucang/app.js"), "utf8");
 const appCss = readFileSync(join(root, "yucang/app.css"), "utf8");
 const html = readFileSync(join(root, "yucang/index.html"), "utf8");
+const loginExperience = readFileSync(join(root, "auth/login-experience.js"), "utf8");
 const resources = JSON.parse(readFileSync(join(root, "prompt-vault-resources.json"), "utf8"));
 
 const requiredTables = [
@@ -109,6 +110,13 @@ assert.match(app, /data-locale-toggle/);
 assert.match(app, /home-login-layer/);
 assert.match(app, /loginExperienceMarkup/);
 assert.match(app, /loginControlsMarkup\(\{ assetRoot: "\.\.", showStatus: true \}\)/);
+assert.match(loginExperience, /id="loginPolicyConsent" type="checkbox"/);
+assert.match(loginExperience, /data-login-action disabled/);
+assert.match(loginExperience, /export function bindLoginConsent/);
+assert.match(loginExperience, /action\.disabled = !allowed\(\) \|\| busyActions\.has\(action\)/);
+assert.match(loginExperience, /checkbox\?\.addEventListener\("change", refresh\)/);
+assert.match(app, /const loginConsent = bindLoginConsent\(root\)/);
+assert.match(app, /if \(!loginConsent\.allowed\(\)\)/);
 assert.match(app, /发送太频繁，请等待 60 秒后再试/);
 assert.match(app, /验证码已发送，请在下方输入/);
 assert.match(appCss, /\.toast \{[^}]*z-index: 150/);

@@ -11,13 +11,17 @@ export function loginControlsMarkup({ assetRoot, showStatus = false } = {}) {
   return `
     ${showStatus ? '<div id="status" class="login-status" role="status" aria-live="polite">正在检查登录状态...</div>' : ""}
     <section id="loginPanel">
+      <label class="login-policy-consent">
+        <input id="loginPolicyConsent" type="checkbox" />
+        <span>我已阅读并同意<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">《用户协议》</a>和<a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">《隐私政策》</a></span>
+      </label>
       <div class="login-method-row">
         <span>其他登录方式</span>
         <div id="oauthButtons" class="login-oauth-icons">
-          <button class="login-provider-icon" type="button" data-provider="github" data-oauth="github" aria-label="使用 GitHub 登录" title="使用 GitHub 登录">
+          <button class="login-provider-icon" type="button" data-provider="github" data-oauth="github" data-login-action disabled aria-label="使用 GitHub 登录" title="使用 GitHub 登录">
             <img src="${root}/auth/assets/github.svg" alt="" width="20" height="20" />
           </button>
-          <button class="login-provider-icon" type="button" data-provider="google" data-oauth="google" aria-label="使用 Google 登录" title="使用 Google 登录">
+          <button class="login-provider-icon" type="button" data-provider="google" data-oauth="google" data-login-action disabled aria-label="使用 Google 登录" title="使用 Google 登录">
             <img src="${root}/auth/assets/google.svg" alt="" width="20" height="20" />
           </button>
         </div>
@@ -28,14 +32,14 @@ export function loginControlsMarkup({ assetRoot, showStatus = false } = {}) {
           <label for="loginEmail">邮箱</label>
           <div class="login-input-action">
             <input id="loginEmail" name="email" type="email" autocomplete="email" required />
-            <button type="submit">发送验证码</button>
+            <button type="submit" data-login-action disabled>发送验证码</button>
           </div>
         </form>
         <form id="emailVerifyForm" class="login-form" hidden>
           <label for="loginToken">验证码</label>
           <div class="login-input-action">
             <input id="loginToken" name="token" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="8" required />
-            <button type="submit">验证并登录</button>
+            <button type="submit" data-login-action disabled>验证并登录</button>
           </div>
         </form>
       </div>
@@ -91,6 +95,24 @@ export function loginExperienceMarkup({
         </div>
       </div>
     </section>`;
+}
+
+export function bindLoginConsent(root) {
+  const checkbox = root.querySelector("#loginPolicyConsent");
+  const actions = [...root.querySelectorAll("[data-login-action]")];
+  const busyActions = new WeakSet();
+  const allowed = () => Boolean(checkbox?.checked);
+  const refresh = () => actions.forEach((action) => {
+    action.disabled = !allowed() || busyActions.has(action);
+  });
+  const setBusy = (action, busy) => {
+    if (!action) return;
+    if (busy) busyActions.add(action); else busyActions.delete(action);
+    refresh();
+  };
+  checkbox?.addEventListener("change", refresh);
+  refresh();
+  return { allowed, refresh, setBusy };
 }
 
 export function bindLoginShowcase(root) {

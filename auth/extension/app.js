@@ -1,4 +1,5 @@
 import {
+  bindLoginConsent,
   bindLoginShowcase,
   loginControlsMarkup,
   loginExperienceMarkup,
@@ -27,6 +28,7 @@ extensionLoginRoot.querySelector(".login-experience")?.insertAdjacentHTML(
   '<button id="closePageButton" class="extension-login-close" type="button" aria-label="取消并关闭登录">×</button>',
 );
 bindLoginShowcase(extensionLoginRoot);
+const loginConsent = bindLoginConsent(extensionLoginRoot);
 
 const statusBox = document.querySelector("#status");
 const loginPanel = document.querySelector("#loginPanel");
@@ -211,6 +213,7 @@ async function initialize() {
     session = data.session;
     history.replaceState(null, "", `${location.pathname}?${new URLSearchParams(flow)}`);
     if (flow.action === "signin" && ["github", "google"].includes(flow.provider)
+      && loginConsent.allowed()
       && sessionStorage.getItem(providerStartMarker()) !== "started") {
       sessionStorage.setItem(providerStartMarker(), "started");
       if (session) {
@@ -230,15 +233,22 @@ async function initialize() {
 }
 
 oauthButtons.addEventListener("click", async (event) => {
-  const provider = event.target.closest("[data-provider]")?.dataset.provider;
+  const button = event.target.closest("[data-provider]");
+  const provider = button?.dataset.provider;
   if (!provider) return;
-  try { await startOAuth(provider); } catch (error) { setStatus(error.message, true); }
+  if (!loginConsent.allowed()) return setStatus("请先阅读并同意用户协议和隐私政策。", true);
+  loginConsent.setBusy(button, true);
+  try { await startOAuth(provider); } catch (error) {
+    loginConsent.setBusy(button, false);
+    setStatus(error.message, true);
+  }
 });
 
 emailRequestForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!loginConsent.allowed()) return setStatus("请先阅读并同意用户协议和隐私政策。", true);
   const button = event.submitter;
-  button.disabled = true;
+  loginConsent.setBusy(button, true);
   pendingEmail = new FormData(event.currentTarget).get("email").trim();
   try {
     const { error } = await client.auth.signInWithOtp({
@@ -251,14 +261,15 @@ emailRequestForm.addEventListener("submit", async (event) => {
     setStatus("验证码已发送，请检查邮箱。");
   } catch (error) {
     setStatus(error.message, true);
-    button.disabled = false;
+    loginConsent.setBusy(button, false);
   }
 });
 
 emailVerifyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (!loginConsent.allowed()) return setStatus("请先阅读并同意用户协议和隐私政策。", true);
   const button = event.submitter;
-  button.disabled = true;
+  loginConsent.setBusy(button, true);
   try {
     const token = new FormData(event.currentTarget).get("token").trim();
     const { data, error } = await client.auth.verifyOtp({ email: pendingEmail, token, type: "email" });
@@ -268,7 +279,7 @@ emailVerifyForm.addEventListener("submit", async (event) => {
     showConsent();
   } catch (error) {
     setStatus(error.message, true);
-    button.disabled = false;
+    loginConsent.setBusy(button, false);
   }
 });
 

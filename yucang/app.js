@@ -9,6 +9,7 @@ import {
   snapshotToViewModel,
 } from "./core.mjs?v=20260825-library1";
 import {
+  bindLoginConsent,
   bindLoginShowcase,
   loginControlsMarkup,
   loginExperienceMarkup,
@@ -374,6 +375,7 @@ function requireStaff() {
 }
 
 function bindWebsiteLogin(root) {
+  const loginConsent = bindLoginConsent(root);
   const lastMethod = localStorage.getItem("yucangLastAuthMethod") || "";
   root.querySelectorAll("[data-oauth]").forEach((button) => {
     if (button.dataset.oauth === lastMethod) {
@@ -401,13 +403,16 @@ function bindWebsiteLogin(root) {
   const emailVerifyForm = root.querySelector("#emailVerifyForm");
   emailRequestForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!loginConsent.allowed()) return setLoginStatus(tr("请先阅读并同意用户协议和隐私政策。", "Please agree to the Terms and Privacy Policy first."), true);
     const button = event.submitter;
     pendingEmail = new FormData(event.currentTarget).get("email").trim();
     setBusy(button, true, tr("正在发送...", "Sending..."));
+    loginConsent.setBusy(button, true);
     const { error } = await getClient().auth.signInWithOtp({
       email: pendingEmail, options: { shouldCreateUser: true },
     });
     setBusy(button, false);
+    loginConsent.setBusy(button, false);
     if (error) return setLoginStatus(emailErrorMessage(error), true);
     emailRequestForm.hidden = true;
     emailVerifyForm.hidden = false;
@@ -417,13 +422,16 @@ function bindWebsiteLogin(root) {
 
   emailVerifyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!loginConsent.allowed()) return setLoginStatus(tr("请先阅读并同意用户协议和隐私政策。", "Please agree to the Terms and Privacy Policy first."), true);
     const button = event.submitter;
     setBusy(button, true, tr("正在验证...", "Verifying..."));
+    loginConsent.setBusy(button, true);
     const form = new FormData(event.currentTarget);
     const { data, error } = await getClient().auth.verifyOtp({
       email: pendingEmail, token: form.get("token"), type: "email",
     });
     setBusy(button, false);
+    loginConsent.setBusy(button, false);
     if (error) return setLoginStatus(error.message, true);
     localStorage.setItem("yucangLastAuthMethod", "email");
     state.session = data.session;
@@ -433,12 +441,17 @@ function bindWebsiteLogin(root) {
   });
 
   root.querySelectorAll("[data-oauth]").forEach((button) => button.addEventListener("click", async () => {
+    if (!loginConsent.allowed()) return setLoginStatus(tr("请先阅读并同意用户协议和隐私政策。", "Please agree to the Terms and Privacy Policy first."), true);
+    loginConsent.setBusy(button, true);
     localStorage.setItem("yucangLastAuthMethod", button.dataset.oauth);
     const { error } = await getClient().auth.signInWithOAuth({
       provider: button.dataset.oauth,
       options: { redirectTo: `${location.origin}${location.pathname}#/home` },
     });
-    if (error) setLoginStatus(error.message, true);
+    if (error) {
+      loginConsent.setBusy(button, false);
+      setLoginStatus(error.message, true);
+    }
   }));
 }
 
