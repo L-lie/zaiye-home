@@ -13,11 +13,13 @@ import {
   loginControlsMarkup,
   loginExperienceMarkup,
 } from "../auth/login-experience.js";
+import { createPromptVaultBridge } from "./prompt-vault-bridge.mjs?v=20260825-import1";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
 const toast = document.getElementById("toast");
 const localeToggle = document.querySelector("[data-locale-toggle]");
+const promptVaultBridge = createPromptVaultBridge();
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
   all: ["全部", "All"],
@@ -141,6 +143,94 @@ function setBusy(button, busy, label = tr("处理中…", "Working…")) {
     button.textContent = button.dataset.label || button.textContent;
     button.disabled = false;
   }
+}
+
+function publicPromptUrl(workId) {
+  return `https://zaiye.art/yucang/#/prompt/${encodeURIComponent(workId)}`;
+}
+
+function officialPromptPayload(item) {
+  return {
+    title: item.title,
+    prompt: item.prompt,
+    project: tr("语藏站方精选", "Yucang Official Picks"),
+    category: item.category || "",
+    type: item.type || item.category || "scene",
+    tags: item.tags || [],
+    variables: item.variables || [],
+    model: item.model || "",
+    modelVersion: item.modelVersion || "",
+    basicParams: item.basicParams || {},
+    license: item.license || "",
+    sourceWorkId: `official:${item.id}`,
+    sourceVersionId: "official-library-v2",
+    sourceUrl: publicPromptUrl(item.id),
+    usageInstruction: item.usage || "",
+    negative: item.negative || "",
+    sourceCreator: item.sourceName || tr("语藏", "Yucang"),
+  };
+}
+
+function communityPromptPayload(item) {
+  return {
+    title: item.title,
+    prompt: item.prompt_text,
+    project: tr("语藏社区", "Yucang Community"),
+    category: item.content_type || "",
+    type: item.content_type || "scene",
+    tags: item.tags || [],
+    variables: normalizeVariables(item.variables),
+    model: item.model_name || "",
+    modelVersion: item.model_version || "",
+    basicParams: item.parameters || {},
+    license: licenseLabel(item.license_code),
+    sourceWorkId: item.work_id,
+    sourceVersionId: item.version_id,
+    sourceUrl: publicPromptUrl(item.work_id),
+    sourceCreator: item.author_nickname || "",
+  };
+}
+
+async function savePromptToVault(button, payload) {
+  setBusy(button, true, tr("正在收进语藏…", "Saving to Prompt Vault…"));
+  const result = await promptVaultBridge.save(payload);
+  setBusy(button, false);
+  if (result.ok && result.status === "created") {
+    button.textContent = tr("已收进 Prompt Vault", "Saved to Prompt Vault");
+    button.disabled = true;
+    notify(tr("已作为普通提示词收进 Prompt Vault。", "Saved as a regular Prompt Vault item."));
+    return;
+  }
+  if (result.ok && result.status === "already_saved") {
+    button.textContent = tr("已在 Prompt Vault 中", "Already in Prompt Vault");
+    button.disabled = true;
+    notify(tr("这个公开版本已经收进 Prompt Vault。", "This public version is already in Prompt Vault."));
+    return;
+  }
+  if (result.error === "not_installed") {
+    notify(tr("未检测到支持此功能的 Prompt Vault，请先安装或更新扩展。", "Prompt Vault was not detected. Install or update the extension first."));
+    window.open("../prompt-vault.html", "_blank", "noopener");
+    return;
+  }
+  notify(tr("暂时无法收进 Prompt Vault，请稍后再试。", "Unable to save to Prompt Vault. Try again later."));
+}
+
+function bindPromptVaultButtons(root, getPayload) {
+  root.querySelectorAll("[data-save-to-vault]").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) return;
+      await savePromptToVault(button, getPayload(button.dataset.saveToVault));
+    });
+  });
+  promptVaultBridge.detect().then((connection) => {
+    if (!root.isConnected) return;
+    root.querySelectorAll("[data-save-to-vault]").forEach((button) => {
+      button.dataset.vaultInstalled = String(connection.installed);
+      if (connection.installed) button.title = tr("保存为扩展中的普通提示词条目", "Save as a regular Prompt Vault item");
+    });
+  });
 }
 
 function routeParts() {
@@ -698,18 +788,16 @@ function resourceSearchText(item) {
 function renderResourceCard(item) {
   return `
     <article class="resource-card">
-      <a href="#/prompt/${encodeURIComponent(item.id)}">
+      <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
         <div class="resource-card-meta">
           <span>${escapeHtml(resourceCategoryLabel(item.category))}</span>
           <span>${escapeHtml(item.model || tr("通用模型", "General model"))}</span>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
-        <footer>
-          <span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span>
-          <strong>${tr("打开使用", "Open")}</strong>
-        </footer>
+        <footer><span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span><strong>${tr("打开使用", "Open")}</strong></footer>
       </a>
+      <div class="resource-card-actions"><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button></div>
     </article>`;
 }
 
@@ -730,6 +818,7 @@ function bindResourceLibrary(items) {
     grid.innerHTML = filtered.length
       ? filtered.map(renderResourceCard).join("")
       : `<div class="library-empty"><h3>${tr("没有找到匹配的 Prompt", "No matching Prompts")}</h3><p>${tr("换一个关键词，或者切换到其他分类。", "Try another keyword or category.")}</p></div>`;
+    bindPromptVaultButtons(grid, (itemId) => officialPromptPayload(items.find((item) => item.id === itemId)));
   };
 
   search.addEventListener("input", update);
@@ -1051,7 +1140,7 @@ function renderOfficialResource(item) {
       <aside class="prompt-stage">
         <div class="tool-heading">
           <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
-          <button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>
+          <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
         </div>
         <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
         <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
@@ -1063,6 +1152,7 @@ function renderOfficialResource(item) {
     output: app.querySelector("[data-final-prompt]"),
     copyButton: app.querySelector("[data-copy-prompt]"),
   });
+  bindPromptVaultButtons(app, () => officialPromptPayload(item));
 }
 
 async function renderPublicPrompt(workId) {
@@ -1096,7 +1186,7 @@ async function renderPublicPrompt(workId) {
         <aside class="panel sticky-panel">
           <div class="section-head"><div><p class="eyebrow">FINAL PROMPT</p><h2>${tr("最终 Prompt", "Final Prompt")}</h2></div></div>
           <pre class="prompt-output" data-final-prompt></pre>
-          <button class="button primary" type="button" data-copy-prompt style="margin-top:16px">${tr("复制 Prompt", "Copy Prompt")}</button>
+          <div class="prompt-actions" style="margin-top:16px"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
         </aside>
       </section>`;
     bindPromptTool({
@@ -1105,6 +1195,7 @@ async function renderPublicPrompt(workId) {
       output: app.querySelector("[data-final-prompt]"),
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
+    bindPromptVaultButtons(app, () => communityPromptPayload(item));
   } catch (error) {
     renderError(error, tr("无法打开 Prompt", "Unable to open Prompt"));
   }
