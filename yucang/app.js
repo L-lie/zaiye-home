@@ -14,12 +14,14 @@ import {
   loginExperienceMarkup,
 } from "../auth/login-experience.js";
 import { createPromptVaultBridge } from "./prompt-vault-bridge.mjs?v=20260825-import1";
+import { createPromptVaultWebsiteAuthBridge } from "./prompt-vault-auth-bridge.mjs?v=20260825-sso1";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
 const toast = document.getElementById("toast");
 const localeToggle = document.querySelector("[data-locale-toggle]");
 const promptVaultBridge = createPromptVaultBridge();
+const promptVaultWebsiteAuthBridge = createPromptVaultWebsiteAuthBridge();
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
   all: ["全部", "All"],
@@ -1339,6 +1341,17 @@ async function initialize() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     state.session = data.session;
+    if (!state.session) {
+      const extensionSession = await promptVaultWebsiteAuthBridge.signInFromExtension();
+      if (extensionSession) {
+        const { data: sessionData, error: sessionError } = await client.auth.setSession({
+          access_token: extensionSession.access_token,
+          refresh_token: extensionSession.refresh_token,
+        });
+        if (sessionError) throw sessionError;
+        state.session = sessionData.session;
+      }
+    }
     await loadAccess();
     state.authReady = true;
     renderHeader();

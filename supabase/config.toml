@@ -3,3 +3,9 @@ verify_jwt = false
 
 [functions.yucang-extension-token]
 verify_jwt = false
+
+[functions.yucang-website-session-authorize]
+verify_jwt = false
+
+[functions.yucang-website-session-token]
+verify_jwt = false
