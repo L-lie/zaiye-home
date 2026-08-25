@@ -102,8 +102,11 @@ const [pageSource, authorizeSource, tokenSource, migration, netlify, sharedLogin
   readFile(new URL("../yucang/app.js", import.meta.url), "utf8"),
 ]);
 
-assert.match(pageSource, /location\.replace\(callbackUrl\(\{ code: result\.code, state: result\.state \}\)\)/);
-assert.doesNotMatch(pageSource, /callbackUrl\(\{[^}]*access_token/);
+assert.match(pageSource, /type: "prompt-vault-extension-auth-result"/);
+assert.match(pageSource, /await sendExtensionResult\(\{ code: result\.code \}\)/);
+assert.match(pageSource, /response\.requestId !== requestId/);
+assert.doesNotMatch(pageSource, /location\.replace\(callbackUrl/);
+assert.doesNotMatch(pageSource, /sendExtensionResult\(\{[^}]*access_token/);
 assert.match(pageSource, /supabase\.co\/functions\/v1/);
 assert.match(pageSource, /yucang-extension-authorize/);
 assert.match(authorizeSource, /auth\.getUser\(accessToken\)/);

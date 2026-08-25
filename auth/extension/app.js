@@ -37,6 +37,14 @@ const cancelButton = document.querySelector("#cancelButton");
 
 const FLOW_STORAGE_KEY = "yucangExtensionPendingAuth";
 const EXTENSION_AUTH_API_BASE = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1";
+const EXTENSION_CALLBACK_PROTOCOL = Object.freeze({
+  type: "prompt-vault-extension-auth-result",
+  protocolVersion: 1,
+  extensionIds: new Set([
+    "fapladhajicfoiadhcpmbmfkodekkckg",
+    "idiemjhonlahnlnalpanhplbgjcfbpnl",
+  ]),
+});
 let client;
 let session;
 let flow;
@@ -61,6 +69,10 @@ function parseFlow() {
   if (redirect.protocol !== "https:" || redirect.pathname !== "/yucang-auth" || redirect.search || redirect.hash) {
     throw new Error("扩展回跳地址无效。");
   }
+  const extensionId = redirect.hostname.replace(/\.chromiumapp\.org$/i, "");
+  if (`${extensionId}.chromiumapp.org` !== redirect.hostname || !EXTENSION_CALLBACK_PROTOCOL.extensionIds.has(extensionId)) {
+    throw new Error("扩展身份不在允许列表中。");
+  }
   const normalized = {
     provider,
     action: candidate.action,
@@ -68,15 +80,37 @@ function parseFlow() {
     code_challenge: candidate.code_challenge,
     code_challenge_method: "S256",
     state: candidate.state,
+    extension_id: extensionId,
   };
   sessionStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(normalized));
   return normalized;
 }
 
-function callbackUrl(values) {
-  const url = new URL(flow.redirect_uri);
-  Object.entries(values).forEach(([key, value]) => url.searchParams.set(key, value));
-  return url.href;
+function sendExtensionResult(values) {
+  return new Promise((resolve, reject) => {
+    if (!globalThis.chrome?.runtime?.sendMessage) {
+      reject(new Error("未检测到可接收登录结果的 Prompt Vault 扩展。"));
+      return;
+    }
+    const requestId = `yucang-auth-${crypto.randomUUID()}`.slice(0, 100);
+    const timer = setTimeout(() => reject(new Error("扩展没有及时接收登录结果，请返回扩展重试。")), 12_000);
+    chrome.runtime.sendMessage(flow.extension_id, {
+      type: EXTENSION_CALLBACK_PROTOCOL.type,
+      protocolVersion: EXTENSION_CALLBACK_PROTOCOL.protocolVersion,
+      action: "complete",
+      requestId,
+      redirect_uri: flow.redirect_uri,
+      state: flow.state,
+      ...values,
+    }, (response) => {
+      clearTimeout(timer);
+      if (chrome.runtime.lastError) return reject(new Error("无法连接 Prompt Vault 扩展，请确认扩展已更新并启用。"));
+      if (!response?.ok || response.requestId !== requestId) {
+        return reject(new Error(response?.error_description || "扩展未能完成登录换码。"));
+      }
+      resolve(response);
+    });
+  });
 }
 
 function showLogin() {
@@ -135,8 +169,12 @@ async function authorizeExtension() {
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error_description || result.error || "无法签发登录凭证。");
+    if (result.state !== flow.state || result.redirect_uri !== flow.redirect_uri) {
+      throw new Error("登录凭证与当前扩展请求不匹配。");
+    }
+    await sendExtensionResult({ code: result.code });
     sessionStorage.removeItem(FLOW_STORAGE_KEY);
-    location.replace(callbackUrl({ code: result.code, state: result.state }));
+    setStatus("登录已安全返回 Prompt Vault，本标签页将自动关闭。");
   } catch (error) {
     setStatus(error.message || "无法完成扩展登录。", true);
     continueButton.disabled = false;
@@ -213,9 +251,16 @@ emailVerifyForm.addEventListener("submit", async (event) => {
 });
 
 continueButton.addEventListener("click", authorizeExtension);
-cancelButton.addEventListener("click", () => {
-  sessionStorage.removeItem(FLOW_STORAGE_KEY);
-  location.replace(callbackUrl({ error: "access_denied", state: flow.state }));
+cancelButton.addEventListener("click", async () => {
+  cancelButton.disabled = true;
+  try {
+    await sendExtensionResult({ error: "access_denied", error_description: "User cancelled the authorization request." });
+    sessionStorage.removeItem(FLOW_STORAGE_KEY);
+    setStatus("已取消，正在返回 Prompt Vault。");
+  } catch (error) {
+    setStatus(error.message || "无法返回 Prompt Vault。", true);
+    cancelButton.disabled = false;
+  }
 });
 
 window.addEventListener("DOMContentLoaded", initialize, { once: true });
