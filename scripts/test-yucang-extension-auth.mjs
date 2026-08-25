@@ -11,41 +11,52 @@ import {
   validateTokenBody,
 } from "../supabase/functions/_shared/yucang-extension-auth.ts";
 
-const chromeRedirect = "https://fapladhajicfoiadhcpmbmfkodekkckg.chromiumapp.org/yucang-auth";
-const edgeRedirect = "https://abcdefghijklmnopabcdefghijklmnop.chromiumapp.org/yucang-auth";
-const allowlist = `${chromeRedirect},${edgeRedirect}`;
+const chromeStoreRedirect = "https://fapladhajicfoiadhcpmbmfkodekkckg.chromiumapp.org/yucang-auth";
+const chromeDevRedirect = "https://idiemjhonlahnlnalpanhplbgjcfbpnl.chromiumapp.org/yucang-auth";
+const unknownEdgeRedirect = "https://abcdefghijklmnopabcdefghijklmnop.chromiumapp.org/yucang-auth";
+const wildcardRedirect = "https://*.chromiumapp.org/yucang-auth";
+const allowlist = `${chromeStoreRedirect},${chromeDevRedirect}`;
 const verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
 const challenge = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
 const state = "state_0123456789abcdef0123456789abcdef";
 
 assert.equal(AUTH_CODE_TTL_SECONDS, 60);
 assert.equal(await sha256Base64Url(verifier), challenge);
-assert.equal(validateRedirectUri(chromeRedirect, allowlist), chromeRedirect);
+assert.equal(validateRedirectUri(chromeStoreRedirect, allowlist), chromeStoreRedirect);
+assert.equal(validateRedirectUri(chromeDevRedirect, allowlist), chromeDevRedirect);
+assert.throws(
+  () => validateRedirectUri(unknownEdgeRedirect, allowlist),
+  (error) => error instanceof OAuthError && error.code === "invalid_request",
+);
+assert.throws(
+  () => validateRedirectUri(chromeStoreRedirect, wildcardRedirect),
+  (error) => error instanceof OAuthError && error.code === "invalid_request",
+);
 assert.throws(
   () => validateRedirectUri("https://evil.example/yucang-auth", allowlist),
   (error) => error instanceof OAuthError && error.code === "invalid_request",
 );
 assert.throws(
-  () => validateRedirectUri(`${chromeRedirect}?token=bad`, allowlist),
+  () => validateRedirectUri(`${chromeStoreRedirect}?token=bad`, allowlist),
   (error) => error instanceof OAuthError && error.code === "invalid_request",
 );
 
 const authorize = validateAuthorizeBody({
   provider: "github",
   action: "signin",
-  redirect_uri: chromeRedirect,
+  redirect_uri: chromeStoreRedirect,
   code_challenge: challenge,
   code_challenge_method: "S256",
   state,
   refresh_token: "refresh-token-value-that-is-long-enough",
   expires_at: Math.floor(Date.now() / 1000) + 3600,
 }, allowlist);
-assert.equal(authorize.redirectUri, chromeRedirect);
+assert.equal(authorize.redirectUri, chromeStoreRedirect);
 assert.equal(authorize.provider, "github");
 assert.throws(
   () => validateAuthorizeBody({
     ...authorize,
-    redirect_uri: chromeRedirect,
+    redirect_uri: chromeStoreRedirect,
     code_challenge_method: "plain",
     state,
     refresh_token: "refresh-token-value-that-is-long-enough",
@@ -58,15 +69,15 @@ const token = validateTokenBody({
   grant_type: "authorization_code",
   code: "authorization_code_0123456789abcdef0123456789",
   code_verifier: verifier,
-  redirect_uri: edgeRedirect,
+  redirect_uri: chromeDevRedirect,
 }, allowlist);
-assert.equal(token.redirectUri, edgeRedirect);
+assert.equal(token.redirectUri, chromeDevRedirect);
 assert.throws(
   () => validateTokenBody({
     grant_type: "refresh_token",
     code: "authorization_code_0123456789abcdef0123456789",
     code_verifier: verifier,
-    redirect_uri: edgeRedirect,
+    redirect_uri: chromeDevRedirect,
   }, allowlist),
   (error) => error instanceof OAuthError && error.code === "unsupported_grant_type",
 );
