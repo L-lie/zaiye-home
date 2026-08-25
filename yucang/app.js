@@ -17,25 +17,26 @@ import {
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
 const toast = document.getElementById("toast");
+const localeToggle = document.querySelector("[data-locale-toggle]");
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
-  all: "全部",
-  image: "图像",
-  video: "视频",
-  writing: "写作",
-  office: "办公",
-  coding: "编程",
+  all: ["全部", "All"],
+  image: ["图像", "Image"],
+  video: ["视频", "Video"],
+  writing: ["写作", "Writing"],
+  office: ["办公", "Office"],
+  coding: ["编程", "Coding"],
 });
 const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
 const HOME_FEATURED_ART = Object.freeze([
-  { src: "assets/featured/mushroom-city-1.webp", title: "蘑菇城", likes: 0, motion: "orbit-a" },
-  { src: "assets/featured/abstract-expression.webp", title: "抽象表现主义", likes: 0, motion: "orbit-b" },
-  { src: "assets/featured/knight-medieval.webp", title: "骑士回中世纪", likes: 0, motion: "orbit-c" },
-  { src: "assets/featured/watercolor-dessert.webp", title: "钢笔水彩手绘", likes: 0, motion: "orbit-d" },
-  { src: "assets/featured/embroidered-mountain.webp", title: "刺绣山水", likes: 0, motion: "orbit-e" },
-  { src: "assets/featured/litian-demon.webp", title: "庶天妖", likes: 0, motion: "orbit-f" },
-  { src: "assets/featured/dark-gothic.webp", title: "暗黑哥特风", likes: 0, motion: "orbit-g" },
-  { src: "assets/featured/particle-poster.webp", title: "粒子海报", likes: 0, motion: "orbit-h" },
+  { src: "assets/featured/mushroom-city-1.webp", title: "蘑菇城", titleEn: "Mushroom City", likes: 0, size: 1.18, phase: .03, speed: .082, lane: 1.02, lift: -12 },
+  { src: "assets/featured/abstract-expression.webp", title: "抽象表现主义", titleEn: "Abstract Expression", likes: 0, size: .78, phase: .17, speed: .11, lane: .91, lift: 18 },
+  { src: "assets/featured/knight-medieval.webp", title: "骑士回中世纪", titleEn: "Medieval Knight", likes: 0, size: 1.04, phase: .29, speed: .094, lane: 1.05, lift: -20 },
+  { src: "assets/featured/watercolor-dessert.webp", title: "钢笔水彩手绘", titleEn: "Ink & Watercolor", likes: 0, size: .72, phase: .44, speed: .122, lane: .87, lift: 8 },
+  { src: "assets/featured/embroidered-mountain.webp", title: "刺绣山水", titleEn: "Embroidered Landscape", likes: 0, size: 1.22, phase: .57, speed: .086, lane: 1, lift: -8 },
+  { src: "assets/featured/litian-demon.webp", title: "庶天妖", titleEn: "Celestial Demon", likes: 0, size: .84, phase: .69, speed: .106, lane: .92, lift: 22 },
+  { src: "assets/featured/dark-gothic.webp", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
+  { src: "assets/featured/particle-poster.webp", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
 ]);
 
 const state = {
@@ -44,7 +45,60 @@ const state = {
   access: null,
   authReady: false,
   resources: null,
+  homeOrbitCleanup: null,
+  locale: localStorage.getItem("yucangLocale")
+    || (navigator.language?.toLowerCase().startsWith("zh") ? "zh" : "en"),
 };
+
+function tr(zh, en) {
+  return state.locale === "en" ? en : zh;
+}
+
+function resourceCategoryLabel(category) {
+  const labels = RESOURCE_CATEGORY_LABELS[category];
+  return labels ? labels[state.locale === "en" ? 1 : 0] : category;
+}
+
+function contentTypeLabel(type) {
+  const english = { image: "Image", video: "Video", text_office: "Text & Office", programming: "Programming" };
+  return state.locale === "en" ? (english[type] || type) : (CONTENT_TYPE_LABELS[type] || type);
+}
+
+function licenseLabel(code) {
+  const english = {
+    personal: "Personal use only",
+    commercial: "Commercial use",
+    commercial_client: "Commercial use & client projects",
+  };
+  return state.locale === "en" ? (english[code] || code) : (LICENSE_LABELS[code] || code);
+}
+
+function updateStaticLocale() {
+  const en = state.locale === "en";
+  document.documentElement.lang = en ? "en" : "zh-CN";
+  document.title = tr("语藏 · Prompt 社区", "Yucang · Prompt Community");
+  document.querySelector(".brand")?.setAttribute("aria-label", tr("语藏首页", "Yucang home"));
+  document.querySelector(".brand strong").textContent = tr("语藏", "Yucang");
+  document.querySelector(".main-nav")?.setAttribute("aria-label", tr("主导航", "Main navigation"));
+  const navLabels = {
+    home: tr("首页", "Home"),
+    discover: tr("提示词库", "Prompt Library"),
+  };
+  Object.entries(navLabels).forEach(([key, label]) => {
+    const link = document.querySelector(`[data-nav="${key}"]`);
+    if (link) link.textContent = label;
+  });
+  const creatorLinks = [...document.querySelectorAll("[data-creator-link]")];
+  if (creatorLinks[0]) creatorLinks[0].textContent = tr("新建作品", "Create");
+  if (creatorLinks[1]) creatorLinks[1].textContent = tr("我的发布", "My Works");
+  const staffLink = document.querySelector("[data-staff-link]");
+  if (staffLink) staffLink.textContent = tr("审核", "Review");
+  const vaultLink = document.querySelector("[data-prompt-vault-link]");
+  if (vaultLink) vaultLink.textContent = tr("安装 Prompt Vault", "Get Prompt Vault");
+  localeToggle.textContent = en ? "中" : "EN";
+  localeToggle.setAttribute("aria-label", en ? "切换到中文" : "Switch to English");
+  document.querySelector(".loading-state p")?.replaceChildren(tr("正在进入语藏…", "Entering Yucang…"));
+}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -57,7 +111,7 @@ function escapeHtml(value) {
 
 function formatDate(value) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("zh-CN", {
+  return new Intl.DateTimeFormat(state.locale === "en" ? "en" : "zh-CN", {
     year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   }).format(new Date(value));
 }
@@ -73,7 +127,7 @@ function notify(message) {
   notify.timer = setTimeout(() => { toast.hidden = true; }, 3200);
 }
 
-function setBusy(button, busy, label = "处理中…") {
+function setBusy(button, busy, label = tr("处理中…", "Working…")) {
   if (!button) return;
   if (busy) {
     button.dataset.label = button.textContent;
@@ -94,10 +148,21 @@ function go(path) {
   location.hash = `#/${path.replace(/^\//, "")}`;
 }
 
+async function setLocale(locale) {
+  state.locale = locale === "en" ? "en" : "zh";
+  localStorage.setItem("yucangLocale", state.locale);
+  updateStaticLocale();
+  renderHeader();
+  await renderRoute();
+}
+
 function getClient() {
   if (state.client) return state.client;
   state.client = window.ZaiyeSupabase?.getClient();
-  if (!state.client) throw new Error("Supabase 尚未配置，无法运行语藏。请检查 supabase-config.js。 ");
+  if (!state.client) throw new Error(tr(
+    "Supabase 尚未配置，无法运行语藏。请检查 supabase-config.js。 ",
+    "Supabase is not configured. Check supabase-config.js.",
+  ));
   return state.client;
 }
 
@@ -110,9 +175,9 @@ async function rpc(name, args = {}) {
 async function loadResources() {
   if (state.resources) return state.resources;
   const response = await fetch("../prompt-vault-resources.json", { cache: "no-cache" });
-  if (!response.ok) throw new Error(`提示词库读取失败（${response.status}）`);
+  if (!response.ok) throw new Error(`${tr("提示词库读取失败", "Prompt Library failed to load")} (${response.status})`);
   const payload = await response.json();
-  if (!Array.isArray(payload.items)) throw new Error("提示词库数据格式不正确。");
+  if (!Array.isArray(payload.items)) throw new Error(tr("提示词库数据格式不正确。", "Prompt Library data is invalid."));
   state.resources = payload.items;
   return state.resources;
 }
@@ -122,9 +187,12 @@ function isSchemaMissing(error) {
     || /schema cache|function .* does not exist|relation .* does not exist/i.test(error?.message || "");
 }
 
-function renderError(error, title = "暂时无法完成") {
+function renderError(error, title = tr("暂时无法完成", "Unable to continue")) {
   const setup = isSchemaMissing(error)
-    ? `<div class="setup-note">远程 Supabase 尚未应用 Slice 1 migration。请先在开发/测试项目应用 <code>20260825000100_yucang_slice1.sql</code>，再刷新页面。</div>`
+    ? `<div class="setup-note">${tr(
+      "远程 Supabase 尚未应用 Slice 1 migration。请先在开发/测试项目应用",
+      "The remote Supabase project is missing the Slice 1 migration. Apply",
+    )} <code>20260825000100_yucang_slice1.sql</code>${tr("，再刷新页面。", ", then refresh.")}</div>`
     : "";
   app.innerHTML = `
     <section class="state-card error-card">
@@ -132,7 +200,7 @@ function renderError(error, title = "暂时无法完成") {
       <h1>${escapeHtml(title)}</h1>
       <p class="lede">${escapeHtml(error?.message || String(error))}</p>
       ${setup}
-      <div class="actions"><a class="button primary" href="#/discover">返回发现</a></div>
+      <div class="actions"><a class="button primary" href="#/discover">${tr("返回发现", "Back to Discover")}</a></div>
     </section>`;
 }
 
@@ -158,15 +226,15 @@ function renderHeader() {
   });
 
   if (!state.session) {
-    accountActions.innerHTML = '<a class="button ghost" href="#/login">登录</a>';
+    accountActions.innerHTML = `<a class="button ghost" href="#/login">${tr("登录", "Sign in")}</a>`;
     return;
   }
   accountActions.innerHTML = `
     <span class="account-copy">
-      <strong>${escapeHtml(state.access?.nickname || state.session.user.user_metadata?.full_name || state.session.user.user_metadata?.name || "已登录")}</strong>
+      <strong>${escapeHtml(state.access?.nickname || state.session.user.user_metadata?.full_name || state.session.user.user_metadata?.name || tr("已登录", "Signed in"))}</strong>
       <small>${escapeHtml(state.session.user.email || "")}</small>
     </span>
-    <button class="button ghost" type="button" data-sign-out>退出</button>`;
+    <button class="button ghost" type="button" data-sign-out>${tr("退出", "Sign out")}</button>`;
   accountActions.querySelector("[data-sign-out]").addEventListener("click", async () => {
     await getClient().auth.signOut();
     go("home");
@@ -185,9 +253,12 @@ function requireCreator() {
   app.innerHTML = `
     <section class="state-card narrow">
       <p class="eyebrow">INVITE ONLY</p>
-      <h1>当前账号没有创作者资格</h1>
-      <p class="lede">语藏 MVP 采用站方邀请制。普通登录用户可以浏览公开作品，但不能创建或提交作品。</p>
-      <a class="button primary" href="#/discover">浏览发现</a>
+      <h1>${tr("当前账号没有创作者资格", "This account is not a creator")}</h1>
+      <p class="lede">${tr(
+        "语藏 MVP 采用站方邀请制。普通登录用户可以浏览公开作品，但不能创建或提交作品。",
+        "Yucang MVP is invite-only for creators. Signed-in members can browse public works but cannot create or submit them.",
+      )}</p>
+      <a class="button primary" href="#/discover">${tr("浏览发现", "Browse Discover")}</a>
     </section>`;
   return false;
 }
@@ -198,9 +269,9 @@ function requireStaff() {
   app.innerHTML = `
     <section class="state-card narrow">
       <p class="eyebrow">STAFF ONLY</p>
-      <h1>没有审核权限</h1>
-      <p class="lede">审核后台仅向审核员和管理员开放。</p>
-      <button class="button" type="button" data-bootstrap-admin>以站点 owner 初始化首位管理员</button>
+      <h1>${tr("没有审核权限", "No review access")}</h1>
+      <p class="lede">${tr("审核后台仅向审核员和管理员开放。", "The review workspace is available only to reviewers and administrators.")}</p>
+      <button class="button" type="button" data-bootstrap-admin>${tr("以站点 owner 初始化首位管理员", "Initialize the first admin as site owner")}</button>
     </section>`;
   app.querySelector("[data-bootstrap-admin]").addEventListener("click", bootstrapAdmin);
   return false;
@@ -211,8 +282,8 @@ function bindWebsiteLogin(root) {
   root.querySelectorAll("[data-oauth]").forEach((button) => {
     if (button.dataset.oauth === lastMethod) {
       button.classList.add("is-recent");
-      button.setAttribute("aria-label", `${button.getAttribute("aria-label")}，最近使用`);
-      button.title = `${button.title}，最近使用`;
+      button.setAttribute("aria-label", `${button.getAttribute("aria-label")}${tr("，最近使用", ", recently used")}`);
+      button.title = `${button.title}${tr("，最近使用", ", recently used")}`;
     }
   });
 
@@ -223,7 +294,7 @@ function bindWebsiteLogin(root) {
     event.preventDefault();
     const button = event.submitter;
     pendingEmail = new FormData(event.currentTarget).get("email").trim();
-    setBusy(button, true, "正在发送...");
+    setBusy(button, true, tr("正在发送...", "Sending..."));
     const { error } = await getClient().auth.signInWithOtp({
       email: pendingEmail, options: { shouldCreateUser: true },
     });
@@ -232,13 +303,13 @@ function bindWebsiteLogin(root) {
     emailRequestForm.hidden = true;
     emailVerifyForm.hidden = false;
     emailVerifyForm.querySelector("input").focus();
-    notify("验证码已发送，请检查邮箱。");
+    notify(tr("验证码已发送，请检查邮箱。", "Verification code sent. Check your email."));
   });
 
   emailVerifyForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = event.submitter;
-    setBusy(button, true, "正在验证...");
+    setBusy(button, true, tr("正在验证...", "Verifying..."));
     const form = new FormData(event.currentTarget);
     const { data, error } = await getClient().auth.verifyOtp({
       email: pendingEmail, token: form.get("token"), type: "email",
@@ -262,47 +333,151 @@ function bindWebsiteLogin(root) {
   }));
 }
 
+function bindHomeOrbit(root) {
+  const cards = [...root.querySelectorAll(".home-art-card")];
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const entries = cards.map((card, index) => ({
+    card,
+    phase: Number(card.dataset.orbitPhase ?? index / cards.length) * Math.PI * 2 - Math.PI / 2,
+    speed: Number(card.dataset.orbitSpeed || .1),
+    lane: Number(card.dataset.orbitLane || 1),
+    lift: Number(card.dataset.orbitLift || 0),
+    paused: false,
+  }));
+  let frame = 0;
+  let previous = performance.now();
+
+  const setPaused = (entry, paused) => {
+    entry.paused = paused;
+    entry.card.classList.toggle("is-orbit-paused", paused);
+    if (paused) {
+      entry.card.style.opacity = "1";
+      entry.card.style.zIndex = "20";
+    } else {
+      entry.card.style.removeProperty("opacity");
+      entry.card.style.removeProperty("z-index");
+    }
+  };
+  entries.forEach((entry) => {
+    entry.card.addEventListener("pointerenter", () => setPaused(entry, true));
+    entry.card.addEventListener("pointerleave", () => setPaused(entry, false));
+    entry.card.addEventListener("focus", () => setPaused(entry, true));
+    entry.card.addEventListener("blur", () => setPaused(entry, false));
+  });
+
+  const paint = (now) => {
+    const elapsed = Math.min((now - previous) / 1000, .08);
+    previous = now;
+    const width = root.clientWidth;
+    const height = root.clientHeight;
+    const centerX = width / 2;
+    const centerY = height * .4;
+    const radiusX = Math.max(150, width * .43);
+    const radiusY = Math.max(105, Math.min(175, height * .22));
+    entries.forEach((entry) => {
+      if (!entry.paused && !reducedMotion) entry.phase += elapsed * entry.speed;
+      const cardWidth = entry.card.offsetWidth;
+      const cardHeight = entry.card.offsetHeight;
+      if (!cardWidth || !cardHeight) return;
+      const depth = (Math.sin(entry.phase) + 1) / 2;
+      const x = centerX + Math.cos(entry.phase) * radiusX * entry.lane - cardWidth / 2;
+      const y = centerY + Math.sin(entry.phase) * radiusY + entry.lift - cardHeight / 2;
+      entry.card.style.setProperty("--orbit-x", `${x}px`);
+      entry.card.style.setProperty("--orbit-y", `${y}px`);
+      entry.card.style.setProperty("--orbit-scale", String(.82 + depth * .18));
+      entry.card.style.setProperty("--orbit-opacity", String(.24 + depth * .28));
+      entry.card.style.setProperty("--orbit-z", String(3 + Math.round(depth * 4)));
+    });
+    if (!reducedMotion) frame = requestAnimationFrame(paint);
+  };
+  paint(previous);
+  return () => cancelAnimationFrame(frame);
+}
+
+function localizeLoginExperience(root) {
+  if (state.locale !== "en") return;
+  const setText = (selector, value) => {
+    const node = root.querySelector(selector);
+    if (node) node.textContent = value;
+  };
+  const setHtml = (selector, value) => {
+    const node = root.querySelector(selector);
+    if (node) node.innerHTML = value;
+  };
+  setText(".login-showcase-copy p", "From inspiration to lasting reuse");
+  setHtml(".login-showcase-copy h2", "Turn scattered Prompts<br />into your creative system");
+  [
+    ["Collect & organize", "Classify, search, edit, and reuse your Prompts"],
+    ["Ready anywhere", "Find what you need across different windows"],
+    ["Connected to Yucang", "Discover public works, then save them to Prompt Vault"],
+  ].forEach(([title, copy], index) => {
+    setText(`[data-login-slide]:nth-child(${index + 1}) figcaption strong`, title);
+    setText(`[data-login-slide]:nth-child(${index + 1}) figcaption span`, copy);
+  });
+  setText(".login-method-row > span", "Other sign-in methods");
+  setText(".login-divider span", "Email verification code");
+  setText('label[for="loginEmail"]', "Email");
+  setText("#emailRequestForm button", "Send code");
+  setText('label[for="loginToken"]', "Verification code");
+  setText("#emailVerifyForm button", "Verify & sign in");
+  root.querySelector('[data-oauth="github"]')?.setAttribute("aria-label", "Sign in with GitHub");
+  root.querySelector('[data-oauth="google"]')?.setAttribute("aria-label", "Sign in with Google");
+}
+
 function renderHome({ showLogin = false } = {}) {
-  const featured = HOME_FEATURED_ART.map((item) => `
-    <article class="home-art-card ${item.motion}" tabindex="0" aria-label="${escapeHtml(item.title)}，${item.likes} 个赞">
-      <img src="${escapeHtml(item.src)}" alt="${escapeHtml(item.title)}的 Prompt 示例效果" width="512" height="512" />
-      <footer><span>${escapeHtml(item.title)}</span><span aria-label="点赞数">♡ ${item.likes}</span></footer>
-    </article>`).join("");
+  const featured = HOME_FEATURED_ART.map((item) => {
+    const title = state.locale === "en" ? item.titleEn : item.title;
+    return `
+    <article class="home-art-card" tabindex="0" aria-label="${escapeHtml(title)}, ${item.likes} ${tr("个赞", "likes")}" style="--card-size:${item.size}" data-orbit-phase="${item.phase}" data-orbit-speed="${item.speed}" data-orbit-lane="${item.lane}" data-orbit-lift="${item.lift}">
+      <img src="${escapeHtml(item.src)}" alt="${escapeHtml(title)} ${tr("的 Prompt 示例效果", "Prompt example")}" width="512" height="512" />
+      <footer><span>${escapeHtml(title)}</span><span aria-label="${tr("点赞数", "Like count")}">♡ ${item.likes}</span></footer>
+    </article>`;
+  }).join("");
   app.innerHTML = `
     <section class="home-hero" aria-labelledby="homeTitle">
       <div class="home-atmosphere" aria-hidden="true"></div>
       <div class="home-copy">
-        <p>Prompt Vault · 语藏</p>
-        <h1 id="homeTitle">让文字汇聚成<br />可以复用的创造</h1>
-        <p>发现真实 Prompt，修改变量，把有效的方法收进自己的创作系统。</p>
+        <p>Prompt Vault · ${tr("语藏", "Yucang")}</p>
+        <h1 id="homeTitle">${tr("让文字汇聚成<br />可以复用的创造", "Turn words into<br />reusable creation")}</h1>
+        <p>${tr(
+          "发现真实 Prompt，修改变量，把有效的方法收进自己的创作系统。",
+          "Discover working Prompts, adjust variables, and keep proven methods in your creative system.",
+        )}</p>
         <div class="home-actions">
-          <a class="button primary" href="#/discover">进入提示词库</a>
-          ${state.session ? '<a class="button" href="#/my-publications">我的发布</a>' : '<a class="button" href="#/login">登录语藏</a>'}
+          <a class="button primary" href="#/discover">${tr("进入提示词库", "Explore Prompts")}</a>
+          ${state.session
+            ? `<a class="button" href="#/my-publications">${tr("我的发布", "My Works")}</a>`
+            : `<a class="button" href="#/login">${tr("登录语藏", "Sign in")}</a>`}
         </div>
       </div>
-      <div class="home-orbit" aria-label="首发 Prompt 示例图，当前均为 0 个赞">
+      <div class="home-orbit" aria-label="${tr("首发 Prompt 示例图，当前均为 0 个赞", "Launch Prompt examples, all currently at 0 likes")}">
         ${featured}
-        <img class="home-text-figure" src="assets/yucang-text-figure.png" alt="由白色中文文字带缠绕形成的无脸抽象半身人形" width="1152" height="1536" />
+        <img class="home-text-figure" src="assets/yucang-text-figure.png" alt="${tr("由白色中文文字带缠绕形成的无脸抽象半身人形", "A faceless abstract half-figure wrapped in white Chinese text ribbons")}" width="1152" height="1536" />
       </div>
-      <p class="home-feature-note">首发精选 · 社区点赞上线后将按真实热度更新</p>
+      <p class="home-feature-note">${tr("首发精选 · 社区点赞上线后将按真实热度更新", "Launch picks · will update from real community likes")}</p>
     </section>
     ${showLogin && !state.session ? `
-      <div class="home-login-layer" role="dialog" aria-modal="true" aria-labelledby="homeLoginTitle">
-        <a class="home-login-backdrop" href="#/home" aria-label="关闭登录"></a>
+      <div class="home-login-layer" role="dialog" aria-modal="true" aria-labelledby="loginExperienceTitle">
+        <a class="home-login-backdrop" href="#/home" aria-label="${tr("关闭登录", "Close sign in")}"></a>
         <div class="home-login-shell">
-          <a class="home-login-close" href="#/home" aria-label="关闭登录">×</a>
+          <a class="home-login-close" href="#/home" aria-label="${tr("关闭登录", "Close sign in")}">×</a>
           ${loginExperienceMarkup({
             assetRoot: "..",
             logoSrc: "assets/prompt-vault-logo.png",
-            title: "登录语藏",
-            description: "使用同一个 Prompt Vault 账号进入社区。",
+            title: tr("登录语藏", "Sign in to Yucang"),
+            description: tr("使用同一个 Prompt Vault 账号进入社区。", "Use your Prompt Vault account to enter the community."),
             controls: loginControlsMarkup({ assetRoot: ".." }),
-            footer: '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
+            footer: tr(
+              '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
+              'Signing in does not upload, sync, or publish local Prompts from your extension.<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">Privacy</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">Terms</a>',
+            ),
           })}
         </div>
       </div>` : ""}`;
+  state.homeOrbitCleanup = bindHomeOrbit(app.querySelector(".home-orbit"));
   if (showLogin && !state.session) {
     const loginShell = app.querySelector(".home-login-shell");
+    localizeLoginExperience(loginShell);
     bindLoginShowcase(loginShell);
     bindWebsiteLogin(loginShell);
     document.onkeydown = (event) => { if (event.key === "Escape") go("home"); };
@@ -313,33 +488,36 @@ function renderHome({ showLogin = false } = {}) {
 }
 
 async function renderDiscover() {
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取提示词库...</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取提示词库...", "Loading Prompt Library...")}</p></section>`;
   try {
     const items = await loadResources();
     app.innerHTML = `
       <section class="library-intro">
         <div>
-          <p class="eyebrow">语藏提示词库</p>
-          <h1>找到 Prompt，改好变量，直接使用</h1>
-          <p>无需登录。浏览站方整理的真实模板，在页面里完成变量替换并复制最终 Prompt。</p>
+          <p class="eyebrow">${tr("语藏提示词库", "YUCANG PROMPT LIBRARY")}</p>
+          <h1>${tr("找到 Prompt，改好变量，直接使用", "Find a Prompt. Adjust it. Use it.")}</h1>
+          <p>${tr(
+            "无需登录。浏览站方整理的真实模板，在页面里完成变量替换并复制最终 Prompt。",
+            "No sign-in required. Browse curated templates, replace variables, and copy the final Prompt.",
+          )}</p>
         </div>
-        <aside class="library-count" aria-label="提示词数量">
-          <strong>${items.length}</strong><span>条可用 Prompt</span>
+        <aside class="library-count" aria-label="${tr("提示词数量", "Prompt count")}">
+          <strong>${items.length}</strong><span>${tr("条可用 Prompt", "Prompts available")}</span>
         </aside>
       </section>
       <section class="library-browser" aria-labelledby="libraryTitle">
         <div class="library-toolbar">
           <div>
-            <h2 id="libraryTitle">全部提示词</h2>
-            <p data-result-count>${items.length} 条结果</p>
+            <h2 id="libraryTitle">${tr("全部提示词", "All Prompts")}</h2>
+            <p data-result-count>${items.length} ${tr("条结果", "results")}</p>
           </div>
           <label class="library-search">
-            <span>搜索</span>
-            <input type="search" data-resource-search placeholder="搜索标题、用途、模型或标签" autocomplete="off" />
+            <span>${tr("搜索", "Search")}</span>
+            <input type="search" data-resource-search placeholder="${tr("搜索标题、用途、模型或标签", "Search title, use, model, or tag")}" autocomplete="off" />
           </label>
         </div>
-        <div class="category-tabs" role="group" aria-label="提示词分类">
-          ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === "all"}">${RESOURCE_CATEGORY_LABELS[category]}</button>`).join("")}
+        <div class="category-tabs" role="group" aria-label="${tr("提示词分类", "Prompt categories")}">
+          ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === "all"}">${resourceCategoryLabel(category)}</button>`).join("")}
         </div>
         <div class="resource-grid" data-resource-grid></div>
       </section>
@@ -347,7 +525,7 @@ async function renderDiscover() {
     bindResourceLibrary(items);
     hydrateCommunityShelf();
   } catch (error) {
-    renderError(error, "提示词库暂时不可用");
+    renderError(error, tr("提示词库暂时不可用", "Prompt Library is unavailable"));
   }
 }
 
@@ -358,7 +536,7 @@ async function hydrateCommunityShelf() {
     const items = await rpc("yucang_list_public_works");
     if (!items.length || !shelf.isConnected) return;
     shelf.innerHTML = `
-      <div class="section-head"><div><h2>社区公开作品</h2><p>已经通过审核的创作者作品</p></div></div>
+      <div class="section-head"><div><h2>${tr("社区公开作品", "Community Works")}</h2><p>${tr("已经通过审核的创作者作品", "Creator works that passed review")}</p></div></div>
       <div class="card-grid">${items.map(renderWorkCard).join("")}</div>`;
     shelf.hidden = false;
   } catch (error) {
@@ -375,14 +553,14 @@ function renderResourceCard(item) {
     <article class="resource-card">
       <a href="#/prompt/${encodeURIComponent(item.id)}">
         <div class="resource-card-meta">
-          <span>${escapeHtml(RESOURCE_CATEGORY_LABELS[item.category] || item.category)}</span>
-          <span>${escapeHtml(item.model || "通用模型")}</span>
+          <span>${escapeHtml(resourceCategoryLabel(item.category))}</span>
+          <span>${escapeHtml(item.model || tr("通用模型", "General model"))}</span>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
         <footer>
           <span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span>
-          <strong>打开使用</strong>
+          <strong>${tr("打开使用", "Open")}</strong>
         </footer>
       </a>
     </article>`;
@@ -401,10 +579,10 @@ function bindResourceLibrary(items) {
       (category === "all" || item.category === category)
       && (!query || resourceSearchText(item).includes(query))
     ));
-    count.textContent = `${filtered.length} 条结果`;
+    count.textContent = `${filtered.length} ${tr("条结果", "results")}`;
     grid.innerHTML = filtered.length
       ? filtered.map(renderResourceCard).join("")
-      : '<div class="library-empty"><h3>没有找到匹配的 Prompt</h3><p>换一个关键词，或者切换到其他分类。</p></div>';
+      : `<div class="library-empty"><h3>${tr("没有找到匹配的 Prompt", "No matching Prompts")}</h3><p>${tr("换一个关键词，或者切换到其他分类。", "Try another keyword or category.")}</p></div>`;
   };
 
   search.addEventListener("input", update);
@@ -421,12 +599,12 @@ function renderWorkCard(item) {
     <article class="prompt-card">
       <a href="#/prompt/${encodeURIComponent(item.work_id)}">
         <div class="card-meta">
-          <span class="pill accent">${escapeHtml(CONTENT_TYPE_LABELS[item.content_type] || item.content_type)}</span>
+          <span class="pill accent">${escapeHtml(contentTypeLabel(item.content_type))}</span>
           <span class="pill">v${Number(item.version_no || 1)}</span>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
-        <p>${escapeHtml(item.summary || "暂无简介")}</p>
-        <footer class="card-footer"><span>${escapeHtml(item.author_nickname)}</span><span>${escapeHtml(item.model_name || "通用模型")}</span></footer>
+        <p>${escapeHtml(item.summary || tr("暂无简介", "No description"))}</p>
+        <footer class="card-footer"><span>${escapeHtml(item.author_nickname)}</span><span>${escapeHtml(item.model_name || tr("通用模型", "General model"))}</span></footer>
       </a>
     </article>`;
 }
@@ -440,23 +618,26 @@ function editorMarkup(record = {}) {
   return `
     <section class="panel">
       <p class="eyebrow">CREATOR STUDIO · ${record.version_id ? `V${record.version_no}` : "NEW"}</p>
-      <h1>${record.version_id ? "编辑发布草稿" : "新建公开作品"}</h1>
-      <p class="lede">保存只进入发布流程域。只有公开预览、二次确认并审核通过后，作品才会出现在发现页。</p>
+      <h1>${record.version_id ? tr("编辑发布草稿", "Edit publication draft") : tr("新建公开作品", "Create public work")}</h1>
+      <p class="lede">${tr(
+        "保存只进入发布流程域。只有公开预览、二次确认并审核通过后，作品才会出现在发现页。",
+        "Saving only creates publication-process data. A work appears in Discover only after preview, second confirmation, and approval.",
+      )}</p>
       <form id="workEditor" class="form-grid" data-version-id="${escapeHtml(record.version_id || "")}" data-work-id="${escapeHtml(record.work_id || "")}" data-revision="${Number(record.revision || 1)}">
-        <label class="field full"><span>标题 *</span><input name="title" maxlength="120" required value="${escapeHtml(record.title || "")}" /></label>
-        <label class="field full"><span>一句话用途/简介 *</span><input name="summary" maxlength="300" required value="${escapeHtml(record.summary || "")}" /></label>
-        <label class="field"><span>内容类型</span><select name="content_type">${Object.entries(CONTENT_TYPE_LABELS).map(([value, label]) => `<option value="${value}" ${record.content_type === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
-        <label class="field"><span>授权类型</span><select name="license_code">${Object.entries(LICENSE_LABELS).map(([value, label]) => `<option value="${value}" ${record.license_code === value ? "selected" : ""}>${label}</option>`).join("")}</select></label>
-        <label class="field full"><span>完整 Prompt *</span><textarea class="prompt-input" name="prompt_text" required placeholder="使用 {{变量名}} 插入可修改变量">${escapeHtml(record.prompt_text || "")}</textarea><small>示例：一张 {{主体}} 的电影感画面，使用 {{光线}}。</small></label>
-        <div class="field full"><span>变量与默认值</span><div class="variable-list" id="variableList">${variables.map(renderVariableEditorRow).join("")}</div><button class="button" type="button" data-add-variable>添加变量</button></div>
-        <label class="field"><span>模型</span><input name="model_name" maxlength="120" value="${escapeHtml(record.model_name || "")}" placeholder="例如 Midjourney" /></label>
-        <label class="field"><span>模型版本</span><input name="model_version" maxlength="120" value="${escapeHtml(record.model_version || "")}" placeholder="例如 v7" /></label>
-        <label class="field full"><span>基础参数</span><textarea name="parameters" placeholder="每行一个，例如：aspect_ratio=16:9">${escapeHtml(formatKeyValueLines(record.parameters))}</textarea></label>
-        <label class="field full"><span>标签</span><input name="tags" value="${escapeHtml((record.tags || []).join("，"))}" placeholder="电影感，角色设计，光影" /></label>
+        <label class="field full"><span>${tr("标题", "Title")} *</span><input name="title" maxlength="120" required value="${escapeHtml(record.title || "")}" /></label>
+        <label class="field full"><span>${tr("一句话用途/简介", "One-line purpose / summary")} *</span><input name="summary" maxlength="300" required value="${escapeHtml(record.summary || "")}" /></label>
+        <label class="field"><span>${tr("内容类型", "Content type")}</span><select name="content_type">${Object.keys(CONTENT_TYPE_LABELS).map((value) => `<option value="${value}" ${record.content_type === value ? "selected" : ""}>${contentTypeLabel(value)}</option>`).join("")}</select></label>
+        <label class="field"><span>${tr("授权类型", "License")}</span><select name="license_code">${Object.keys(LICENSE_LABELS).map((value) => `<option value="${value}" ${record.license_code === value ? "selected" : ""}>${licenseLabel(value)}</option>`).join("")}</select></label>
+        <label class="field full"><span>${tr("完整 Prompt", "Full Prompt")} *</span><textarea class="prompt-input" name="prompt_text" required placeholder="${tr("使用 {{变量名}} 插入可修改变量", "Use {{variable}} to insert an editable variable")}">${escapeHtml(record.prompt_text || "")}</textarea><small>${tr("示例：一张 {{主体}} 的电影感画面，使用 {{光线}}。", "Example: A cinematic image of {{subject}}, using {{lighting}}.")}</small></label>
+        <div class="field full"><span>${tr("变量与默认值", "Variables and defaults")}</span><div class="variable-list" id="variableList">${variables.map(renderVariableEditorRow).join("")}</div><button class="button" type="button" data-add-variable>${tr("添加变量", "Add variable")}</button></div>
+        <label class="field"><span>${tr("模型", "Model")}</span><input name="model_name" maxlength="120" value="${escapeHtml(record.model_name || "")}" placeholder="${tr("例如 Midjourney", "e.g. Midjourney")}" /></label>
+        <label class="field"><span>${tr("模型版本", "Model version")}</span><input name="model_version" maxlength="120" value="${escapeHtml(record.model_version || "")}" placeholder="${tr("例如 v7", "e.g. v7")}" /></label>
+        <label class="field full"><span>${tr("基础参数", "Parameters")}</span><textarea name="parameters" placeholder="${tr("每行一个，例如：aspect_ratio=16:9", "One per line, e.g. aspect_ratio=16:9")}">${escapeHtml(formatKeyValueLines(record.parameters))}</textarea></label>
+        <label class="field full"><span>${tr("标签", "Tags")}</span><input name="tags" value="${escapeHtml((record.tags || []).join("，"))}" placeholder="${tr("电影感，角色设计，光影", "cinematic, character design, lighting")}" /></label>
         <div class="actions field full">
-          <button class="button" type="submit" name="intent" value="save">保存草稿</button>
-          <button class="button primary" type="submit" name="intent" value="preview">保存并公开预览</button>
-          <a class="button" href="#/my-publications">返回我的发布</a>
+          <button class="button" type="submit" name="intent" value="save">${tr("保存草稿", "Save draft")}</button>
+          <button class="button primary" type="submit" name="intent" value="preview">${tr("保存并公开预览", "Save & preview")}</button>
+          <a class="button" href="#/my-publications">${tr("返回我的发布", "Back to My Works")}</a>
         </div>
       </form>
     </section>`;
@@ -464,9 +645,9 @@ function editorMarkup(record = {}) {
 
 function renderVariableEditorRow(item = {}) {
   return `<div class="variable-row">
-    <input data-variable-name value="${escapeHtml(item.name || "")}" placeholder="变量名" aria-label="变量名" />
-    <input data-variable-default value="${escapeHtml(item.defaultValue || "")}" placeholder="默认值" aria-label="变量默认值" />
-    <button class="icon-button" type="button" data-remove-variable aria-label="删除变量">×</button>
+    <input data-variable-name value="${escapeHtml(item.name || "")}" placeholder="${tr("变量名", "Variable name")}" aria-label="${tr("变量名", "Variable name")}" />
+    <input data-variable-default value="${escapeHtml(item.defaultValue || "")}" placeholder="${tr("默认值", "Default value")}" aria-label="${tr("变量默认值", "Variable default value")}" />
+    <button class="icon-button" type="button" data-remove-variable aria-label="${tr("删除变量", "Remove variable")}">×</button>
   </div>`;
 }
 
@@ -516,21 +697,21 @@ async function saveEditor(form) {
 
 async function renderEditor(versionId = "") {
   if (!requireCreator()) return;
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在打开发布草稿…</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在打开发布草稿…", "Opening publication draft…")}</p></section>`;
   try {
     const record = versionId ? firstRow(await rpc("yucang_get_my_version", { p_version_id: versionId })) : {};
-    if (versionId && !record) throw new Error("没有找到可访问的版本。");
-    if (record?.status && record.status !== "draft") throw new Error("当前版本不处于可编辑 draft 状态。");
+    if (versionId && !record) throw new Error(tr("没有找到可访问的版本。", "No accessible version was found."));
+    if (record?.status && record.status !== "draft") throw new Error(tr("当前版本不处于可编辑 draft 状态。", "The current version is not an editable draft."));
     app.innerHTML = editorMarkup(record || {});
     const form = app.querySelector("#workEditor");
     bindVariableEditor(form);
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const button = event.submitter;
-      setBusy(button, true, button.value === "preview" ? "正在生成预览…" : "正在保存…");
+      setBusy(button, true, button.value === "preview" ? tr("正在生成预览…", "Preparing preview…") : tr("正在保存…", "Saving…"));
       try {
         const savedVersionId = await saveEditor(form);
-        notify("草稿已保存");
+        notify(tr("草稿已保存", "Draft saved"));
         if (button.value === "preview") go(`preview/${savedVersionId}`);
         else if (!versionId) go(`publish/${savedVersionId}`);
       } catch (error) {
@@ -540,35 +721,35 @@ async function renderEditor(versionId = "") {
       }
     });
   } catch (error) {
-    renderError(error, "无法打开发布草稿");
+    renderError(error, tr("无法打开发布草稿", "Unable to open publication draft"));
   }
 }
 
 function snapshotDetail(view, { includePrompt = true } = {}) {
   return `
     <div class="detail-meta">
-      <span class="pill accent">${escapeHtml(CONTENT_TYPE_LABELS[view.content_type] || view.content_type)}</span>
+      <span class="pill accent">${escapeHtml(contentTypeLabel(view.content_type))}</span>
       <span class="pill">v${view.version_no}</span>
-      <span class="pill">${escapeHtml(LICENSE_LABELS[view.license_code] || view.license_code)}</span>
+      <span class="pill">${escapeHtml(licenseLabel(view.license_code))}</span>
     </div>
     <h1>${escapeHtml(view.title)}</h1>
     <p class="lede">${escapeHtml(view.summary)}</p>
     <dl class="data-list">
-      <div><dt>作者</dt><dd>${escapeHtml(view.author_nickname || state.access?.nickname || "—")}</dd></div>
-      <div><dt>模型</dt><dd>${escapeHtml([view.model_name, view.model_version].filter(Boolean).join(" · ") || "—")}</dd></div>
-      <div><dt>参数</dt><dd>${escapeHtml(formatKeyValueLines(view.parameters) || "—").replaceAll("\n", "<br>")}</dd></div>
-      <div><dt>标签</dt><dd><span class="tag-list">${(view.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("") || "—"}</span></dd></div>
-      <div><dt>授权</dt><dd>${escapeHtml(LICENSE_LABELS[view.license_code] || view.license_code)}</dd></div>
+      <div><dt>${tr("作者", "Author")}</dt><dd>${escapeHtml(view.author_nickname || state.access?.nickname || "—")}</dd></div>
+      <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([view.model_name, view.model_version].filter(Boolean).join(" · ") || "—")}</dd></div>
+      <div><dt>${tr("参数", "Parameters")}</dt><dd>${escapeHtml(formatKeyValueLines(view.parameters) || "—").replaceAll("\n", "<br>")}</dd></div>
+      <div><dt>${tr("标签", "Tags")}</dt><dd><span class="tag-list">${(view.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("") || "—"}</span></dd></div>
+      <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(view.license_code))}</dd></div>
     </dl>
-    ${includePrompt ? `<h2 style="margin-top:30px">完整 Prompt</h2><pre class="prompt-output">${escapeHtml(view.prompt_text)}</pre>` : ""}`;
+    ${includePrompt ? `<h2 style="margin-top:30px">${tr("完整 Prompt", "Full Prompt")}</h2><pre class="prompt-output">${escapeHtml(view.prompt_text)}</pre>` : ""}`;
 }
 
 async function renderPreview(versionId) {
   if (!requireCreator()) return;
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在生成冻结预览…</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在生成冻结预览…", "Preparing frozen preview…")}</p></section>`;
   try {
     const preview = firstRow(await rpc("yucang_prepare_preview", { p_version_id: versionId }));
-    if (!preview) throw new Error("无法生成预览。");
+    if (!preview) throw new Error(tr("无法生成预览。", "Unable to prepare preview."));
     const view = snapshotToViewModel(preview.snapshot);
     app.innerHTML = `
       <section class="panel">
@@ -576,24 +757,27 @@ async function renderPreview(versionId) {
         <div class="detail-header">${snapshotDetail(view)}</div>
         <label class="confirm-box">
           <input type="checkbox" data-confirm-publish />
-          <span>我确认以上全部内容将作为冻结的待审核版本提交。审核期间不能直接修改；只有审核通过后才会公开。</span>
+          <span>${tr(
+            "我确认以上全部内容将作为冻结的待审核版本提交。审核期间不能直接修改；只有审核通过后才会公开。",
+            "I confirm that all content above will be submitted as a frozen version for review. It cannot be edited during review and becomes public only after approval.",
+          )}</span>
         </label>
         <div class="actions">
-          <button class="button primary" type="button" data-submit-review disabled>确认并提交审核</button>
-          <a class="button" href="#/publish/${encodeURIComponent(versionId)}">返回修改</a>
+          <button class="button primary" type="button" data-submit-review disabled>${tr("确认并提交审核", "Confirm & submit")}</button>
+          <a class="button" href="#/publish/${encodeURIComponent(versionId)}">${tr("返回修改", "Back to edit")}</a>
         </div>
       </section>`;
     const checkbox = app.querySelector("[data-confirm-publish]");
     const button = app.querySelector("[data-submit-review]");
     checkbox.addEventListener("change", () => { button.disabled = !checkbox.checked; });
     button.addEventListener("click", async () => {
-      setBusy(button, true, "正在冻结并提交…");
+      setBusy(button, true, tr("正在冻结并提交…", "Freezing and submitting…"));
       try {
         await rpc("yucang_submit_for_review", {
           p_version_id: versionId,
           p_expected_hash: preview.content_hash,
         });
-        notify("已提交审核，版本内容现已冻结。");
+        notify(tr("已提交审核，版本内容现已冻结。", "Submitted for review. The version is now frozen."));
         go("my-publications");
       } catch (error) {
         notify(error.message);
@@ -601,34 +785,34 @@ async function renderPreview(versionId) {
       }
     });
   } catch (error) {
-    renderError(error, "无法生成公开预览");
+    renderError(error, tr("无法生成公开预览", "Unable to prepare public preview"));
   }
 }
 
 async function renderMyPublications() {
   if (!requireCreator()) return;
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取我的发布…</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取我的发布…", "Loading My Works…")}</p></section>`;
   try {
     const items = await rpc("yucang_list_my_publications");
     app.innerHTML = `
       <section>
-        <div class="section-head"><div><p class="eyebrow">CREATOR STUDIO</p><h1 style="font-size:52px">我的发布</h1></div><a class="button primary" href="#/publish/new">新建公开作品</a></div>
+        <div class="section-head"><div><p class="eyebrow">CREATOR STUDIO</p><h1 style="font-size:52px">${tr("我的发布", "My Works")}</h1></div><a class="button primary" href="#/publish/new">${tr("新建公开作品", "Create public work")}</a></div>
         ${items.length ? `<div class="table-list">${items.map((item) => `
           <article class="table-row">
-            <div><span class="status">${escapeHtml(item.version_status)}</span><h3>${escapeHtml(item.title || "未命名草稿")}</h3><p>v${item.version_no} · ${escapeHtml(item.summary || "暂无简介")} · ${formatDate(item.updated_at)}</p></div>
+            <div><span class="status">${escapeHtml(item.version_status)}</span><h3>${escapeHtml(item.title || tr("未命名草稿", "Untitled draft"))}</h3><p>v${item.version_no} · ${escapeHtml(item.summary || tr("暂无简介", "No description"))} · ${formatDate(item.updated_at)}</p></div>
             <div class="actions" style="margin:0">
-              ${item.version_status === "draft" ? `<a class="button" href="#/publish/${item.version_id}">编辑</a><a class="button primary" href="#/preview/${item.version_id}">预览提交</a>` : ""}
-              ${item.version_status === "pending_review" ? `<button class="button" type="button" data-withdraw="${item.version_id}">撤回审核</button>` : ""}
-              ${item.version_status === "changes_requested" ? `<button class="button" type="button" data-reopen="${item.version_id}">继续修改</button>` : ""}
-              ${item.version_status === "approved" && item.current_public_version_id === item.version_id ? `<a class="button" href="#/prompt/${item.work_id}">查看公开页</a>` : ""}
+              ${item.version_status === "draft" ? `<a class="button" href="#/publish/${item.version_id}">${tr("编辑", "Edit")}</a><a class="button primary" href="#/preview/${item.version_id}">${tr("预览提交", "Preview & submit")}</a>` : ""}
+              ${item.version_status === "pending_review" ? `<button class="button" type="button" data-withdraw="${item.version_id}">${tr("撤回审核", "Withdraw review")}</button>` : ""}
+              ${item.version_status === "changes_requested" ? `<button class="button" type="button" data-reopen="${item.version_id}">${tr("继续修改", "Continue editing")}</button>` : ""}
+              ${item.version_status === "approved" && item.current_public_version_id === item.version_id ? `<a class="button" href="#/prompt/${item.work_id}">${tr("查看公开页", "View public page")}</a>` : ""}
             </div>
-          </article>`).join("")}</div>` : '<div class="empty-state"><h3>还没有发布流程</h3><p>从新建公开作品开始。</p></div>'}
+          </article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("还没有发布流程", "No publication flow yet")}</h3><p>${tr("从新建公开作品开始。", "Start by creating a public work.")}</p></div>`}
       </section>`;
     app.querySelectorAll("[data-withdraw]").forEach((button) => button.addEventListener("click", async () => {
       setBusy(button, true);
       try {
         await rpc("yucang_withdraw_review", { p_version_id: button.dataset.withdraw });
-        notify("审核已撤回，版本回到 draft。");
+        notify(tr("审核已撤回，版本回到 draft。", "Review withdrawn. The version is back in draft."));
         renderMyPublications();
       } catch (error) { notify(error.message); setBusy(button, false); }
     }));
@@ -640,7 +824,7 @@ async function renderMyPublications() {
       } catch (error) { notify(error.message); setBusy(button, false); }
     }));
   } catch (error) {
-    renderError(error, "无法读取我的发布");
+    renderError(error, tr("无法读取我的发布", "Unable to load My Works"));
   }
 }
 
@@ -668,16 +852,19 @@ function bindPromptTool({ template, variables, output, copyButton }) {
   copyButton.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(output.textContent);
-      copyButton.textContent = "已复制";
-      notify("Prompt 已复制");
-      setTimeout(() => { copyButton.textContent = "复制 Prompt"; }, 1600);
+      copyButton.textContent = tr("已复制", "Copied");
+      notify(tr("Prompt 已复制", "Prompt copied"));
+      setTimeout(() => { copyButton.textContent = tr("复制 Prompt", "Copy Prompt"); }, 1600);
     } catch {
       const range = document.createRange();
       range.selectNodeContents(output);
       const selection = getSelection();
       selection.removeAllRanges();
       selection.addRange(range);
-      notify("浏览器未授权剪贴板，已选中文本，请手动复制。");
+      notify(tr(
+        "浏览器未授权剪贴板，已选中文本，请手动复制。",
+        "Clipboard access was blocked. The Prompt is selected for manual copying.",
+      ));
     }
   });
   update();
@@ -687,37 +874,37 @@ function renderOfficialResource(item) {
   const variables = officialResourceVariables(item);
   app.innerHTML = `
     <section class="resource-detail-head">
-      <a class="back-link" href="#/discover">返回提示词库</a>
+      <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
       <div class="detail-meta">
-        <span class="pill accent">${escapeHtml(RESOURCE_CATEGORY_LABELS[item.category] || item.category)}</span>
-        <span class="pill">站方模板</span>
+        <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
+        <span class="pill">${tr("站方模板", "Official template")}</span>
       </div>
       <h1>${escapeHtml(item.title)}</h1>
       <p>${escapeHtml(item.summary)}</p>
       <dl class="resource-facts">
-        <div><dt>模型</dt><dd>${escapeHtml(item.model || "通用模型")}</dd></div>
-        <div><dt>来源</dt><dd>${escapeHtml(item.sourceName || "语藏")}</dd></div>
-        <div><dt>授权</dt><dd>${escapeHtml(item.license || "请查看发布说明")}</dd></div>
+        <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml(item.model || tr("通用模型", "General model"))}</dd></div>
+        <div><dt>${tr("来源", "Source")}</dt><dd>${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</dd></div>
+        <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
       </dl>
     </section>
     <section class="resource-use-layout">
       <div class="resource-variable-panel">
         <div class="tool-heading">
-          <h2>修改变量</h2>
-          <p>输入内容后，右侧 Prompt 会立即更新。</p>
+          <h2>${tr("修改变量", "Adjust variables")}</h2>
+          <p>${tr("输入内容后，右侧 Prompt 会立即更新。", "The Prompt updates as you type.")}</p>
         </div>
         <div class="resource-variable-list">
           ${variables.length ? variables.map((entry) => `
             <label class="resource-variable">
               <span>${escapeHtml(entry.label)}</span>
               <input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" placeholder="${escapeHtml(entry.placeholder)}" />
-            </label>`).join("") : '<p class="lede">这条 Prompt 没有变量，可以直接复制。</p>'}
+            </label>`).join("") : `<p class="lede">${tr("这条 Prompt 没有变量，可以直接复制。", "This Prompt has no variables and can be copied directly.")}</p>`}
         </div>
       </div>
       <aside class="prompt-stage">
         <div class="tool-heading">
-          <div><h2>最终 Prompt</h2><p>${escapeHtml(item.usage || "检查内容后直接复制使用。")}</p></div>
-          <button class="button primary" type="button" data-copy-prompt>复制 Prompt</button>
+          <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
+          <button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>
         </div>
         <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
         <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
@@ -732,7 +919,7 @@ function renderOfficialResource(item) {
 }
 
 async function renderPublicPrompt(workId) {
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取 Prompt...</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取 Prompt...", "Loading Prompt...")}</p></section>`;
   try {
     const resources = await loadResources();
     const officialResource = resources.find((item) => item.id === workId);
@@ -741,7 +928,10 @@ async function renderPublicPrompt(workId) {
       return;
     }
     const item = firstRow(await rpc("yucang_get_public_work", { p_work_id: workId }));
-    if (!item) throw new Error("作品不存在、尚未审核通过或当前不可公开访问。");
+    if (!item) throw new Error(tr(
+      "作品不存在、尚未审核通过或当前不可公开访问。",
+      "This work does not exist, is not approved, or is not publicly accessible.",
+    ));
     const variables = normalizeVariables(item.variables);
     app.innerHTML = `
       <section class="detail-header">
@@ -750,16 +940,16 @@ async function renderPublicPrompt(workId) {
       </section>
       <section class="split-layout">
         <div class="panel">
-          <h2>修改变量</h2>
-          <p class="lede">变量只在当前页面生成最终 Prompt，不会修改公开版本。</p>
+          <h2>${tr("修改变量", "Adjust variables")}</h2>
+          <p class="lede">${tr("变量只在当前页面生成最终 Prompt，不会修改公开版本。", "Variables only change the generated Prompt on this page; the public version stays unchanged.")}</p>
           <div class="form-grid" data-variable-inputs>
-            ${variables.length ? variables.map((entry) => `<label class="field"><span>${escapeHtml(entry.name)}</span><input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" /></label>`).join("") : '<p class="lede field full">这个 Prompt 没有声明变量，可直接复制。</p>'}
+            ${variables.length ? variables.map((entry) => `<label class="field"><span>${escapeHtml(entry.name)}</span><input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" /></label>`).join("") : `<p class="lede field full">${tr("这个 Prompt 没有声明变量，可直接复制。", "This Prompt has no declared variables and can be copied directly.")}</p>`}
           </div>
         </div>
         <aside class="panel sticky-panel">
-          <div class="section-head"><div><p class="eyebrow">FINAL PROMPT</p><h2>最终 Prompt</h2></div></div>
+          <div class="section-head"><div><p class="eyebrow">FINAL PROMPT</p><h2>${tr("最终 Prompt", "Final Prompt")}</h2></div></div>
           <pre class="prompt-output" data-final-prompt></pre>
-          <button class="button primary" type="button" data-copy-prompt style="margin-top:16px">复制 Prompt</button>
+          <button class="button primary" type="button" data-copy-prompt style="margin-top:16px">${tr("复制 Prompt", "Copy Prompt")}</button>
         </aside>
       </section>`;
     bindPromptTool({
@@ -769,7 +959,7 @@ async function renderPublicPrompt(workId) {
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
   } catch (error) {
-    renderError(error, "无法打开 Prompt");
+    renderError(error, tr("无法打开 Prompt", "Unable to open Prompt"));
   }
 }
 
@@ -780,7 +970,7 @@ async function bootstrapAdmin(event) {
     await rpc("yucang_bootstrap_admin");
     await loadAccess();
     renderHeader();
-    notify("语藏首位管理员已初始化。");
+    notify(tr("语藏首位管理员已初始化。", "The first Yucang administrator is initialized."));
     go("admin/review");
   } catch (error) {
     notify(error.message);
@@ -794,24 +984,24 @@ async function renderAdminReview() {
     requireStaff();
     return;
   }
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取审核队列…</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取审核队列…", "Loading review queue…")}</p></section>`;
   try {
     const items = await rpc("yucang_admin_list_pending");
     app.innerHTML = `
       <section class="split-layout">
         <div>
-          <div class="section-head"><div><p class="eyebrow">REVIEW QUEUE</p><h1 style="font-size:52px">待审核</h1></div><span class="status">${items.length} 项</span></div>
+          <div class="section-head"><div><p class="eyebrow">REVIEW QUEUE</p><h1 style="font-size:52px">${tr("待审核", "Pending review")}</h1></div><span class="status">${items.length} ${tr("项", "items")}</span></div>
           ${items.length ? `<div class="table-list">${items.map((item) => `
-            <article class="table-row"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author_nickname)} · v${item.version_no} · ${formatDate(item.submitted_at)}</p></div><a class="button primary" href="#/admin/review/${item.submission_id}">打开审核</a></article>`).join("")}</div>` : '<div class="empty-state"><h3>审核队列为空</h3><p>创作者二次确认并提交后，会出现在这里。</p></div>'}
+            <article class="table-row"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author_nickname)} · v${item.version_no} · ${formatDate(item.submitted_at)}</p></div><a class="button primary" href="#/admin/review/${item.submission_id}">${tr("打开审核", "Open review")}</a></article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("审核队列为空", "Review queue is empty")}</h3><p>${tr("创作者二次确认并提交后，会出现在这里。", "Creator submissions appear here after second confirmation.")}</p></div>`}
         </div>
         ${state.access?.is_admin ? `
           <aside class="panel sticky-panel">
-            <p class="eyebrow">ADMIN</p><h2>赋予创作者资格</h2>
+            <p class="eyebrow">ADMIN</p><h2>${tr("赋予创作者资格", "Grant creator access")}</h2>
             <form id="grantCreator" class="form-grid">
-              <label class="field full"><span>已有账号邮箱</span><input name="email" type="email" required /></label>
-              <label class="field full"><span>公开昵称</span><input name="nickname" required maxlength="40" /></label>
-              <label class="field full"><span>作者 slug</span><input name="slug" required pattern="[a-z0-9][a-z0-9-]{1,62}[a-z0-9]" placeholder="visual-creator" /></label>
-              <button class="button primary field full" type="submit">赋予资格</button>
+              <label class="field full"><span>${tr("已有账号邮箱", "Existing account email")}</span><input name="email" type="email" required /></label>
+              <label class="field full"><span>${tr("公开昵称", "Public nickname")}</span><input name="nickname" required maxlength="40" /></label>
+              <label class="field full"><span>${tr("作者 slug", "Creator slug")}</span><input name="slug" required pattern="[a-z0-9][a-z0-9-]{1,62}[a-z0-9]" placeholder="visual-creator" /></label>
+              <button class="button primary field full" type="submit">${tr("赋予资格", "Grant access")}</button>
             </form>
           </aside>` : ""}
       </section>`;
@@ -823,21 +1013,21 @@ async function renderAdminReview() {
         await rpc("yucang_admin_grant_creator", {
           p_email: data.get("email"), p_nickname: data.get("nickname"), p_slug: data.get("slug"),
         });
-        notify("创作者资格已生效。"); event.currentTarget.reset();
+        notify(tr("创作者资格已生效。", "Creator access granted.")); event.currentTarget.reset();
         if (data.get("email") === state.session.user.email) { await loadAccess(); renderHeader(); }
       } catch (error) { notify(error.message); } finally { setBusy(button, false); }
     });
   } catch (error) {
-    renderError(error, "无法打开审核后台");
+    renderError(error, tr("无法打开审核后台", "Unable to open review workspace"));
   }
 }
 
 async function renderSubmission(submissionId) {
   if (!requireStaff()) return;
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取冻结 submission…</p></section>';
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取冻结 submission…", "Loading frozen submission…")}</p></section>`;
   try {
     const item = firstRow(await rpc("yucang_admin_get_submission", { p_submission_id: submissionId }));
-    if (!item) throw new Error("Submission 不存在或不可访问。");
+    if (!item) throw new Error(tr("Submission 不存在或不可访问。", "Submission does not exist or is inaccessible."));
     const view = snapshotToViewModel(item.snapshot);
     app.innerHTML = `
       <section class="split-layout">
@@ -846,36 +1036,40 @@ async function renderSubmission(submissionId) {
           ${snapshotDetail(view)}
         </div>
         <aside class="panel sticky-panel">
-          <p class="eyebrow">REVIEW ACTION</p><h2>审核决定</h2>
-          <p class="lede">审核员只能决定结果，不能修改创作者 Prompt。</p>
-          <label class="field"><span>审核原因/说明</span><textarea data-review-reason placeholder="要求修改或拒绝时请说明原因"></textarea></label>
+          <p class="eyebrow">REVIEW ACTION</p><h2>${tr("审核决定", "Review decision")}</h2>
+          <p class="lede">${tr("审核员只能决定结果，不能修改创作者 Prompt。", "Reviewers can decide the outcome but cannot edit the creator's Prompt.")}</p>
+          <label class="field"><span>${tr("审核原因/说明", "Reason / notes")}</span><textarea data-review-reason placeholder="${tr("要求修改或拒绝时请说明原因", "A reason is required for changes or rejection")}"></textarea></label>
           <div class="actions">
-            <button class="button primary" type="button" data-review-action="approved">通过并公开</button>
-            <button class="button" type="button" data-review-action="changes_requested">要求修改</button>
-            <button class="button danger" type="button" data-review-action="rejected">拒绝</button>
+            <button class="button primary" type="button" data-review-action="approved">${tr("通过并公开", "Approve & publish")}</button>
+            <button class="button" type="button" data-review-action="changes_requested">${tr("要求修改", "Request changes")}</button>
+            <button class="button danger" type="button" data-review-action="rejected">${tr("拒绝", "Reject")}</button>
           </div>
         </aside>
       </section>`;
     app.querySelectorAll("[data-review-action]").forEach((button) => button.addEventListener("click", async () => {
       const action = button.dataset.reviewAction;
       const reason = app.querySelector("[data-review-reason]").value.trim();
-      if (action !== "approved" && !reason) return notify("要求修改或拒绝时必须填写原因。");
-      setBusy(button, true, action === "approved" ? "正在批准并公开…" : "正在提交决定…");
+      if (action !== "approved" && !reason) return notify(tr("要求修改或拒绝时必须填写原因。", "A reason is required for changes or rejection."));
+      setBusy(button, true, action === "approved" ? tr("正在批准并公开…", "Approving and publishing…") : tr("正在提交决定…", "Submitting decision…"));
       try {
         await rpc("yucang_review_submission", {
           p_submission_id: submissionId, p_action: action, p_reason: reason,
         });
-        notify(action === "approved" ? "审核通过，作品已成为真实公开数据。" : "审核结果已保存。");
+        notify(action === "approved"
+          ? tr("审核通过，作品已成为真实公开数据。", "Approved. The work is now live public data.")
+          : tr("审核结果已保存。", "Review decision saved."));
         go("admin/review");
       } catch (error) { notify(error.message); setBusy(button, false); }
     }));
   } catch (error) {
-    renderError(error, "无法读取审核 submission");
+    renderError(error, tr("无法读取审核 submission", "Unable to load review submission"));
   }
 }
 
 async function renderRoute() {
   const [section, id] = routeParts();
+  state.homeOrbitCleanup?.();
+  state.homeOrbitCleanup = null;
   const homeRoute = section === "home" || section === "login";
   document.body.classList.toggle("route-home", homeRoute);
   document.body.classList.toggle("route-login", section === "login" && !state.session);
@@ -894,11 +1088,15 @@ async function renderRoute() {
   if (section === "my-publications") return renderMyPublications();
   if (section === "admin" && id === "review" && routeParts()[2]) return renderSubmission(routeParts()[2]);
   if (section === "admin" && id === "review") return renderAdminReview();
-  renderError(new Error("页面不存在。"), "没有找到这个页面");
+  renderError(new Error(tr("页面不存在。", "Page not found.")), tr("没有找到这个页面", "Page not found"));
 }
 
 async function initialize() {
   try {
+    updateStaticLocale();
+    localeToggle.addEventListener("click", () => {
+      setLocale(state.locale === "en" ? "zh" : "en");
+    });
     const client = getClient();
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
@@ -915,7 +1113,7 @@ async function initialize() {
     });
     await renderRoute();
   } catch (error) {
-    renderError(error, "语藏初始化失败");
+    renderError(error, tr("语藏初始化失败", "Yucang failed to initialize"));
   }
 }
 

@@ -7,11 +7,11 @@
     <title>语藏 · Prompt Community</title>
     <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
     <link rel="stylesheet" href="../auth/login-experience.css" />
-    <link rel="stylesheet" href="app.css?v=20260825-home3" />
+    <link rel="stylesheet" href="app.css?v=20260825-orbit4" />
     <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="../supabase-config.js" defer></script>
     <script src="../supabase-client.js" defer></script>
-    <script type="module" src="app.js?v=20260825-home2"></script>
+    <script type="module" src="app.js?v=20260825-orbit4"></script>
   </head>
   <body>
     <header class="app-header">
@@ -26,8 +26,12 @@
         <a href="#/my-publications" data-creator-link hidden>我的发布</a>
         <a href="#/admin/review" data-staff-link hidden>审核</a>
       </nav>
-      <div class="account-actions" id="accountActions">
-        <a class="button ghost" href="#/login">登录</a>
+      <div class="header-actions">
+        <a class="header-product-link" href="../prompt-vault.html" data-prompt-vault-link>安装 Prompt Vault</a>
+        <button class="locale-toggle" type="button" data-locale-toggle aria-label="Switch to English">EN</button>
+        <div class="account-actions" id="accountActions">
+          <a class="button ghost" href="#/login">登录</a>
+        </div>
       </div>
     </header>
 

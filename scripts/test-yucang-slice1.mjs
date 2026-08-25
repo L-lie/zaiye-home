@@ -92,6 +92,10 @@ assert.match(app, /fetch\("\.\.\/prompt-vault-resources\.json"/);
 assert.match(app, /data-resource-search/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /HOME_FEATURED_ART/);
+assert.match(app, /bindHomeOrbit/);
+assert.match(app, /navigator\.language/);
+assert.match(app, /yucangLocale/);
+assert.match(app, /data-locale-toggle/);
 assert.match(app, /home-login-layer/);
 assert.match(app, /loginExperienceMarkup/);
 for (const asset of [
@@ -105,6 +109,8 @@ for (const asset of [
   "yucang/assets/featured/dark-gothic.webp",
   "yucang/assets/featured/particle-poster.webp",
 ]) assert(existsSync(join(root, asset)), `missing homepage asset ${asset}`);
+assert.match(readFileSync(join(root, "index.html"), "utf8"), /href="yucang\/"/);
+assert.match(readFileSync(join(root, "prompt-vault.html"), "utf8"), /href="yucang\/"/);
 assert.deepEqual(parseKeyValueLines("aspect_ratio=16:9\nseed：42\ninvalid"), { aspect_ratio: "16:9", seed: "42" });
 assert.deepEqual(parseTags("电影感，角色设计,电影感"), ["电影感", "角色设计"]);
 assert.deepEqual(normalizeVariables([{ name: "主体", default: "人物" }, { name: "主体", default: "重复" }]), [
