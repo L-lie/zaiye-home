@@ -36,6 +36,7 @@ const continueButton = document.querySelector("#continueButton");
 const cancelButton = document.querySelector("#cancelButton");
 
 const FLOW_STORAGE_KEY = "yucangExtensionPendingAuth";
+const EXTENSION_AUTH_API_BASE = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1";
 let client;
 let session;
 let flow;
@@ -120,7 +121,7 @@ async function authorizeExtension() {
       sessionStorage.removeItem(marker);
     }
 
-    const response = await fetch("/api/auth/extension/authorize", {
+    const response = await fetch(`${EXTENSION_AUTH_API_BASE}/yucang-extension-authorize`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${session.access_token}`,

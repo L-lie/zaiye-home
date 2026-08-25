@@ -93,6 +93,8 @@ const [pageSource, authorizeSource, tokenSource, migration, netlify, sharedLogin
 
 assert.match(pageSource, /location\.replace\(callbackUrl\(\{ code: result\.code, state: result\.state \}\)\)/);
 assert.doesNotMatch(pageSource, /callbackUrl\(\{[^}]*access_token/);
+assert.match(pageSource, /supabase\.co\/functions\/v1/);
+assert.match(pageSource, /yucang-extension-authorize/);
 assert.match(authorizeSource, /auth\.getUser\(accessToken\)/);
 assert.match(authorizeSource, /state_hash/);
 assert.match(tokenSource, /p_code_challenge: verifierChallenge/);
