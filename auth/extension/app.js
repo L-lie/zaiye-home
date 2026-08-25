@@ -16,11 +16,16 @@ extensionLoginRoot.innerHTML = loginExperienceMarkup({
       <p id="actionDescription">确认后将返回 Prompt Vault 扩展。</p>
       <div class="login-consent-actions">
         <button id="continueButton" type="button">继续</button>
+        <button id="switchAccountButton" type="button" class="secondary">切换账号</button>
         <button id="cancelButton" type="button" class="secondary">取消</button>
       </div>
     </section>`,
   footer: "登录只建立账号会话，不会上传、同步或公开你的本地 Prompt。",
 });
+extensionLoginRoot.querySelector(".login-experience")?.insertAdjacentHTML(
+  "beforeend",
+  '<button id="closePageButton" class="extension-login-close" type="button" aria-label="取消并关闭登录">×</button>',
+);
 bindLoginShowcase(extensionLoginRoot);
 
 const statusBox = document.querySelector("#status");
@@ -33,7 +38,9 @@ const consentPanel = document.querySelector("#consentPanel");
 const accountLabel = document.querySelector("#accountLabel");
 const actionDescription = document.querySelector("#actionDescription");
 const continueButton = document.querySelector("#continueButton");
+const switchAccountButton = document.querySelector("#switchAccountButton");
 const cancelButton = document.querySelector("#cancelButton");
+const closePageButton = document.querySelector("#closePageButton");
 
 const FLOW_STORAGE_KEY = "yucangExtensionPendingAuth";
 const EXTENSION_AUTH_API_BASE = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1";
@@ -111,6 +118,10 @@ function sendExtensionResult(values) {
       resolve(response);
     });
   });
+}
+
+function providerStartMarker() {
+  return `yucangExtensionProviderStarted:${flow.state}`;
 }
 
 function showLogin() {
@@ -199,6 +210,17 @@ async function initialize() {
     if (error) throw error;
     session = data.session;
     history.replaceState(null, "", `${location.pathname}?${new URLSearchParams(flow)}`);
+    if (flow.action === "signin" && ["github", "google"].includes(flow.provider)
+      && sessionStorage.getItem(providerStartMarker()) !== "started") {
+      sessionStorage.setItem(providerStartMarker(), "started");
+      if (session) {
+        const { error: signOutError } = await client.auth.signOut({ scope: "local" });
+        if (signOutError) throw signOutError;
+        session = null;
+      }
+      await startOAuth(flow.provider);
+      return;
+    }
     if (session) showConsent(); else showLogin();
   } catch (error) {
     setStatus(error.message || "扩展登录请求无效。", true);
@@ -251,16 +273,41 @@ emailVerifyForm.addEventListener("submit", async (event) => {
 });
 
 continueButton.addEventListener("click", authorizeExtension);
-cancelButton.addEventListener("click", async () => {
+switchAccountButton.addEventListener("click", async () => {
+  switchAccountButton.disabled = true;
+  try {
+    const { error } = await client.auth.signOut({ scope: "local" });
+    if (error) throw error;
+    session = null;
+    sessionStorage.removeItem(providerStartMarker());
+    flow = { ...flow, provider: "" };
+    sessionStorage.setItem(FLOW_STORAGE_KEY, JSON.stringify(flow));
+    history.replaceState(null, "", `${location.pathname}?${new URLSearchParams(flow)}`);
+    showLogin();
+    setStatus("已退出当前网站账号，请重新选择登录方式。");
+  } catch (error) {
+    setStatus(error.message || "无法切换账号。", true);
+  } finally {
+    switchAccountButton.disabled = false;
+  }
+});
+
+async function cancelAndClose() {
   cancelButton.disabled = true;
+  closePageButton.disabled = true;
   try {
     await sendExtensionResult({ error: "access_denied", error_description: "User cancelled the authorization request." });
     sessionStorage.removeItem(FLOW_STORAGE_KEY);
+    sessionStorage.removeItem(providerStartMarker());
     setStatus("已取消，正在返回 Prompt Vault。");
   } catch (error) {
     setStatus(error.message || "无法返回 Prompt Vault。", true);
     cancelButton.disabled = false;
+    closePageButton.disabled = false;
   }
-});
+}
+
+cancelButton.addEventListener("click", cancelAndClose);
+closePageButton.addEventListener("click", cancelAndClose);
 
 window.addEventListener("DOMContentLoaded", initialize, { once: true });

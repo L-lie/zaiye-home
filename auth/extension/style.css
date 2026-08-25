@@ -12,6 +12,26 @@ body {
 }
 button, input { font: inherit; }
 .auth-shell { min-height: 100dvh; display: grid; place-items: center; padding: 20px 22px; }
+.auth-shell .login-experience { position: relative; }
+.extension-login-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 3;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: rgba(23, 33, 31, .62);
+  background: transparent;
+  font-size: 34px;
+  line-height: 1;
+  cursor: pointer;
+}
+.extension-login-close:hover { color: #17211f; background: rgba(23, 33, 31, .06); }
+.extension-login-close:focus-visible { outline: 3px solid rgba(12, 118, 111, .22); outline-offset: 2px; }
+.extension-login-close:disabled { cursor: wait; opacity: .45; }
 noscript { display: block; padding: 24px; text-align: center; }
 
 @media (max-width: 820px) {

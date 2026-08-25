@@ -105,6 +105,11 @@ const [pageSource, authorizeSource, tokenSource, migration, netlify, sharedLogin
 
 assert.match(pageSource, /type: "prompt-vault-extension-auth-result"/);
 assert.match(pageSource, /await sendExtensionResult\(\{ code: result\.code \}\)/);
+assert.match(pageSource, /yucangExtensionProviderStarted/);
+assert.match(pageSource, /client\.auth\.signOut\(\{ scope: "local" \}\)/);
+assert.match(pageSource, /id="switchAccountButton"/);
+assert.match(pageSource, /id="closePageButton"/);
+assert.match(pageSource, /cancelButton\.addEventListener\("click", cancelAndClose\)/);
 assert.match(pageSource, /response\.requestId !== requestId/);
 assert.doesNotMatch(pageSource, /location\.replace\(callbackUrl/);
 assert.doesNotMatch(pageSource, /sendExtensionResult\(\{[^}]*access_token/);
