@@ -30,6 +30,7 @@ const RESOURCE_CATEGORY_LABELS = Object.freeze({
 const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
 const HOME_FEATURED_ART = Object.freeze([
   { src: "assets/featured/mushroom-city-1.webp", title: "蘑菇城", titleEn: "Mushroom City", likes: 0, size: 1.18, phase: .03, speed: .082, lane: 1.02, lift: -12 },
+  { src: "assets/featured/mushroom-city-2.webp", title: "蘑菇城秘境", titleEn: "Mushroom Realm", likes: 0, size: .82, phase: .10, speed: .112, lane: .9, lift: 14 },
   { src: "assets/featured/abstract-expression.webp", title: "抽象表现主义", titleEn: "Abstract Expression", likes: 0, size: .78, phase: .17, speed: .11, lane: .91, lift: 18 },
   { src: "assets/featured/knight-medieval.webp", title: "骑士回中世纪", titleEn: "Medieval Knight", likes: 0, size: 1.04, phase: .29, speed: .094, lane: 1.05, lift: -20 },
   { src: "assets/featured/watercolor-dessert.webp", title: "钢笔水彩手绘", titleEn: "Ink & Watercolor", likes: 0, size: .72, phase: .44, speed: .122, lane: .87, lift: 8 },
@@ -37,6 +38,9 @@ const HOME_FEATURED_ART = Object.freeze([
   { src: "assets/featured/litian-demon.webp", title: "庶天妖", titleEn: "Celestial Demon", likes: 0, size: .84, phase: .69, speed: .106, lane: .92, lift: 22 },
   { src: "assets/featured/dark-gothic.webp", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
   { src: "assets/featured/particle-poster.webp", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
+  { src: "assets/featured/neon-action.webp", title: "霓虹动作场景", titleEn: "Neon Action", likes: 0, size: .9, phase: .37, speed: .098, lane: .96, lift: 24 },
+  { src: "assets/featured/cosmic-eye.webp", title: "宇宙之眼", titleEn: "Cosmic Eye", likes: 0, size: .7, phase: .63, speed: .126, lane: .86, lift: -6 },
+  { src: "assets/featured/ink-character.webp", title: "黑白人物", titleEn: "Ink Character", likes: 0, size: .8, phase: .75, speed: .102, lane: 1.04, lift: 6 },
 ]);
 
 const state = {
@@ -394,6 +398,110 @@ function bindHomeOrbit(root) {
   return () => cancelAnimationFrame(frame);
 }
 
+function bindTextFigure(canvas) {
+  const context = canvas.getContext("2d");
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const glyphs = "语藏提示词灵感创作想象光影构图镜头场景叙事节奏色彩质感空间细节图像语言模型参数风格结构生成变化重组流动";
+  const particles = [];
+  const motes = [];
+  let frame = 0;
+  let start = performance.now();
+  let seed = 24681357;
+  const random = () => {
+    seed = (seed * 48271) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  const insideFigure = (x, y) => {
+    const head = (x / .235) ** 2 + ((y - .285) / .23) ** 2 <= 1;
+    const neckHalf = .09 + Math.max(0, y - .48) * .22;
+    const neck = y >= .43 && y <= .68 && Math.abs(x) <= neckHalf;
+    const shoulderY = (y - .79) / .24;
+    const shoulders = y >= .59 && y <= 1.03 && (x / .58) ** 2 + shoulderY ** 2 <= 1;
+    const torso = y >= .7 && y <= 1.03 && Math.abs(x) <= .34 - (y - .7) * .1;
+    return head || neck || shoulders || torso;
+  };
+  for (let index = 0; index < 760; index += 1) {
+    let x;
+    let y;
+    do {
+      x = random() * 1.24 - .62;
+      y = random() * .98 + .04;
+    } while (!insideFigure(x, y));
+    const depth = random();
+    particles.push({
+      x,
+      y,
+      depth,
+      glyph: glyphs[Math.floor(random() * glyphs.length)],
+      size: 7 + depth * 12 + random() * 5,
+      alpha: .18 + depth * .58,
+      phase: random() * Math.PI * 2,
+      speed: .18 + random() * .32,
+      rotation: (random() - .5) * .22,
+    });
+  }
+  for (let index = 0; index < 90; index += 1) {
+    motes.push({
+      x: random() * 1.1 - .55,
+      y: random() * .78 + .08,
+      glyph: glyphs[Math.floor(random() * glyphs.length)],
+      size: 6 + random() * 5,
+      speed: .018 + random() * .028,
+      phase: random(),
+    });
+  }
+
+  const draw = (now = start) => {
+    const cssWidth = canvas.clientWidth;
+    const cssHeight = canvas.clientHeight;
+    const ratio = Math.min(devicePixelRatio || 1, 2);
+    const width = Math.round(cssWidth * ratio);
+    const height = Math.round(cssHeight * ratio);
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, cssWidth, cssHeight);
+    const time = (now - start) / 1000;
+    const centerX = cssWidth / 2;
+    const scaleX = cssWidth * .77;
+    const scaleY = cssHeight * .9;
+    particles
+      .slice()
+      .sort((a, b) => a.depth - b.depth)
+      .forEach((particle) => {
+        const drift = reducedMotion ? 0 : Math.sin(time * particle.speed + particle.phase) * (1.2 + particle.depth * 1.8);
+        const x = centerX + particle.x * scaleX + drift;
+        const y = particle.y * scaleY + Math.cos(time * particle.speed * .7 + particle.phase) * 1.4;
+        context.save();
+        context.translate(x, y);
+        context.rotate(particle.rotation + Math.sin(time * .12 + particle.phase) * .025);
+        context.font = `${Math.round(particle.size)}px "Songti SC", SimSun, STSong, serif`;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillStyle = `rgba(239, 239, 232, ${particle.alpha})`;
+        context.shadowColor = `rgba(239, 239, 232, ${.08 + particle.depth * .22})`;
+        context.shadowBlur = 2 + particle.depth * 5;
+        context.fillText(particle.glyph, 0, 0);
+        context.restore();
+      });
+    motes.forEach((mote) => {
+      const travel = reducedMotion ? 0 : (time * mote.speed + mote.phase) % 1;
+      const x = centerX + mote.x * scaleX + Math.sin(time * .3 + mote.phase * 8) * 4;
+      const y = (mote.y - travel * .18) * scaleY;
+      const alpha = Math.sin(Math.PI * travel) * .34;
+      context.font = `${mote.size}px "Songti SC", SimSun, STSong, serif`;
+      context.textAlign = "center";
+      context.fillStyle = `rgba(239, 239, 232, ${alpha})`;
+      context.fillText(mote.glyph, x, y);
+    });
+    if (!reducedMotion) frame = requestAnimationFrame(draw);
+  };
+  draw();
+  return () => cancelAnimationFrame(frame);
+}
+
 function localizeLoginExperience(root) {
   if (state.locale !== "en") return;
   const setText = (selector, value) => {
@@ -452,7 +560,7 @@ function renderHome({ showLogin = false } = {}) {
       </div>
       <div class="home-orbit" aria-label="${tr("首发 Prompt 示例图，当前均为 0 个赞", "Launch Prompt examples, all currently at 0 likes")}">
         ${featured}
-        <img class="home-text-figure" src="assets/yucang-text-figure.png" alt="${tr("由白色中文文字带缠绕形成的无脸抽象半身人形", "A faceless abstract half-figure wrapped in white Chinese text ribbons")}" width="1152" height="1536" />
+        <canvas class="home-text-figure" role="img" aria-label="${tr("由流动中文文字汇聚成的无五官抽象人形", "A featureless abstract figure formed from flowing Chinese characters")}"></canvas>
       </div>
       <p class="home-feature-note">${tr("首发精选 · 社区点赞上线后将按真实热度更新", "Launch picks · will update from real community likes")}</p>
     </section>
@@ -474,7 +582,12 @@ function renderHome({ showLogin = false } = {}) {
           })}
         </div>
       </div>` : ""}`;
-  state.homeOrbitCleanup = bindHomeOrbit(app.querySelector(".home-orbit"));
+  const stopOrbit = bindHomeOrbit(app.querySelector(".home-orbit"));
+  const stopFigure = bindTextFigure(app.querySelector(".home-text-figure"));
+  state.homeOrbitCleanup = () => {
+    stopOrbit();
+    stopFigure();
+  };
   if (showLogin && !state.session) {
     const loginShell = app.querySelector(".home-login-shell");
     localizeLoginExperience(loginShell);

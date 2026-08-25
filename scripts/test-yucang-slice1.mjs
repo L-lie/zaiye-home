@@ -93,6 +93,7 @@ assert.match(app, /data-resource-search/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /HOME_FEATURED_ART/);
 assert.match(app, /bindHomeOrbit/);
+assert.match(app, /bindTextFigure/);
 assert.match(app, /navigator\.language/);
 assert.match(app, /yucangLocale/);
 assert.match(app, /data-locale-toggle/);
@@ -101,6 +102,7 @@ assert.match(app, /loginExperienceMarkup/);
 for (const asset of [
   "yucang/assets/yucang-text-figure.png",
   "yucang/assets/featured/mushroom-city-1.webp",
+  "yucang/assets/featured/mushroom-city-2.webp",
   "yucang/assets/featured/abstract-expression.webp",
   "yucang/assets/featured/knight-medieval.webp",
   "yucang/assets/featured/watercolor-dessert.webp",
@@ -108,6 +110,9 @@ for (const asset of [
   "yucang/assets/featured/litian-demon.webp",
   "yucang/assets/featured/dark-gothic.webp",
   "yucang/assets/featured/particle-poster.webp",
+  "yucang/assets/featured/neon-action.webp",
+  "yucang/assets/featured/cosmic-eye.webp",
+  "yucang/assets/featured/ink-character.webp",
 ]) assert(existsSync(join(root, asset)), `missing homepage asset ${asset}`);
 assert.match(readFileSync(join(root, "index.html"), "utf8"), /href="yucang\/"/);
 assert.match(readFileSync(join(root, "prompt-vault.html"), "utf8"), /href="yucang\/"/);
