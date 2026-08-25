@@ -113,9 +113,9 @@ a { color: inherit; text-decoration: none; }
 .home-text-figure {
   position: absolute;
   left: 50%;
-  top: 46%;
+  top: 41%;
   z-index: 5;
-  width: clamp(300px, 31vw, 440px);
+  width: clamp(280px, 27vw, 380px);
   aspect-ratio: 4 / 5;
   transform: translateX(-50%);
   filter: drop-shadow(0 0 34px rgba(239,239,232,.1));
@@ -324,7 +324,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
   .prompt-stage { position: static; }
   .home-copy { margin-top: 116px; }
   .home-copy h1 { font-size: clamp(42px, 9vw, 62px); }
-  .home-text-figure { top: 47%; bottom: auto; width: min(56vw, 420px); }
+  .home-text-figure { top: 43%; bottom: auto; width: min(51vw, 380px); }
   .home-art-card { width: clamp(92px, calc(18vw * var(--card-size, 1)), 150px); }
   .home-art-card:nth-of-type(7), .home-art-card:nth-of-type(8) { display: none; }
 }
@@ -356,7 +356,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
   .home-copy > p:not(:first-child) { font-size: 14px; }
   .home-actions { margin-top: 17px; }
   .home-actions .button { min-height: 40px; padding: 8px 13px; }
-  .home-text-figure { top: 49%; bottom: auto; width: min(78vw, 350px); opacity: .9; }
+  .home-text-figure { top: 46%; bottom: auto; width: min(70vw, 320px); opacity: .9; }
   .home-art-card { width: clamp(82px, calc(25vw * var(--card-size, 1)), 112px); border-radius: 9px; }
   .home-art-card footer { padding: 6px 7px; font-size: 9px; }
   .home-art-card:nth-of-type(3), .home-art-card:nth-of-type(6) { display: none; }

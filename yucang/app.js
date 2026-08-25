@@ -413,13 +413,16 @@ function bindTextFigure(canvas) {
     return (seed - 1) / 2147483646;
   };
   const insideFigure = (x, y) => {
-    const head = (x / .17) ** 2 + ((y - .19) / .145) ** 2 <= 1;
-    const neckHalf = .075 + Math.max(0, y - .31) * .25;
-    const neck = y >= .3 && y <= .49 && Math.abs(x) <= neckHalf;
-    const shoulderY = (y - .62) / .23;
-    const shoulders = y >= .43 && y <= .86 && (x / .59) ** 2 + shoulderY ** 2 <= 1;
-    const torso = y >= .58 && y <= 1.02 && Math.abs(x) <= .37 - (y - .58) * .12;
-    return head || neck || shoulders || torso;
+    const head = (x / .16) ** 2 + ((y - .18) / .15) ** 2 <= 1;
+    const neck = y >= .31 && y <= .48 && Math.abs(x) <= .066 + (y - .31) * .17;
+    let bust = false;
+    if (y >= .45 && y <= 1.02) {
+      const progress = (y - .45) / .57;
+      const shoulderRise = Math.sin(Math.min(1, progress / .24) * Math.PI / 2);
+      const halfWidth = .09 + shoulderRise * .43 - Math.max(0, progress - .24) * .16;
+      bust = Math.abs(x) <= halfWidth;
+    }
+    return head || neck || bust;
   };
   for (let index = 0; index < 760; index += 1) {
     let x;
@@ -434,7 +437,7 @@ function bindTextFigure(canvas) {
       y,
       depth,
       glyph: glyphs[Math.floor(random() * glyphs.length)],
-      size: 5 + depth ** 2 * 24 + random() * 6,
+      size: 5 + depth ** 2 * 13 + random() * 4,
       alpha: .14 + depth * .64,
       phase: random() * Math.PI * 2,
       speed: .18 + random() * .32,
