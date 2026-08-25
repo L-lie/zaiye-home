@@ -7,7 +7,7 @@ import {
   parseTags,
   renderPromptTemplate,
   snapshotToViewModel,
-} from "./core.mjs";
+} from "./core.mjs?v=20260825-library1";
 import {
   bindLoginShowcase,
   loginControlsMarkup,
@@ -18,11 +18,22 @@ const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
 const toast = document.getElementById("toast");
 
+const RESOURCE_CATEGORY_LABELS = Object.freeze({
+  all: "全部",
+  image: "图像",
+  video: "视频",
+  writing: "写作",
+  office: "办公",
+  coding: "编程",
+});
+const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
+
 const state = {
   client: null,
   session: null,
   access: null,
   authReady: false,
+  resources: null,
 };
 
 function escapeHtml(value) {
@@ -84,6 +95,16 @@ async function rpc(name, args = {}) {
   const result = await getClient().rpc(name, args);
   if (result.error) throw result.error;
   return result.data;
+}
+
+async function loadResources() {
+  if (state.resources) return state.resources;
+  const response = await fetch("../prompt-vault-resources.json", { cache: "no-cache" });
+  if (!response.ok) throw new Error(`提示词库读取失败（${response.status}）`);
+  const payload = await response.json();
+  if (!Array.isArray(payload.items)) throw new Error("提示词库数据格式不正确。");
+  state.resources = payload.items;
+  return state.resources;
 }
 
 function isSchemaMissing(error) {
@@ -176,33 +197,107 @@ function requireStaff() {
 }
 
 async function renderDiscover() {
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取公开作品…</p></section>';
+  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取提示词库...</p></section>';
   try {
-    const items = await rpc("yucang_list_public_works");
+    const items = await loadResources();
     app.innerHTML = `
-      <section class="hero">
+      <section class="library-intro">
         <div>
-          <p class="eyebrow">YUCANG · PROMPT COMMUNITY</p>
-          <h1>从真实效果，找到可复用的 Prompt</h1>
-          <p>语藏连接公开作品与个人 Prompt Vault。首个 MVP 从视觉创作者的免费分享开始。</p>
-          ${state.access?.is_creator ? '<a class="button primary" href="#/publish/new">新建公开作品</a>' : ''}
+          <p class="eyebrow">语藏提示词库</p>
+          <h1>找到 Prompt，改好变量，直接使用</h1>
+          <p>无需登录。浏览站方整理的真实模板，在页面里完成变量替换并复制最终 Prompt。</p>
         </div>
-        <aside class="hero-panel">
-          <strong>${items.length}</strong>
-          <span>个已审核公开作品。未审核草稿不会出现在这里。</span>
+        <aside class="library-count" aria-label="提示词数量">
+          <strong>${items.length}</strong><span>条可用 Prompt</span>
         </aside>
       </section>
-      <section>
-        <div class="section-head"><div><p class="eyebrow">DISCOVER</p><h2>最新公开</h2></div><p>只读取 active + approved current version</p></div>
-        ${items.length ? `<div class="card-grid">${items.map(renderWorkCard).join("")}</div>` : `
-          <div class="empty-state">
-            <h3>还没有公开作品</h3>
-            <p>创作者提交的首个版本审核通过后，会真实出现在这里。</p>
-          </div>`}
-      </section>`;
+      <section class="library-browser" aria-labelledby="libraryTitle">
+        <div class="library-toolbar">
+          <div>
+            <h2 id="libraryTitle">全部提示词</h2>
+            <p data-result-count>${items.length} 条结果</p>
+          </div>
+          <label class="library-search">
+            <span>搜索</span>
+            <input type="search" data-resource-search placeholder="搜索标题、用途、模型或标签" autocomplete="off" />
+          </label>
+        </div>
+        <div class="category-tabs" role="group" aria-label="提示词分类">
+          ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === "all"}">${RESOURCE_CATEGORY_LABELS[category]}</button>`).join("")}
+        </div>
+        <div class="resource-grid" data-resource-grid></div>
+      </section>
+      <section class="community-shelf" data-community-shelf hidden></section>`;
+    bindResourceLibrary(items);
+    hydrateCommunityShelf();
   } catch (error) {
-    renderError(error, "发现页暂时不可用");
+    renderError(error, "提示词库暂时不可用");
   }
+}
+
+async function hydrateCommunityShelf() {
+  const shelf = app.querySelector("[data-community-shelf]");
+  if (!shelf) return;
+  try {
+    const items = await rpc("yucang_list_public_works");
+    if (!items.length || !shelf.isConnected) return;
+    shelf.innerHTML = `
+      <div class="section-head"><div><h2>社区公开作品</h2><p>已经通过审核的创作者作品</p></div></div>
+      <div class="card-grid">${items.map(renderWorkCard).join("")}</div>`;
+    shelf.hidden = false;
+  } catch (error) {
+    if (!isSchemaMissing(error)) console.warn("Community shelf unavailable", error);
+  }
+}
+
+function resourceSearchText(item) {
+  return [item.title, item.summary, item.model, item.usage, ...(item.tags || [])].join(" ").toLocaleLowerCase("zh-CN");
+}
+
+function renderResourceCard(item) {
+  return `
+    <article class="resource-card">
+      <a href="#/prompt/${encodeURIComponent(item.id)}">
+        <div class="resource-card-meta">
+          <span>${escapeHtml(RESOURCE_CATEGORY_LABELS[item.category] || item.category)}</span>
+          <span>${escapeHtml(item.model || "通用模型")}</span>
+        </div>
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.summary)}</p>
+        <footer>
+          <span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span>
+          <strong>打开使用</strong>
+        </footer>
+      </a>
+    </article>`;
+}
+
+function bindResourceLibrary(items) {
+  const grid = app.querySelector("[data-resource-grid]");
+  const search = app.querySelector("[data-resource-search]");
+  const count = app.querySelector("[data-result-count]");
+  const buttons = [...app.querySelectorAll("[data-resource-category]")];
+  let category = "all";
+
+  const update = () => {
+    const query = search.value.trim().toLocaleLowerCase("zh-CN");
+    const filtered = items.filter((item) => (
+      (category === "all" || item.category === category)
+      && (!query || resourceSearchText(item).includes(query))
+    ));
+    count.textContent = `${filtered.length} 条结果`;
+    grid.innerHTML = filtered.length
+      ? filtered.map(renderResourceCard).join("")
+      : '<div class="library-empty"><h3>没有找到匹配的 Prompt</h3><p>换一个关键词，或者切换到其他分类。</p></div>';
+  };
+
+  search.addEventListener("input", update);
+  buttons.forEach((button) => button.addEventListener("click", () => {
+    category = button.dataset.resourceCategory;
+    buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+    update();
+  }));
+  update();
 }
 
 function renderWorkCard(item) {
@@ -506,13 +601,105 @@ async function renderMyPublications() {
   }
 }
 
+function officialResourceVariables(item) {
+  return (item.variables || []).map((entry) => ({
+    name: String(entry.name || "").trim(),
+    label: String(entry.label || entry.name || "").trim(),
+    placeholder: String(entry.placeholder || "").trim(),
+    defaultValue: String(entry.default ?? "").trim(),
+  })).filter((entry) => entry.name);
+}
+
+function bindPromptTool({ template, variables, output, copyButton }) {
+  const values = Object.fromEntries(variables.map((entry) => [
+    entry.name,
+    entry.defaultValue || `@${entry.name}`,
+  ]));
+  const update = () => {
+    output.textContent = renderPromptTemplate(template, variables, values);
+  };
+  app.querySelectorAll("[data-variable-value]").forEach((input) => { input.oninput = () => {
+    values[input.dataset.variableValue] = input.value || `@${input.dataset.variableValue}`;
+    update();
+  }; });
+  copyButton.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(output.textContent);
+      copyButton.textContent = "已复制";
+      notify("Prompt 已复制");
+      setTimeout(() => { copyButton.textContent = "复制 Prompt"; }, 1600);
+    } catch {
+      const range = document.createRange();
+      range.selectNodeContents(output);
+      const selection = getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      notify("浏览器未授权剪贴板，已选中文本，请手动复制。");
+    }
+  });
+  update();
+}
+
+function renderOfficialResource(item) {
+  const variables = officialResourceVariables(item);
+  app.innerHTML = `
+    <section class="resource-detail-head">
+      <a class="back-link" href="#/discover">返回提示词库</a>
+      <div class="detail-meta">
+        <span class="pill accent">${escapeHtml(RESOURCE_CATEGORY_LABELS[item.category] || item.category)}</span>
+        <span class="pill">站方模板</span>
+      </div>
+      <h1>${escapeHtml(item.title)}</h1>
+      <p>${escapeHtml(item.summary)}</p>
+      <dl class="resource-facts">
+        <div><dt>模型</dt><dd>${escapeHtml(item.model || "通用模型")}</dd></div>
+        <div><dt>来源</dt><dd>${escapeHtml(item.sourceName || "语藏")}</dd></div>
+        <div><dt>授权</dt><dd>${escapeHtml(item.license || "请查看发布说明")}</dd></div>
+      </dl>
+    </section>
+    <section class="resource-use-layout">
+      <div class="resource-variable-panel">
+        <div class="tool-heading">
+          <h2>修改变量</h2>
+          <p>输入内容后，右侧 Prompt 会立即更新。</p>
+        </div>
+        <div class="resource-variable-list">
+          ${variables.length ? variables.map((entry) => `
+            <label class="resource-variable">
+              <span>${escapeHtml(entry.label)}</span>
+              <input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" placeholder="${escapeHtml(entry.placeholder)}" />
+            </label>`).join("") : '<p class="lede">这条 Prompt 没有变量，可以直接复制。</p>'}
+        </div>
+      </div>
+      <aside class="prompt-stage">
+        <div class="tool-heading">
+          <div><h2>最终 Prompt</h2><p>${escapeHtml(item.usage || "检查内容后直接复制使用。")}</p></div>
+          <button class="button primary" type="button" data-copy-prompt>复制 Prompt</button>
+        </div>
+        <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
+        <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      </aside>
+    </section>`;
+  bindPromptTool({
+    template: item.prompt,
+    variables,
+    output: app.querySelector("[data-final-prompt]"),
+    copyButton: app.querySelector("[data-copy-prompt]"),
+  });
+}
+
 async function renderPublicPrompt(workId) {
-  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取公开版本…</p></section>';
+  app.innerHTML = '<section class="loading-state"><span class="spinner"></span><p>正在读取 Prompt...</p></section>';
   try {
+    const resources = await loadResources();
+    const officialResource = resources.find((item) => item.id === workId);
+    if (officialResource) {
+      renderOfficialResource(officialResource);
+      return;
+    }
     const item = firstRow(await rpc("yucang_get_public_work", { p_work_id: workId }));
     if (!item) throw new Error("作品不存在、尚未审核通过或当前不可公开访问。");
     const variables = normalizeVariables(item.variables);
-    const values = Object.fromEntries(variables.map((entry) => [entry.name, entry.defaultValue]));
     app.innerHTML = `
       <section class="detail-header">
         <p class="eyebrow">PUBLIC PROMPT · APPROVED CURRENT VERSION</p>
@@ -532,23 +719,12 @@ async function renderPublicPrompt(workId) {
           <button class="button primary" type="button" data-copy-prompt style="margin-top:16px">复制 Prompt</button>
         </aside>
       </section>`;
-    const output = app.querySelector("[data-final-prompt]");
-    const update = () => { output.textContent = renderPromptTemplate(item.prompt_text, variables, values); };
-    app.querySelectorAll("[data-variable-value]").forEach((input) => input.addEventListener("input", () => {
-      values[input.dataset.variableValue] = input.value;
-      update();
-    }));
-    app.querySelector("[data-copy-prompt]").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(output.textContent);
-        notify("Prompt 已复制");
-      } catch {
-        const range = document.createRange(); range.selectNodeContents(output);
-        const selection = getSelection(); selection.removeAllRanges(); selection.addRange(range);
-        notify("浏览器未授权剪贴板，已选中文本，请手动复制。");
-      }
+    bindPromptTool({
+      template: item.prompt_text,
+      variables,
+      output: app.querySelector("[data-final-prompt]"),
+      copyButton: app.querySelector("[data-copy-prompt]"),
     });
-    update();
   } catch (error) {
     renderError(error, "无法打开 Prompt");
   }

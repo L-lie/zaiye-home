@@ -13,6 +13,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const migration = readFileSync(join(root, "supabase/migrations/20260825000100_yucang_slice1.sql"), "utf8");
 const app = readFileSync(join(root, "yucang/app.js"), "utf8");
 const html = readFileSync(join(root, "yucang/index.html"), "utf8");
+const resources = JSON.parse(readFileSync(join(root, "prompt-vault-resources.json"), "utf8"));
 
 const requiredTables = [
   "yucang_creator_profiles",
@@ -74,6 +75,22 @@ assert.equal(
   ], { 主体: "飞船" }),
   "一张 飞船 的画面，晨光",
 );
+assert.equal(
+  renderPromptTemplate("@主体位于@场景，画幅为@画幅。", [
+    { name: "主体", default: "人物" },
+    { name: "场景", default: "城市" },
+    { name: "画幅", default: "16:9" },
+  ], { 主体: "飞船" }),
+  "飞船位于城市，画幅为16:9。",
+);
+assert.equal(resources.items.length, 24, "official prompt library must contain 24 real resources");
+assert.deepEqual(
+  [...new Set(resources.items.map((item) => item.category))].sort(),
+  ["coding", "image", "office", "video", "writing"],
+);
+assert.match(app, /fetch\("\.\.\/prompt-vault-resources\.json"/);
+assert.match(app, /data-resource-search/);
+assert.match(app, /bindPromptTool/);
 assert.deepEqual(parseKeyValueLines("aspect_ratio=16:9\nseed：42\ninvalid"), { aspect_ratio: "16:9", seed: "42" });
 assert.deepEqual(parseTags("电影感，角色设计,电影感"), ["电影感", "角色设计"]);
 assert.deepEqual(normalizeVariables([{ name: "主体", default: "人物" }, { name: "主体", default: "重复" }]), [

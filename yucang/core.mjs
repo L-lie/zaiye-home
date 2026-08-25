@@ -60,10 +60,14 @@ export function renderPromptTemplate(template, variables, values = {}) {
   const replacements = new Map(
     normalized.map((item) => [item.name, String(values[item.name] ?? item.defaultValue)]),
   );
-  return String(template || "").replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (match, rawName) => {
+  const braceRendered = String(template || "").replace(/\{\{\s*([^{}]+?)\s*\}\}/g, (match, rawName) => {
     const name = String(rawName).trim();
     return replacements.has(name) ? replacements.get(name) : match;
   });
+  return [...normalized].sort((a, b) => b.name.length - a.name.length).reduce((result, item) => {
+    const escapedName = item.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return result.replace(new RegExp(`@${escapedName}`, "g"), replacements.get(item.name));
+  }, braceRendered);
 }
 
 export function snapshotToViewModel(snapshot = {}) {
