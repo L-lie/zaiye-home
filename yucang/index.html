@@ -3,23 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="语藏提示词库。浏览真实 Prompt，修改变量并直接复制使用。" />
-    <title>语藏提示词库</title>
+    <meta name="description" content="语藏 Prompt 社区与提示词库。发现真实 Prompt，修改变量并收进自己的创作系统。" />
+    <title>语藏 · Prompt Community</title>
     <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
     <link rel="stylesheet" href="../auth/login-experience.css" />
-    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="app.css?v=20260825-home3" />
     <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="../supabase-config.js" defer></script>
     <script src="../supabase-client.js" defer></script>
-    <script type="module" src="app.js?v=20260825-library1"></script>
+    <script type="module" src="app.js?v=20260825-home2"></script>
   </head>
   <body>
     <header class="app-header">
-      <a class="brand" href="#/discover" aria-label="语藏发现首页">
+      <a class="brand" href="#/home" aria-label="语藏首页">
         <img class="brand-mark" src="assets/prompt-vault-logo.png" alt="" width="38" height="38" />
         <span><strong>语藏</strong><small>Prompt Library</small></span>
       </a>
       <nav class="main-nav" aria-label="主导航">
+        <a href="#/home" data-nav="home">首页</a>
         <a href="#/discover" data-nav="discover">提示词库</a>
         <a href="#/publish/new" data-creator-link hidden>新建作品</a>
         <a href="#/my-publications" data-creator-link hidden>我的发布</a>

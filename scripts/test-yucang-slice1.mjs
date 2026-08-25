@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import {
@@ -64,7 +64,7 @@ for (const rpc of [
   assert(app.includes(`"${rpc}"`), `web app does not call ${rpc}`);
 }
 
-for (const route of ["discover", "login", "prompt", "publish", "preview", "my-publications", "admin"]) {
+for (const route of ["home", "discover", "login", "prompt", "publish", "preview", "my-publications", "admin"]) {
   assert(app.includes(`section === "${route}"`) || html.includes(`#/${route}`), `missing route ${route}`);
 }
 
@@ -91,6 +91,20 @@ assert.deepEqual(
 assert.match(app, /fetch\("\.\.\/prompt-vault-resources\.json"/);
 assert.match(app, /data-resource-search/);
 assert.match(app, /bindPromptTool/);
+assert.match(app, /HOME_FEATURED_ART/);
+assert.match(app, /home-login-layer/);
+assert.match(app, /loginExperienceMarkup/);
+for (const asset of [
+  "yucang/assets/yucang-text-figure.png",
+  "yucang/assets/featured/mushroom-city-1.webp",
+  "yucang/assets/featured/abstract-expression.webp",
+  "yucang/assets/featured/knight-medieval.webp",
+  "yucang/assets/featured/watercolor-dessert.webp",
+  "yucang/assets/featured/embroidered-mountain.webp",
+  "yucang/assets/featured/litian-demon.webp",
+  "yucang/assets/featured/dark-gothic.webp",
+  "yucang/assets/featured/particle-poster.webp",
+]) assert(existsSync(join(root, asset)), `missing homepage asset ${asset}`);
 assert.deepEqual(parseKeyValueLines("aspect_ratio=16:9\nseed：42\ninvalid"), { aspect_ratio: "16:9", seed: "42" });
 assert.deepEqual(parseTags("电影感，角色设计,电影感"), ["电影感", "角色设计"]);
 assert.deepEqual(normalizeVariables([{ name: "主体", default: "人物" }, { name: "主体", default: "重复" }]), [

@@ -27,6 +27,16 @@ const RESOURCE_CATEGORY_LABELS = Object.freeze({
   coding: "编程",
 });
 const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
+const HOME_FEATURED_ART = Object.freeze([
+  { src: "assets/featured/mushroom-city-1.webp", title: "蘑菇城", likes: 0, motion: "orbit-a" },
+  { src: "assets/featured/abstract-expression.webp", title: "抽象表现主义", likes: 0, motion: "orbit-b" },
+  { src: "assets/featured/knight-medieval.webp", title: "骑士回中世纪", likes: 0, motion: "orbit-c" },
+  { src: "assets/featured/watercolor-dessert.webp", title: "钢笔水彩手绘", likes: 0, motion: "orbit-d" },
+  { src: "assets/featured/embroidered-mountain.webp", title: "刺绣山水", likes: 0, motion: "orbit-e" },
+  { src: "assets/featured/litian-demon.webp", title: "庶天妖", likes: 0, motion: "orbit-f" },
+  { src: "assets/featured/dark-gothic.webp", title: "暗黑哥特风", likes: 0, motion: "orbit-g" },
+  { src: "assets/featured/particle-poster.webp", title: "粒子海报", likes: 0, motion: "orbit-h" },
+]);
 
 const state = {
   client: null,
@@ -76,7 +86,7 @@ function setBusy(button, busy, label = "处理中…") {
 }
 
 function routeParts() {
-  const value = location.hash.replace(/^#\/?/, "") || "discover";
+  const value = location.hash.replace(/^#\/?/, "") || "home";
   return value.split("/").filter(Boolean);
 }
 
@@ -159,7 +169,7 @@ function renderHeader() {
     <button class="button ghost" type="button" data-sign-out>退出</button>`;
   accountActions.querySelector("[data-sign-out]").addEventListener("click", async () => {
     await getClient().auth.signOut();
-    go("discover");
+    go("home");
   });
 }
 
@@ -194,6 +204,112 @@ function requireStaff() {
     </section>`;
   app.querySelector("[data-bootstrap-admin]").addEventListener("click", bootstrapAdmin);
   return false;
+}
+
+function bindWebsiteLogin(root) {
+  const lastMethod = localStorage.getItem("yucangLastAuthMethod") || "";
+  root.querySelectorAll("[data-oauth]").forEach((button) => {
+    if (button.dataset.oauth === lastMethod) {
+      button.classList.add("is-recent");
+      button.setAttribute("aria-label", `${button.getAttribute("aria-label")}，最近使用`);
+      button.title = `${button.title}，最近使用`;
+    }
+  });
+
+  let pendingEmail = "";
+  const emailRequestForm = root.querySelector("#emailRequestForm");
+  const emailVerifyForm = root.querySelector("#emailVerifyForm");
+  emailRequestForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.submitter;
+    pendingEmail = new FormData(event.currentTarget).get("email").trim();
+    setBusy(button, true, "正在发送...");
+    const { error } = await getClient().auth.signInWithOtp({
+      email: pendingEmail, options: { shouldCreateUser: true },
+    });
+    setBusy(button, false);
+    if (error) return notify(error.message);
+    emailRequestForm.hidden = true;
+    emailVerifyForm.hidden = false;
+    emailVerifyForm.querySelector("input").focus();
+    notify("验证码已发送，请检查邮箱。");
+  });
+
+  emailVerifyForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = event.submitter;
+    setBusy(button, true, "正在验证...");
+    const form = new FormData(event.currentTarget);
+    const { data, error } = await getClient().auth.verifyOtp({
+      email: pendingEmail, token: form.get("token"), type: "email",
+    });
+    setBusy(button, false);
+    if (error) return notify(error.message);
+    localStorage.setItem("yucangLastAuthMethod", "email");
+    state.session = data.session;
+    await loadAccess();
+    renderHeader();
+    go("home");
+  });
+
+  root.querySelectorAll("[data-oauth]").forEach((button) => button.addEventListener("click", async () => {
+    localStorage.setItem("yucangLastAuthMethod", button.dataset.oauth);
+    const { error } = await getClient().auth.signInWithOAuth({
+      provider: button.dataset.oauth,
+      options: { redirectTo: `${location.origin}${location.pathname}#/home` },
+    });
+    if (error) notify(error.message);
+  }));
+}
+
+function renderHome({ showLogin = false } = {}) {
+  const featured = HOME_FEATURED_ART.map((item) => `
+    <article class="home-art-card ${item.motion}" tabindex="0" aria-label="${escapeHtml(item.title)}，${item.likes} 个赞">
+      <img src="${escapeHtml(item.src)}" alt="${escapeHtml(item.title)}的 Prompt 示例效果" width="512" height="512" />
+      <footer><span>${escapeHtml(item.title)}</span><span aria-label="点赞数">♡ ${item.likes}</span></footer>
+    </article>`).join("");
+  app.innerHTML = `
+    <section class="home-hero" aria-labelledby="homeTitle">
+      <div class="home-atmosphere" aria-hidden="true"></div>
+      <div class="home-copy">
+        <p>Prompt Vault · 语藏</p>
+        <h1 id="homeTitle">让文字汇聚成<br />可以复用的创造</h1>
+        <p>发现真实 Prompt，修改变量，把有效的方法收进自己的创作系统。</p>
+        <div class="home-actions">
+          <a class="button primary" href="#/discover">进入提示词库</a>
+          ${state.session ? '<a class="button" href="#/my-publications">我的发布</a>' : '<a class="button" href="#/login">登录语藏</a>'}
+        </div>
+      </div>
+      <div class="home-orbit" aria-label="首发 Prompt 示例图，当前均为 0 个赞">
+        ${featured}
+        <img class="home-text-figure" src="assets/yucang-text-figure.png" alt="由白色中文文字带缠绕形成的无脸抽象半身人形" width="1152" height="1536" />
+      </div>
+      <p class="home-feature-note">首发精选 · 社区点赞上线后将按真实热度更新</p>
+    </section>
+    ${showLogin && !state.session ? `
+      <div class="home-login-layer" role="dialog" aria-modal="true" aria-labelledby="homeLoginTitle">
+        <a class="home-login-backdrop" href="#/home" aria-label="关闭登录"></a>
+        <div class="home-login-shell">
+          <a class="home-login-close" href="#/home" aria-label="关闭登录">×</a>
+          ${loginExperienceMarkup({
+            assetRoot: "..",
+            logoSrc: "assets/prompt-vault-logo.png",
+            title: "登录语藏",
+            description: "使用同一个 Prompt Vault 账号进入社区。",
+            controls: loginControlsMarkup({ assetRoot: ".." }),
+            footer: '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
+          })}
+        </div>
+      </div>` : ""}`;
+  if (showLogin && !state.session) {
+    const loginShell = app.querySelector(".home-login-shell");
+    bindLoginShowcase(loginShell);
+    bindWebsiteLogin(loginShell);
+    document.onkeydown = (event) => { if (event.key === "Escape") go("home"); };
+    requestAnimationFrame(() => app.querySelector(".home-login-close")?.focus());
+  } else {
+    document.onkeydown = null;
+  }
 }
 
 async function renderDiscover() {
@@ -316,80 +432,7 @@ function renderWorkCard(item) {
 }
 
 async function renderLogin() {
-  if (state.session) {
-    app.innerHTML = `
-      <section class="state-card narrow">
-        <p class="eyebrow">SIGNED IN</p><h1>已经登录</h1>
-        <p class="lede">${escapeHtml(state.session.user.email || "")}</p>
-        <a class="button primary" href="#/discover">进入语藏</a>
-      </section>`;
-    return;
-  }
-  const lastMethod = localStorage.getItem("yucangLastAuthMethod") || "";
-  app.innerHTML = loginExperienceMarkup({
-    assetRoot: "..",
-    logoSrc: "assets/prompt-vault-logo.png",
-    title: "登录语藏",
-    description: "使用同一个 Prompt Vault 账号进入社区。",
-    controls: loginControlsMarkup({ assetRoot: ".." }),
-    footer: '登录不会上传、同步或公开你扩展中的本地 Prompt。<br><a href="https://zaiye.art/privacy.html" target="_blank" rel="noopener">隐私政策</a>　<a href="https://zaiye.art/terms.html" target="_blank" rel="noopener">用户协议</a>',
-  });
-  bindLoginShowcase(app);
-
-  app.querySelectorAll("[data-oauth]").forEach((button) => {
-    if (button.dataset.oauth === lastMethod) {
-      button.classList.add("is-recent");
-      button.setAttribute("aria-label", `${button.getAttribute("aria-label")}，最近使用`);
-      button.title = `${button.title}，最近使用`;
-    }
-  });
-
-  let pendingEmail = "";
-  const emailRequestForm = app.querySelector("#emailRequestForm");
-  const emailVerifyForm = app.querySelector("#emailVerifyForm");
-  emailRequestForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const button = event.submitter;
-    pendingEmail = new FormData(event.currentTarget).get("email").trim();
-    setBusy(button, true, "正在发送...");
-    const { error } = await getClient().auth.signInWithOtp({
-      email: pendingEmail, options: { shouldCreateUser: true },
-    });
-    setBusy(button, false);
-    if (error) return notify(error.message);
-    emailRequestForm.hidden = true;
-    emailVerifyForm.hidden = false;
-    emailVerifyForm.querySelector("input").focus();
-    notify("验证码已发送，请检查邮箱。");
-  });
-
-  emailVerifyForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const button = event.submitter;
-    setBusy(button, true, "正在验证...");
-    const form = new FormData(event.currentTarget);
-    const { data, error } = await getClient().auth.verifyOtp({
-      email: pendingEmail,
-      token: form.get("token"),
-      type: "email",
-    });
-    setBusy(button, false);
-    if (error) return notify(error.message);
-    localStorage.setItem("yucangLastAuthMethod", "email");
-    state.session = data.session;
-    await loadAccess();
-    renderHeader();
-    go("discover");
-  });
-
-  app.querySelectorAll("[data-oauth]").forEach((button) => button.addEventListener("click", async () => {
-    localStorage.setItem("yucangLastAuthMethod", button.dataset.oauth);
-    const { error } = await getClient().auth.signInWithOAuth({
-      provider: button.dataset.oauth,
-      options: { redirectTo: `${location.origin}${location.pathname}#/discover` },
-    });
-    if (error) notify(error.message);
-  }));
+  renderHome({ showLogin: !state.session });
 }
 
 function editorMarkup(record = {}) {
@@ -833,11 +876,15 @@ async function renderSubmission(submissionId) {
 
 async function renderRoute() {
   const [section, id] = routeParts();
+  const homeRoute = section === "home" || section === "login";
+  document.body.classList.toggle("route-home", homeRoute);
+  document.body.classList.toggle("route-login", section === "login" && !state.session);
   document.querySelectorAll(".main-nav a").forEach((link) => {
     link.removeAttribute("aria-current");
     if (link.getAttribute("href") === `#/${section}`) link.setAttribute("aria-current", "page");
   });
   app.focus({ preventScroll: true });
+  if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
