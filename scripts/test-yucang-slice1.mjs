@@ -114,8 +114,8 @@ for (const asset of [
   "yucang/assets/featured/cosmic-eye.webp",
   "yucang/assets/featured/ink-character.webp",
 ]) assert(existsSync(join(root, asset)), `missing homepage asset ${asset}`);
-assert.match(readFileSync(join(root, "index.html"), "utf8"), /href="yucang\/"/);
-assert.match(readFileSync(join(root, "prompt-vault.html"), "utf8"), /href="yucang\/"/);
+assert.match(readFileSync(join(root, "index.html"), "utf8"), /href="yucang\/\?release=[^"]+#\/home"/);
+assert.match(readFileSync(join(root, "prompt-vault.html"), "utf8"), /href="yucang\/\?release=[^"]+#\/home"/);
 assert.deepEqual(parseKeyValueLines("aspect_ratio=16:9\nseed：42\ninvalid"), { aspect_ratio: "16:9", seed: "42" });
 assert.deepEqual(parseTags("电影感，角色设计,电影感"), ["电影感", "角色设计"]);
 assert.deepEqual(normalizeVariables([{ name: "主体", default: "人物" }, { name: "主体", default: "重复" }]), [
