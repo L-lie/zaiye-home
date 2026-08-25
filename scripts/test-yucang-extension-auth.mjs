@@ -113,5 +113,7 @@ assert.match(sharedLogin, /aria-label="使用 GitHub 登录" title="使用 GitHu
 assert.match(sharedLogin, /aria-label="使用 Google 登录" title="使用 Google 登录"/);
 assert.match(sharedStyles, /@media \(max-width: 820px\)/);
 assert.match(sharedStyles, /prefers-reduced-motion/);
+assert.match(sharedStyles, /height: min\(680px, calc\(100dvh - 112px\)\)/);
+assert.match(sharedStyles, /\.login-slide \{[\s\S]*position: absolute;[\s\S]*inset: 0;/);
 
 console.log("Yucang extension auth contract tests passed.");

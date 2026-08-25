@@ -9,7 +9,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1.16fr) minmax(380px, .84fr);
   width: min(1120px, 100%);
-  min-height: min(720px, calc(100dvh - 112px));
+  height: min(680px, calc(100dvh - 112px));
+  min-height: 590px;
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid rgba(239, 239, 232, .16);
@@ -21,8 +22,8 @@
 
 .login-showcase {
   position: relative;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: clamp(28px, 4vw, 54px);
   overflow: hidden;
@@ -51,22 +52,31 @@
   letter-spacing: -.025em;
 }
 
-.login-slides { position: relative; min-height: 0; margin: 34px 0 24px; }
+.login-slides {
+  position: relative;
+  display: grid;
+  flex: 1 1 0;
+  height: 0;
+  min-height: 0;
+  margin: 34px 0 24px;
+}
 .login-slide {
   position: absolute;
   inset: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 18px;
+  width: 100%;
+  height: 100%;
   margin: 0;
   opacity: 0;
   transform: translateY(10px);
 }
-.login-slide.is-active { position: relative; height: 100%; opacity: 1; transform: none; }
+.login-slide.is-active { opacity: 1; transform: none; }
 .login-slide img {
   width: 100%;
   height: 100%;
-  min-height: 250px;
+  min-height: 200px;
   max-height: 420px;
   border: 1px solid rgba(255, 255, 255, .17);
   border-radius: 14px;
@@ -78,7 +88,7 @@
 .login-slide figcaption { display: grid; gap: 4px; }
 .login-slide figcaption strong { color: #f3f0e5; font-size: 17px; }
 .login-slide figcaption span { color: rgba(243, 240, 229, .66); font-size: 13px; line-height: 1.55; }
-.login-slide-controls { position: relative; z-index: 2; display: flex; gap: 9px; }
+.login-slide-controls { position: relative; z-index: 2; display: flex; flex: 0 0 4px; gap: 9px; }
 .login-slide-controls button {
   width: 28px;
   height: 4px;
@@ -170,10 +180,10 @@
 }
 
 @media (max-width: 820px) {
-  .login-experience { grid-template-columns: 1fr; min-height: 0; }
+  .login-experience { grid-template-columns: 1fr; height: auto; min-height: 0; }
   .login-showcase { min-height: 330px; padding: 26px; }
   .login-showcase-copy h2 { font-size: 30px; }
-  .login-slides { margin: 24px 0 16px; }
+  .login-slides { flex: none; height: 268px; margin: 24px 0 16px; }
   .login-slide img { min-height: 150px; max-height: 210px; }
   .login-slide figcaption span { display: none; }
   .login-entry { padding: 38px 24px 46px; }
@@ -184,7 +194,7 @@
   .login-experience { border-radius: 16px; }
   .login-showcase { min-height: 270px; }
   .login-showcase-copy h2 { font-size: 25px; }
-  .login-slides { margin-top: 18px; }
+  .login-slides { height: 208px; margin-top: 18px; }
   .login-slide img { min-height: 120px; max-height: 150px; }
   .login-input-action { grid-template-columns: 1fr; }
   .login-input-action button { width: 100%; }

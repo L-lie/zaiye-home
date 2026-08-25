@@ -11,7 +11,7 @@ body {
   font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 button, input { font: inherit; }
-.auth-shell { min-height: 100dvh; display: grid; place-items: center; padding: 34px 22px; }
+.auth-shell { min-height: 100dvh; display: grid; place-items: center; padding: 20px 22px; }
 noscript { display: block; padding: 24px; text-align: center; }
 
 @media (max-width: 820px) {
