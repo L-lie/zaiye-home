@@ -11,7 +11,7 @@ const pricing = read("YUCANG_HOSTED_AI_PRICING.md");
 
 assert.doesNotMatch(html, /href="#\/ai-service" data-nav="ai-service"/);
 assert.match(app, /class="my-account-card" href="#\/ai-service"/);
-assert.match(app, /section === "ai-service"\) return requireLogin\(\) && renderAiService\(\)/);
+assert.match(app, /section === "ai-service"\) return renderAiService\(\)/);
 assert.match(app, /function renderAiService\(\)/);
 assert.match(css, /\.ai-service-page/);
 
@@ -21,35 +21,39 @@ const page = app.slice(pageStart, pageEnd > pageStart ? pageEnd : app.length);
 
 for (const text of [
   "价格公示",
-  "购买尚未开放",
-  "DeepSeek V4 Flash",
-  "DeepSeek V4 Pro",
-  "Qwen3-VL-Flash",
-  "4,000 输入 token",
-  "2,000 输出 token",
-  "标准文本",
-  "图像理解",
-  "进阶推理",
-  "30 额度",
-  "240 额度",
-  "750 额度",
-  "1800 额度",
+  "充值与托管 AI 尚未开放",
+  "100 点 = 人民币 1 元",
+  "经济模型 · 输入",
+  "经济模型 · 输出",
+  "品质模型 · 输入",
+  "品质模型 · 输出",
+  "每次请求最低扣 2 点",
+  "1000 点",
+  "3200 点",
+  "8000 点",
+  "一次性获得 100 点体验点",
   "¥9.9",
   "¥29",
   "¥69",
   "不自动续费",
+  "不允许透支",
+  "付费点永久有效",
   "BYOK",
+  "本地基础功能永久免费且无需登录",
   "平台不收取 AI 服务费",
   "Key 只保存在本机",
+  "模型商费用由用户承担",
   "不会扫描、搜索或枚举扩展私库",
   "登录不会上传本地 Prompt",
   "云同步仍然关闭",
-  "退款规则公示",
-  "购买后 7 天内且未使用",
-  "赠送额度不折现",
+  "约 2000 输入 token + 1000 输出 token",
+  "约 6 点（¥0.06）",
+  "约 12 点（¥0.12）",
+  "图片尺寸",
+  "失败且没有产生有效模型结果时不扣点",
   "不可变用量账本",
-  "不提供无限量套餐",
-  "No unlimited plans are offered",
+  "当前继续使用自带 API",
+  "查看如何配置自带 API",
 ]) assert.ok(page.includes(text), `AI service page missing: ${text}`);
 
 for (const url of [
@@ -64,17 +68,20 @@ for (const url of [
 assert.ok(!page.includes("立即购买"));
 assert.ok(!page.includes("Buy now"));
 assert.ok(!page.includes("data-buy"));
-assert.ok(!page.includes("OpenAI/Gemini/Groq"));
+assert.ok(!page.includes("余额："));
+assert.ok(!page.includes("Balance:"));
 
 for (const text of [
   "毛利压力测试",
-  "商户主体",
-  "支付宝、微信支付或合规收单服务",
+  "100 语藏点 = 人民币 1 元",
+  "每次请求最低扣 2 点",
+  "合法收款主体",
   "签名 webhook",
-  "订单、退款、发票和财务对账",
+  "退款、发票与对账",
   "用户协议、隐私政策",
-  "Customer Application",
-  "不转售 API Key",
+  "Gemini 3.5 Flash-Lite",
+  "OpenAI GPT-4.1 mini",
+  "DeepSeek v4 flash",
 ]) assert.ok(pricing.includes(text), `pricing document missing: ${text}`);
 
 console.log("Yucang hosted AI pricing tests passed.");

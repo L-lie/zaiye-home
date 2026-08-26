@@ -907,37 +907,28 @@ async function renderDiscover() {
 function renderAiService() {
   const plans = [
     {
-      name: tr("体验", "Trial"),
-      price: tr("注册后赠送", "Registration gift"),
-      credits: tr("30 额度", "30 credits"),
-      validity: tr("30 天有效", "Valid for 30 days"),
-    },
-    {
       name: tr("轻量", "Light"),
       price: "¥9.9",
-      credits: tr("240 额度", "240 credits"),
-      validity: tr("180 天有效", "Valid for 180 days"),
+      credits: tr("1000 点", "1,000 points"),
     },
     {
       name: tr("创作者", "Creator"),
       price: "¥29",
-      credits: tr("750 额度", "750 credits"),
-      validity: tr("365 天有效", "Valid for 365 days"),
+      credits: tr("3200 点", "3,200 points"),
     },
     {
       name: tr("工作室", "Studio"),
       price: "¥69",
-      credits: tr("1800 额度", "1,800 credits"),
-      validity: tr("365 天有效", "Valid for 365 days"),
+      credits: tr("8000 点", "8,000 points"),
     },
   ];
   const planMarkup = plans.map((plan, index) => `
-    <article class="ai-plan${index === 2 ? " is-emphasized" : ""}">
+    <article class="ai-plan${index === 1 ? " is-emphasized" : ""}">
       <h3>${plan.name}</h3>
       <strong class="ai-plan-price">${plan.price}</strong>
       <p>${plan.credits}</p>
-      <small>${plan.validity}</small>
-      <span class="ai-plan-status">${tr("购买尚未开放", "Purchases not open")}</span>
+      <small>${tr("一次性充值 · 不自动续费", "One-time · no auto-renewal")}</small>
+      <span class="ai-plan-status">${tr("即将开放", "Coming soon")}</span>
     </article>`).join("");
 
   app.innerHTML = `
@@ -945,38 +936,39 @@ function renderAiService() {
       <section class="ai-service-hero" aria-labelledby="ai-service-title">
         <div class="ai-service-intro">
           <p class="ai-kicker">${tr("托管 AI 服务", "Hosted AI service")}</p>
-          <h1 id="ai-service-title">${tr("无需配置 API Key，按需调用 AI", "Hosted AI without your own API key")}</h1>
+          <h1 id="ai-service-title">${tr("不想配置 API，也可以按量使用 AI", "Use AI on demand without configuring an API")}</h1>
           <p>${tr(
-            "语藏计划提供按额度计费的托管调用。当前仅公示计费标准，购买和托管调用尚未开放。",
-            "Yucang plans to offer credit-based hosted AI calls. Pricing is published for review; purchases and hosted calls are not yet available.",
+            "语藏托管 AI 计划使用预付语藏点，并且必须登录。当前仅公布标准，充值与托管调用尚未开放。",
+            "Hosted AI is planned as a prepaid Yucang Points service for signed-in users. These standards are public, but top-ups and hosted calls are not yet open.",
           )}</p>
         </div>
         <aside class="ai-service-state" aria-label="${tr("当前开放状态", "Current availability")}">
           <span>${tr("当前状态", "Current status")}</span>
           <strong>${tr("价格公示", "Pricing published")}</strong>
-          <p>${tr("购买尚未开放", "Purchases not open")}</p>
+          <p>${tr("充值与托管 AI 尚未开放", "Top-ups and hosted AI are not open")}</p>
         </aside>
       </section>
 
       <section class="ai-billing-rule" aria-labelledby="ai-billing-title">
         <div>
-          <h2 id="ai-billing-title">${tr("一个额度，代表一个计费块", "One credit represents one billing block")}</h2>
+          <h2 id="ai-billing-title">${tr("100 点 = 人民币 1 元", "100 points = RMB ¥1")}</h2>
           <p>${tr(
-            "每个计费块最多包含 4,000 输入 token 和 2,000 输出 token。任一方向超出后按块向上取整，不提供无限量套餐。",
-            "Each billing block includes up to 4,000 input tokens and 2,000 output tokens. Usage rounds up by block when either limit is exceeded. No unlimited plans are offered.",
+            "每次请求最低扣 2 点。执行前显示预计点数范围，完成后只按模型服务商返回的实际 usage 结算，并展示模型、输入 token、输出 token、扣点和时间明细。",
+            "Each request has a 2-point minimum. An estimated range appears before execution; after completion, points are settled from the provider's actual usage with model, input token, output token, points, and time details.",
           )}</p>
         </div>
-        <div class="ai-multiplier-list" aria-label="${tr("模型额度倍率", "Model credit multipliers")}">
-          <div><span>${tr("标准文本", "Standard text")}</span><strong>1x</strong><small>DeepSeek V4 Flash · ${tr("计划接入", "Planned")}</small></div>
-          <div><span>${tr("图像理解", "Image understanding")}</span><strong>2x</strong><small>Qwen3-VL-Flash · ${tr("计划接入", "Planned")}</small></div>
-          <div><span>${tr("进阶推理", "Advanced reasoning")}</span><strong>3x</strong><small>DeepSeek V4 Pro · ${tr("计划接入", "Planned")}</small></div>
+        <div class="ai-multiplier-list" aria-label="${tr("模型点数标准", "Model point rates")}">
+          <div><span>${tr("经济模型 · 输入", "Economy · input")}</span><strong>1</strong><small>${tr("点 / 1000 token", "point / 1,000 tokens")}</small></div>
+          <div><span>${tr("经济模型 · 输出", "Economy · output")}</span><strong>4</strong><small>${tr("点 / 1000 token", "points / 1,000 tokens")}</small></div>
+          <div><span>${tr("品质模型 · 输入", "Quality · input")}</span><strong>2</strong><small>${tr("点 / 1000 token", "points / 1,000 tokens")}</small></div>
+          <div><span>${tr("品质模型 · 输出", "Quality · output")}</span><strong>8</strong><small>${tr("点 / 1000 token", "points / 1,000 tokens")}</small></div>
         </div>
       </section>
 
       <section class="ai-plans" aria-labelledby="ai-plans-title">
         <div class="ai-section-copy">
-          <h2 id="ai-plans-title">${tr("一次性额度套餐", "One-time credit packages")}</h2>
-          <p>${tr("不自动续费。价格调整只影响以后新购买，不追溯已经购买的额度。", "No automatic renewal. Price changes apply only to future purchases and never retroactively alter purchased credits.")}</p>
+          <h2 id="ai-plans-title">${tr("建议充值档位", "Suggested top-up amounts")}</h2>
+          <p>${tr("以下仅为即将开放的标准展示，没有付款入口。新登录用户将随托管 AI 内测一次性获得 100 点体验点。", "These are coming-soon standards only, with no payment entry. New signed-in users will receive a one-time 100-point trial when the hosted AI beta opens.")}</p>
         </div>
         <div class="ai-plan-grid">${planMarkup}</div>
       </section>
@@ -985,8 +977,8 @@ function renderAiService() {
         <div>
           <h2 id="ai-byok-title">BYOK ${tr("继续保留", "remains available")}</h2>
           <p>${tr(
-            "继续使用自己的 API Key 时，平台不收取 AI 服务费，Key 只保存在本机。",
-            "When you use your own API key, Yucang charges no AI service fee and the key stays only on your device.",
+            "扩展的本地基础功能永久免费且无需登录。继续使用自己的 API Key 时，平台不收取 AI 服务费，模型商费用由用户承担，Key 只保存在本机。",
+            "The extension's local core features remain free and require no sign-in. With your own API key, Yucang charges no service fee; provider charges are yours, and the key stays on your device.",
           )}</p>
         </div>
         <div>
@@ -1002,28 +994,28 @@ function renderAiService() {
         <article>
           <h2>${tr("为什么这样计费", "Why billing works this way")}</h2>
           <p>${tr(
-            "模型、输入长度和输出长度都会改变真实成本。额度块让调用前的预计费用可读，也为不同模型保留清楚的倍率。",
-            "Model choice, input length, and output length all affect real cost. Credit blocks make estimates readable and keep model multipliers explicit.",
+            "输入和输出分开计费，能让短回答和长生成按实际消耗结算。点数价格还需覆盖汇率、支付、服务器、滥用防护与失败重试缓冲。图片会按所选模型折算成输入 token。",
+            "Input and output are billed separately so short answers and long generations settle by actual usage. Point rates also reserve room for exchange rates, payments, servers, abuse controls, and failed retries. Images count as model-converted input tokens.",
           )}</p>
         </article>
         <article>
-          <h2>${tr("额度示例", "Credit examples")}</h2>
+          <h2>${tr("点数示例", "Point examples")}</h2>
           <p>${tr(
-            "标准文本在一个计费块内消耗 1 额度；图像理解消耗 2 额度；进阶推理消耗 3 额度。超出一个块时按块数乘以对应倍率。",
-            "Within one block, standard text uses 1 credit, image understanding uses 2, and advanced reasoning uses 3. Additional blocks multiply by the same rate.",
+            "约 2000 输入 token + 1000 输出 token：经济模型约 6 点（¥0.06），品质模型约 12 点（¥0.12）。",
+            "About 2,000 input tokens + 1,000 output tokens: around 6 points (¥0.06) on an economy model or 12 points (¥0.12) on a quality model.",
           )}</p>
-          <small>${tr("调用前显示预计额度。成功后按实际块结算；第三方或平台失败且没有有效输出时不扣额度。", "Estimated credits are shown before a call. Successful calls settle by actual blocks; third-party or platform failures with no valid output consume no credits.")}</small>
+          <small>${tr("实际价格会随上下文长度、图片尺寸和输出长度变化。失败且没有产生有效模型结果时不扣点。", "Actual cost varies with context length, image size, and output length. Failed calls with no valid model result consume no points.")}</small>
         </article>
       </section>
 
       <section class="ai-policy-layout">
-        <article class="ai-refund" aria-labelledby="ai-refund-title">
-          <h2 id="ai-refund-title">${tr("退款规则公示", "Refund policy")}</h2>
+        <article class="ai-refund" aria-labelledby="ai-balance-title">
+          <h2 id="ai-balance-title">${tr("余额与有效期", "Balance and validity")}</h2>
           <ul>
-            <li>${tr("购买后 7 天内且未使用，可申请全额原路退款。", "Within 7 days of purchase, unused packages may be refunded in full to the original payment method.")}</li>
-            <li>${tr("已经使用后，扣除实际消费的付费额度，退还未使用的付费部分。", "After usage, consumed paid credits are deducted and the unused paid portion is refunded.")}</li>
-            <li>${tr("赠送额度不折现。", "Gift credits have no cash value.")}</li>
-            <li>${tr("服务终止或平台无法继续提供时，退还未使用的付费部分。", "If the service ends or the platform cannot continue providing it, the unused paid portion is refunded.")}</li>
+            <li>${tr("默认不自动续费，不允许透支；余额不足时停止调用。", "No auto-renewal or overdrafts; calls stop when the balance is insufficient.")}</li>
+            <li>${tr("付费点永久有效。", "Paid points do not expire.")}</li>
+            <li>${tr("赠送点可在发放时单独标注有效期。", "Gift points may carry a stated expiry when granted.")}</li>
+            <li>${tr("每笔用量都提供模型、token、扣点和时间记录。", "Every usage record shows model, tokens, points, and time.")}</li>
           </ul>
         </article>
         <article class="ai-safety" aria-labelledby="ai-safety-title">
@@ -1045,19 +1037,25 @@ function renderAiService() {
           <span>${tr("幂等处理", "Idempotency")}</span>
           <span>${tr("不可变用量账本", "Immutable usage ledger")}</span>
         </div>
-        <p>${tr("这些安全与账务能力完成并经过验证后，平台才会开放购买。", "Purchases will open only after these security and accounting controls are implemented and verified.")}</p>
+        <p>${tr("支付、钱包、扣点和代理调用现在都没有上线。这些安全与账务能力完成并经过验证后，平台才会开放充值。", "Payments, wallets, point deductions, and hosted proxy calls are not live. Top-ups will open only after these security and accounting controls are implemented and verified.")}</p>
       </section>
 
       <section class="ai-sources" aria-labelledby="ai-sources-title">
         <div>
           <h2 id="ai-sources-title">${tr("第三方模型与价格可能调整", "Third-party models and prices may change")}</h2>
-          <p>${tr("模型名称、可用性和上游价格以正式接入时的供应商公示为准。平台会在新购买前公开调整，不追溯已购额度。", "Model names, availability, and upstream prices are subject to provider information at launch. Changes will be published before new purchases and will not alter existing credits.")}</p>
+          <p>${tr("模型名称、可用性和上游价格以正式接入时的供应商公示为准。标准调整会在生效前公示。", "Model names, availability, and upstream prices are subject to provider information at launch. Standard changes will be published before taking effect.")}</p>
         </div>
         <nav aria-label="${tr("官方价格来源", "Official pricing sources")}">
           <a href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/" target="_blank" rel="noopener noreferrer">DeepSeek ${tr("官方价格", "official pricing")}</a>
           <a href="https://help.aliyun.com/zh/model-studio/model-pricing" target="_blank" rel="noopener noreferrer">${tr("阿里云百炼价格", "Alibaba Cloud Model Studio pricing")}</a>
           <a href="https://supabase.com/docs/guides/functions/pricing" target="_blank" rel="noopener noreferrer">Supabase Edge Functions ${tr("价格", "pricing")}</a>
         </nav>
+      </section>
+
+      <section class="ai-readiness" aria-labelledby="ai-current-title">
+        <h2 id="ai-current-title">${tr("当前继续使用自带 API", "Use your own API for now")}</h2>
+        <p>${tr("当前仅公布标准，充值与托管 AI 尚未开放。现阶段请继续在 Prompt Vault 中配置自己的 API Key。", "These standards are public, but top-ups and hosted AI are not yet open. For now, continue configuring your own API key in Prompt Vault.")}</p>
+        <div class="actions"><a class="button primary" href="../prompt-vault.html">${tr("返回扩展介绍", "View Prompt Vault")}</a><a class="button ghost" href="../prompt-vault.html#api-guide">${tr("查看如何配置自带 API", "How to configure your API")}</a></div>
       </section>
     </div>`;
 }
@@ -1779,7 +1777,7 @@ async function renderRoute() {
   if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
   if (section === "my") return renderMyAccount();
-  if (section === "ai-service") return requireLogin() && renderAiService();
+  if (section === "ai-service") return renderAiService();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
