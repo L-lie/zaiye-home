@@ -78,6 +78,8 @@ function parseFlow() {
   const candidate = current.redirect_uri ? current : (stored ? JSON.parse(stored) : current);
   const provider = candidate.provider || "";
   if (provider && !["github", "google", "email"].includes(provider)) throw new Error("登录方式无效。");
+  const consent = candidate.consent || "";
+  if (consent && consent !== "accepted") throw new Error("登录确认状态无效。");
   if (!["signin", "link"].includes(candidate.action)) throw new Error("登录动作无效。");
   if (candidate.code_challenge_method !== "S256") throw new Error("只支持 S256 PKCE。");
   if (!/^[A-Za-z0-9_-]{43,128}$/.test(candidate.code_challenge || "")) throw new Error("PKCE challenge 无效。");
@@ -92,6 +94,7 @@ function parseFlow() {
   }
   const normalized = {
     provider,
+    consent,
     action: candidate.action,
     redirect_uri: redirect.href,
     code_challenge: candidate.code_challenge,
@@ -157,6 +160,35 @@ function showConsent() {
   setStatus("已登录。请确认是否继续返回扩展。");
 }
 
+async function clearStaleWebsiteSession() {
+  try {
+    await client.auth.signOut({ scope: "local" });
+  } catch {
+    // A rejected or expired remote session must not keep the local consent UI alive.
+  }
+  session = null;
+}
+
+async function getVerifiedWebsiteSession() {
+  const { data, error } = await client.auth.getSession();
+  if (error) throw error;
+  const candidate = data.session;
+  if (!candidate) return null;
+
+  const verified = await client.auth.getUser(candidate.access_token);
+  if (!verified.error && verified.data.user?.id === candidate.user?.id) return candidate;
+
+  const refreshed = await client.auth.refreshSession();
+  const refreshedSession = refreshed.data?.session;
+  if (!refreshed.error && refreshedSession) {
+    const reverified = await client.auth.getUser(refreshedSession.access_token);
+    if (!reverified.error && reverified.data.user?.id === refreshedSession.user?.id) return refreshedSession;
+  }
+
+  await clearStaleWebsiteSession();
+  return null;
+}
+
 async function authorizeExtension() {
   continueButton.disabled = true;
   setStatus("正在签发一次性登录凭证…");
@@ -189,6 +221,12 @@ async function authorizeExtension() {
       }),
     });
     const result = await response.json();
+    if (!response.ok && (response.status === 401 || result.error === "invalid_session")) {
+      await clearStaleWebsiteSession();
+      showLogin();
+      setStatus("官网登录已过期，请重新选择登录方式。", true);
+      return;
+    }
     if (!response.ok) throw new Error(result.error_description || result.error || "无法签发登录凭证。");
     if (result.state !== flow.state || result.redirect_uri !== flow.redirect_uri) {
       throw new Error("登录凭证与当前扩展请求不匹配。");
@@ -220,9 +258,12 @@ async function initialize() {
     flow = parseFlow();
     client = window.ZaiyeSupabase?.getClient();
     if (!client) throw new Error("语藏登录服务尚未配置。");
-    const { data, error } = await client.auth.getSession();
-    if (error) throw error;
-    session = data.session;
+    if (flow.consent === "accepted") {
+      const checkbox = extensionLoginRoot.querySelector("#loginPolicyConsent");
+      if (checkbox) checkbox.checked = true;
+      loginConsent.refresh();
+    }
+    session = await getVerifiedWebsiteSession();
     const pendingAuthMethod = sessionStorage.getItem(PENDING_AUTH_METHOD_KEY) || "";
     if (session && ["github", "google"].includes(pendingAuthMethod)) {
       localStorage.setItem(LAST_AUTH_METHOD_KEY, pendingAuthMethod);
