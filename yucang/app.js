@@ -17,7 +17,7 @@ import {
 } from "../auth/login-experience.js";
 import { createPromptVaultBridge } from "./prompt-vault-bridge.mjs?v=20260825-import1";
 import { createPromptVaultWebsiteAuthBridge } from "./prompt-vault-auth-bridge.mjs?v=20260825-sso1";
-import { createPromptVaultPublishBridge, hashHandoffContent } from "./prompt-vault-publish-bridge.mjs?v=20260826-handoff2";
+import { createPromptVaultPublishBridge } from "./prompt-vault-publish-bridge.mjs?v=20260826-handoff2";
 import {
   loadAccountProfile,
   openAccountProfileEditor,
@@ -33,6 +33,7 @@ const promptVaultBridge = createPromptVaultBridge();
 const promptVaultWebsiteAuthBridge = createPromptVaultWebsiteAuthBridge();
 const promptVaultPublishBridge = createPromptVaultPublishBridge();
 const HANDOFF_DRAFT_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-create-handoff-draft";
+const VERSION_MEDIA_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-version-media";
 const ACCOUNT_PROFILE_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-update-profile";
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
@@ -171,6 +172,31 @@ function publicAssetUrl(value) {
   }
 }
 
+function mediaGalleryMarkup(images, label = tr("作品图片", "Work images")) {
+  if (!images?.length) return "";
+  return `<div class="publication-media" aria-label="${escapeHtml(label)}">${images.map((item, index) => {
+    const url = typeof item === "string" ? item : item.url;
+    return `<figure><img src="${escapeHtml(url)}" alt="${escapeHtml(`${label} ${index + 1}`)}" loading="lazy" decoding="async" /></figure>`;
+  }).join("")}</div>`;
+}
+
+async function loadVersionMedia(versionId) {
+  if (!versionId) return [];
+  const headers = {
+    "apikey": window.ZaiyeSupabase.config.publishableKey,
+    "Content-Type": "application/json",
+  };
+  if (state.session?.access_token) headers.Authorization = `Bearer ${state.session.access_token}`;
+  const response = await fetch(VERSION_MEDIA_ENDPOINT, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ versionId }),
+  });
+  if (!response.ok) return [];
+  const result = await response.json().catch(() => ({}));
+  return result.ok && Array.isArray(result.images) ? result.images : [];
+}
+
 function resolvedOfficialPrompt(item) {
   const variables = officialResourceVariables(item);
   const values = Object.fromEntries(variables.map((entry) => [
@@ -203,10 +229,11 @@ function officialPromptPayload(item, prompt = resolvedOfficialPrompt(item)) {
   };
 }
 
-function communityPromptPayload(item) {
+function communityPromptPayload(item, image = "") {
   return {
     title: item.title,
     prompt: item.prompt_text,
+    image,
     project: tr("语藏社区", "Yucang Community"),
     category: item.content_type || "",
     type: item.content_type || "scene",
@@ -1280,8 +1307,9 @@ function handoffErrorMessage(error) {
     expired: tr("这次交接已超过 5 分钟，请回到扩展重新发起。", "This handoff expired after 5 minutes. Start it again from Prompt Vault."),
     handoff_expired: tr("这次交接已超过 5 分钟，请回到扩展重新发起。", "This handoff expired after 5 minutes. Start it again from Prompt Vault."),
     creator_required: tr("当前账号还没有受邀创作者资格。", "This account does not have invited creator access."),
-    media_not_supported_yet: tr("当前切片还不能交接案例图或参考图，请先移除图片后重试。", "This slice cannot hand off media yet. Remove images and try again."),
-    media_confirmation_required: tr("请先确认本次仅发布文字、不包含图片，或取消交接。", "Confirm text-only publication without images, or cancel the handoff."),
+    media_must_be_embedded: tr("这张图片不是可上传的本地图片，请回到扩展重新保存图片后再发布。", "This image is not embedded for upload. Save it locally in Prompt Vault and try again."),
+    invalid_media: tr("图片文件无效，仅支持真实的 JPEG、PNG 或 WebP。", "Invalid image. Only real JPEG, PNG, or WebP files are supported."),
+    media_too_large: tr("图片过大：单张最多 5 MB，合计最多 10 MB。", "Images are too large: 5 MB each and 10 MB combined."),
     paid_not_available: tr("付费发布尚未开放。", "Paid publication is not available yet."),
   };
   return messages[code] || code;
@@ -1295,6 +1323,7 @@ function handoffContentMarkup(content) {
       <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(content.contentType))}</span><span class="pill">${escapeHtml(licenseLabel(content.licenseCode))}</span></div>
       <h1>${escapeHtml(content.title)}</h1>
       <p class="lede">${escapeHtml(content.summary)}</p>
+      ${mediaGalleryMarkup((content.images || []).filter((item) => typeof item === "string" && /^data:image\/(?:png|jpeg|webp);base64,/i.test(item)), tr("本次发布图片", "Images in this publication"))}
       <dl class="data-list">
         <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([content.model?.name, content.model?.version].filter(Boolean).join(" · ") || "—")}</dd></div>
         <div><dt>${tr("标签", "Tags")}</dt><dd>${escapeHtml((content.tags || []).join(" / ") || "—")}</dd></div>
@@ -1352,9 +1381,6 @@ async function renderPublishHandoff(handoffId) {
     if (claim.expiresAt && new Date(claim.expiresAt).getTime() <= Date.now()) throw new Error("handoff_expired");
     const content = claim.content;
     const imageCount = Array.isArray(content.images) ? content.images.length : 0;
-    const imageLabels = imageCount
-      ? content.images.slice(0, 4).map((item, index) => escapeHtml(item?.name || item?.title || `${tr("图片", "Image")} ${index + 1}`)).join("、")
-      : "";
     app.innerHTML = `
       <section class="handoff-layout">
         <div class="panel">${handoffContentMarkup(content)}</div>
@@ -1365,7 +1391,7 @@ async function renderPublishHandoff(handoffId) {
           <label class="handoff-option"><input type="radio" name="publicationMode" value="private" /><span><strong>${tr("仅自己", "Only me")}</strong><small>${tr("不上传到网站，结束本次交接。", "Do not upload; end this handoff.")}</small></span></label>
           <label class="handoff-option"><input type="radio" name="publicationMode" value="free_public" checked /><span><strong>${tr("免费公开", "Free public")}</strong><small>${tr("创建发布草稿，随后继续公开预览和二次确认。", "Create a publication draft, then continue to public preview and second confirmation.")}</small></span></label>
           <label class="handoff-option is-disabled"><input type="radio" name="publicationMode" value="paid" disabled /><span><strong>${tr("付费发布", "Paid")}</strong><small>${tr("MVP 暂未开放", "Not available in the MVP")}</small></span></label>
-          ${imageCount ? `<div class="handoff-media-warning"><strong>${tr(`这条 Prompt 含 ${imageCount} 张图片`, `This Prompt contains ${imageCount} image(s)`)}</strong><p>${imageLabels}${imageCount > 4 ? tr(" 等", " and more") : ""}</p><p>${tr("当前切片尚不支持上传案例图或参考图。图片不会被静默上传或删除。", "This slice does not upload examples or references. Images will not be silently uploaded or deleted.")}</p><label><input type="checkbox" data-exclude-handoff-images /> <span>${tr("我确认本次仅发布文字，不包含图片", "I confirm this publication will include text only, without images")}</span></label></div>` : ""}
+          ${imageCount ? `<div class="handoff-media-warning"><strong>${tr(`这条 Prompt 含 ${imageCount} 张图片`, `This Prompt contains ${imageCount} image(s)`)}</strong><p>${tr("继续后，图片会与这一个发布草稿一起安全上传；不会读取扩展里的其他内容。", "The images will be securely uploaded with this one draft. No other extension content is read.")}</p></div>` : ""}
           <div class="actions"><button class="button primary" type="button" data-handoff-continue>${tr("继续", "Continue")}</button><button class="button" type="button" data-handoff-cancel>${tr("取消交接", "Cancel handoff")}</button></div>
           <p class="handoff-status" data-handoff-status>${tr("在创建网站草稿前，Prompt 仍只存在于扩展本地。", "Before a website draft is created, the Prompt remains only in the extension.")}</p>
         </aside>
@@ -1373,7 +1399,6 @@ async function renderPublishHandoff(handoffId) {
     const status = app.querySelector("[data-handoff-status]");
     const continueButton = app.querySelector("[data-handoff-continue]");
     const cancelButton = app.querySelector("[data-handoff-cancel]");
-    const excludeImages = app.querySelector("[data-exclude-handoff-images]");
     continueButton.addEventListener("click", async () => {
       const mode = app.querySelector('input[name="publicationMode"]:checked')?.value;
       setBusy(continueButton, true, mode === "private" ? tr("正在保留…", "Keeping private…") : tr("正在创建草稿…", "Creating draft…"));
@@ -1385,10 +1410,7 @@ async function renderPublishHandoff(handoffId) {
           go("my-publications");
           return;
         }
-        if (imageCount && !excludeImages.checked) throw new Error("media_confirmation_required");
-        const publicationContent = imageCount ? { ...content, images: [] } : content;
-        const publicationHash = imageCount ? await hashHandoffContent(publicationContent) : claim.payloadHash;
-        const result = await createHandoffDraft(claim, publicationContent, publicationHash);
+        const result = await createHandoffDraft(claim, content, claim.payloadHash);
         await promptVaultPublishBridge.complete(claim, result);
         state.publishHandoff = null;
         notify(tr("发布草稿已创建，请继续检查并生成公开预览。", "Publication draft created. Review it and continue to public preview."));
@@ -1423,7 +1445,8 @@ async function renderEditor(versionId = "") {
     const record = versionId ? firstRow(await rpc("yucang_get_my_version_v2", { p_version_id: versionId })) : {};
     if (versionId && !record) throw new Error(tr("没有找到可访问的版本。", "No accessible version was found."));
     if (record?.status && record.status !== "draft") throw new Error(tr("当前版本不处于可编辑 draft 状态。", "The current version is not an editable draft."));
-    app.innerHTML = editorMarkup(record || {});
+    const images = versionId ? await loadVersionMedia(versionId) : [];
+    app.innerHTML = `${mediaGalleryMarkup(images)}${editorMarkup(record || {})}`;
     const form = app.querySelector("#workEditor");
     bindVariableEditor(form);
     form.addEventListener("submit", async (event) => {
@@ -1474,9 +1497,11 @@ async function renderPreview(versionId) {
     const preview = firstRow(await rpc("yucang_prepare_preview", { p_version_id: versionId }));
     if (!preview) throw new Error(tr("无法生成预览。", "Unable to prepare preview."));
     const view = snapshotToViewModel(preview.snapshot);
+    const images = await loadVersionMedia(versionId);
     app.innerHTML = `
       <section class="panel">
         <p class="eyebrow">PUBLIC PREVIEW · SECOND CONFIRMATION</p>
+        ${mediaGalleryMarkup(images)}
         <div class="detail-header">${snapshotDetail(view)}</div>
         <label class="confirm-box">
           <input type="checkbox" data-confirm-publish />
@@ -1663,9 +1688,11 @@ async function renderPublicPrompt(workId) {
       "This work does not exist, is not approved, or is not publicly accessible.",
     ));
     const variables = normalizeVariables(item.variables);
+    const images = await loadVersionMedia(item.version_id);
     app.innerHTML = `
       <section class="detail-header">
         <p class="eyebrow">PUBLIC PROMPT · APPROVED CURRENT VERSION</p>
+        ${mediaGalleryMarkup(images)}
         ${snapshotDetail(item, { includePrompt: false })}
       </section>
       <section class="split-layout">
@@ -1688,7 +1715,7 @@ async function renderPublicPrompt(workId) {
       output: app.querySelector("[data-final-prompt]"),
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
-    bindPromptVaultButtons(app, () => communityPromptPayload(item));
+    bindPromptVaultButtons(app, () => communityPromptPayload(item, images[0]?.url || ""));
   } catch (error) {
     renderError(error, tr("无法打开 Prompt", "Unable to open Prompt"));
   }

@@ -1,6 +1,8 @@
 import { createClient } from "npm:@supabase/supabase-js@2.111.0";
 import {
   HandoffError,
+  sha256Hex,
+  stableStringify,
   validateHandoffBody,
   YUCANG_WEB_ORIGIN,
 } from "../_shared/yucang-publish-handoff.ts";
@@ -33,9 +35,9 @@ Deno.serve(async (request) => {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
     if (request.method !== "POST") return json(405, { ok: false, error: "method_not_allowed" });
     const declaredLength = Number(request.headers.get("content-length") || 0);
-    if (declaredLength > 100_000) throw new HandoffError(413, "payload_too_large", "Request body is too large.");
+    if (declaredLength > 14_500_000) throw new HandoffError(413, "payload_too_large", "Request body is too large.");
     const raw = await request.text();
-    if (raw.length > 100_000) throw new HandoffError(413, "payload_too_large", "Request body is too large.");
+    if (raw.length > 14_500_000) throw new HandoffError(413, "payload_too_large", "Request body is too large.");
     let parsed: unknown;
     try { parsed = JSON.parse(raw); } catch { throw new HandoffError(400, "invalid_json", "Request body must be valid JSON."); }
     if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && typeof (parsed as Record<string, unknown>).requestId === "string") {
@@ -49,10 +51,11 @@ Deno.serve(async (request) => {
     });
     const { data: userData, error: userError } = await client.auth.getUser(token);
     if (userError || !userData.user) throw new HandoffError(401, "invalid_session", "The website session is invalid or expired.");
+    const draftPayloadHash = await sha256Hex(stableStringify(input.content));
     const { data, error } = await client.rpc("yucang_create_draft_from_handoff", {
       p_request_id: input.requestId,
       p_handoff_id: input.handoffId,
-      p_payload_hash: input.payloadHash,
+      p_payload_hash: draftPayloadHash,
       p_target_work_id: input.targetWorkId,
       p_content: input.content,
     });
@@ -64,6 +67,31 @@ Deno.serve(async (request) => {
     }
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) throw new HandoffError(500, "draft_creation_failed", "Draft creation returned no result.");
+    if (input.media.length) {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const manifest = [];
+      for (const media of input.media) {
+        const storagePath = `${userData.user.id}/${input.handoffId}/${media.position}.${media.extension}`;
+        const { error: uploadError } = await admin.storage
+          .from("yucang-publication-media")
+          .upload(storagePath, media.bytes, { contentType: media.mimeType, upsert: true, cacheControl: "3600" });
+        if (uploadError) throw new HandoffError(500, "media_upload_failed", "Unable to store publication media.");
+        manifest.push({
+          version_id: row.version_id,
+          author_id: userData.user.id,
+          storage_path: storagePath,
+          mime_type: media.mimeType,
+          byte_size: media.byteSize,
+          position: media.position,
+        });
+      }
+      const { error: manifestError } = await admin
+        .from("yucang_version_media")
+        .upsert(manifest, { onConflict: "version_id,position" });
+      if (manifestError) throw new HandoffError(500, "media_manifest_failed", "Unable to attach publication media.");
+    }
     const status = row.result_status === "already_created" ? "already_created" : "created";
     return json(status === "created" ? 201 : 200, {
       ok: true,
@@ -73,6 +101,7 @@ Deno.serve(async (request) => {
       workId: row.work_id,
       versionId: row.version_id,
       revision: Number(row.revision || 1),
+      mediaCount: input.media.length,
       originKind: "vault_handoff",
       nextUrl: `/yucang/#/publish/${row.version_id}`,
     });

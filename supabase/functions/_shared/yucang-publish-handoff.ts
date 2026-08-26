@@ -17,6 +17,9 @@ const HASH = /^[0-9a-f]{64}$/;
 const CONTENT_TYPES = new Set(["image", "video", "text_office", "programming"]);
 const LICENSES = new Set(["personal", "commercial", "commercial_client"]);
 const FORBIDDEN_KEYS = ["apikey", "secret", "token", "password", "authorization", "accesstoken", "refreshtoken", "clientsecret"];
+const MAX_MEDIA_ITEMS = 4;
+const MAX_MEDIA_BYTES = 5 * 1024 * 1024;
+const MAX_MEDIA_TOTAL_BYTES = 10 * 1024 * 1024;
 
 function object(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -80,6 +83,45 @@ function simpleObject(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
+function decodeBase64(value: string, label: string) {
+  let binary = "";
+  try { binary = atob(value); } catch { throw new HandoffError(422, "invalid_media", `${label} is not valid base64.`); }
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  if (!bytes.length || bytes.length > MAX_MEDIA_BYTES) {
+    throw new HandoffError(422, "media_too_large", `${label} must be between 1 byte and 5 MB.`);
+  }
+  return bytes;
+}
+
+function validateImageBytes(bytes: Uint8Array, declaredMime: string, label: string) {
+  const png = bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((value, index) => bytes[index] === value);
+  const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const webp = bytes.length >= 12
+    && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
+    && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
+  const actualMime = png ? "image/png" : jpeg ? "image/jpeg" : webp ? "image/webp" : "";
+  if (!actualMime || actualMime !== declaredMime) {
+    throw new HandoffError(422, "invalid_media", `${label} must be a real JPEG, PNG, or WebP image.`);
+  }
+  return { mimeType: actualMime, extension: actualMime === "image/png" ? "png" : actualMime === "image/jpeg" ? "jpg" : "webp" };
+}
+
+function normalizeImages(value: unknown) {
+  if (!Array.isArray(value)) throw new HandoffError(422, "invalid_payload", "images must be an array.");
+  if (value.length > MAX_MEDIA_ITEMS) throw new HandoffError(422, "too_many_media", `images may contain at most ${MAX_MEDIA_ITEMS} items.`);
+  let totalBytes = 0;
+  return value.map((item, index) => {
+    if (typeof item !== "string") throw new HandoffError(422, "invalid_media", `images[${index}] must be an embedded image.`);
+    const match = item.match(/^data:(image\/(?:png|jpeg|webp));base64,([a-z0-9+/=]+)$/i);
+    if (!match) throw new HandoffError(422, "media_must_be_embedded", `images[${index}] must be an embedded JPEG, PNG, or WebP image.`);
+    const bytes = decodeBase64(match[2], `images[${index}]`);
+    totalBytes += bytes.length;
+    if (totalBytes > MAX_MEDIA_TOTAL_BYTES) throw new HandoffError(422, "media_too_large", "Combined images must not exceed 10 MB.");
+    const validated = validateImageBytes(bytes, match[1].toLowerCase(), `images[${index}]`);
+    return { ...validated, bytes, byteSize: bytes.length, position: index };
+  });
+}
+
 export function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
   if (object(value)) {
@@ -114,11 +156,9 @@ export async function validateHandoffBody(input: unknown) {
   rejectCredentialFields(content);
   exactKeys(content, ["title", "summary", "contentType", "prompt", "negativePrompt", "variables", "model", "parameters", "dependencies", "tags", "licenseCode", "instructions", "images"], "content");
 
-  const images = content.images ?? [];
-  if (!Array.isArray(images)) throw new HandoffError(422, "invalid_payload", "images must be an array.");
-  if (images.length) throw new HandoffError(422, "media_not_supported_yet", "Media handoff is not supported yet.");
   const computedHash = await sha256Hex(stableStringify(content));
   if (computedHash !== input.payloadHash) throw new HandoffError(409, "payload_hash_mismatch", "payloadHash does not match the canonical content.");
+  const media = normalizeImages(content.images ?? []);
   if (!CONTENT_TYPES.has(String(content.contentType))) throw new HandoffError(422, "invalid_payload", "contentType is invalid.");
   if (!LICENSES.has(String(content.licenseCode))) throw new HandoffError(422, "invalid_payload", "licenseCode is invalid.");
 
@@ -188,5 +228,6 @@ export async function validateHandoffBody(input: unknown) {
     targetWorkId: input.targetWorkId as string | null,
     payloadHash: input.payloadHash,
     content: normalizedContent,
+    media,
   };
 }

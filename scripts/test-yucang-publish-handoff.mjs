@@ -50,10 +50,20 @@ for (const [mode, code] of [["private", "private_stays_in_vault"], ["paid", "pai
   const input = await body({ publicationMode: mode });
   await assert.rejects(() => validateHandoffBody(input), (error) => error instanceof HandoffError && error.code === code);
 }
-const mediaInput = await body({}, { images: [{ src: "data:image/png;base64,a" }] });
+const mediaInput = await body({}, { images: ["data:image/png;base64,iVBORw0KGgo="] });
+const media = await validateHandoffBody(mediaInput);
+assert.equal(media.media.length, 1);
+assert.equal(media.media[0].mimeType, "image/png");
+assert.equal(media.content.images.length, 0, "binary images must not be stored inside the version snapshot");
+const fakeMediaInput = await body({}, { images: ["data:image/png;base64,YWJj"] });
 await assert.rejects(
-  () => validateHandoffBody(mediaInput),
-  (error) => error instanceof HandoffError && error.code === "media_not_supported_yet",
+  () => validateHandoffBody(fakeMediaInput),
+  (error) => error instanceof HandoffError && error.code === "invalid_media",
+);
+const remoteMediaInput = await body({}, { images: ["https://example.com/image.png"] });
+await assert.rejects(
+  () => validateHandoffBody(remoteMediaInput),
+  (error) => error instanceof HandoffError && error.code === "media_must_be_embedded",
 );
 const wrongHashInput = await body({ payloadHash: "0".repeat(64) });
 await assert.rejects(
@@ -116,7 +126,8 @@ await bridge.discard(claim);
 assert.equal(sent[2].message.action, "discard");
 
 const migration = read("supabase/migrations/20260826000100_yucang_publish_handoff.sql")
-  + read("supabase/migrations/20260826000200_yucang_handoff_rate_guard.sql");
+  + read("supabase/migrations/20260826000200_yucang_handoff_rate_guard.sql")
+  + read("supabase/migrations/20260826000600_yucang_publication_media.sql");
 for (const required of [
   "private.yucang_handoff_receipts",
   "unique (author_id, handoff_id)",
@@ -130,6 +141,9 @@ for (const required of [
   "negative_prompt_text",
   "dependencies",
   "instructions",
+  "yucang-publication-media",
+  "yucang_version_media",
+  "yucang_can_access_version_media",
 ]) assert.ok(migration.includes(required), `migration missing ${required}`);
 assert.ok(migration.indexOf("return query select 'already_created'") < migration.indexOf("raise exception 'rate_limited'"), "idempotent replay must be checked before rate limiting");
 assert.ok(!migration.includes("private_notebooks"), "handoff must not touch the private sync domain");
@@ -138,17 +152,23 @@ const edge = read("supabase/functions/yucang-create-handoff-draft/index.ts");
 assert.ok(edge.includes('origin !== YUCANG_WEB_ORIGIN'));
 assert.ok(edge.includes('client.auth.getUser(token)'));
 assert.ok(edge.includes('known === "rate_limited" ? 429'));
-assert.ok(!/service[_-]?role/i.test(edge), "handoff Edge Function must execute as the user, not service role");
+assert.ok(edge.includes("client.auth.getUser(token)"), "the user must be authenticated before privileged media storage is used");
+assert.ok(edge.includes("SUPABASE_SERVICE_ROLE_KEY"), "private publication media must be stored by the controlled server boundary");
 assert.ok(!edge.includes("prompt: row"), "server response must not echo Prompt content");
+const mediaEdge = read("supabase/functions/yucang-version-media/index.ts");
+assert.ok(mediaEdge.includes("yucang_can_access_version_media"));
+assert.ok(mediaEdge.includes("createSignedUrls"));
+assert.ok(mediaEdge.includes('request.headers.get("origin") !== WEB_ORIGIN'));
 
 const app = read("yucang/app.js");
 assert.ok(app.includes('id === "handoff" && childId'));
 assert.ok(app.includes("promptVaultPublishBridge.claim(handoffId)"));
 assert.ok(app.includes("promptVaultPublishBridge.complete(claim, result)"));
 assert.ok(app.includes("promptVaultPublishBridge.discard(claim)"));
-assert.ok(app.includes("media_not_supported_yet"));
-assert.ok(app.includes("data-exclude-handoff-images"), "media handoffs need explicit text-only confirmation");
-assert.ok(app.includes("hashHandoffContent(publicationContent)"), "removing images must produce a new canonical hash");
-assert.ok(app.includes("imageCount && !excludeImages.checked"), "media must never be silently dropped");
+assert.ok(app.includes("VERSION_MEDIA_ENDPOINT"));
+assert.ok(app.includes("loadVersionMedia"));
+assert.ok(app.includes("图片会与这一个发布草稿一起安全上传"));
+assert.ok(!app.includes("data-exclude-handoff-images"), "media handoffs must not force a text-only downgrade");
+assert.ok(app.includes("createHandoffDraft(claim, content, claim.payloadHash)"), "the selected images must remain in the handoff request");
 
 console.log("Yucang publish handoff tests passed.");
