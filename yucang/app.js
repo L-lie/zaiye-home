@@ -18,6 +18,11 @@ import {
 import { createPromptVaultBridge } from "./prompt-vault-bridge.mjs?v=20260825-import1";
 import { createPromptVaultWebsiteAuthBridge } from "./prompt-vault-auth-bridge.mjs?v=20260825-sso1";
 import { createPromptVaultPublishBridge, hashHandoffContent } from "./prompt-vault-publish-bridge.mjs?v=20260826-handoff2";
+import {
+  loadAccountProfile,
+  openAccountProfileEditor,
+  profileAvatarMarkup,
+} from "./account-profile.mjs?v=20260826-profile1";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
@@ -27,6 +32,7 @@ const promptVaultBridge = createPromptVaultBridge();
 const promptVaultWebsiteAuthBridge = createPromptVaultWebsiteAuthBridge();
 const promptVaultPublishBridge = createPromptVaultPublishBridge();
 const HANDOFF_DRAFT_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-create-handoff-draft";
+const ACCOUNT_PROFILE_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-update-profile";
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
   all: ["全部", "All"],
@@ -56,6 +62,7 @@ const state = {
   client: null,
   session: null,
   access: null,
+  profile: null,
   authReady: false,
   resources: null,
   homeOrbitCleanup: null,
@@ -328,6 +335,24 @@ async function loadAccess() {
   }
 }
 
+async function loadProfile() {
+  if (!state.session) {
+    state.profile = null;
+    return;
+  }
+  const metadata = state.session.user.user_metadata || {};
+  const fallback = {
+    nickname: state.access?.nickname || metadata.full_name || metadata.name || state.session.user.email || tr("已登录", "Signed in"),
+    avatarUrl: metadata.avatar_url || metadata.picture || "",
+  };
+  try {
+    state.profile = await loadAccountProfile(getClient(), fallback);
+  } catch (error) {
+    state.profile = fallback;
+    if (!isSchemaMissing(error)) console.error(error);
+  }
+}
+
 function renderHeader() {
   document.querySelectorAll("[data-creator-link]").forEach((item) => {
     item.hidden = !state.access?.is_creator;
@@ -340,12 +365,33 @@ function renderHeader() {
     accountActions.innerHTML = `<a class="button ghost" href="#/login">${tr("登录", "Sign in")}</a>`;
     return;
   }
+  const profile = state.profile || {
+    nickname: state.access?.nickname || state.session.user.user_metadata?.full_name || state.session.user.user_metadata?.name || tr("已登录", "Signed in"),
+    avatarUrl: state.session.user.user_metadata?.avatar_url || state.session.user.user_metadata?.picture || "",
+  };
   accountActions.innerHTML = `
-    <span class="account-copy">
-      <strong>${escapeHtml(state.access?.nickname || state.session.user.user_metadata?.full_name || state.session.user.user_metadata?.name || tr("已登录", "Signed in"))}</strong>
-      <small>${escapeHtml(state.session.user.email || "")}</small>
-    </span>
+    <button class="account-profile-button" type="button" data-edit-profile title="${tr("编辑昵称和头像", "Edit nickname and avatar")}">
+      ${profileAvatarMarkup(profile, state.locale)}
+      <span class="account-copy">
+        <strong>${escapeHtml(profile.nickname)}</strong>
+        <small>${escapeHtml(state.session.user.email || "")}</small>
+      </span>
+    </button>
     <button class="button ghost" type="button" data-sign-out>${tr("退出", "Sign out")}</button>`;
+  accountActions.querySelector("[data-edit-profile]").addEventListener("click", () => {
+    openAccountProfileEditor({
+      client: getClient(),
+      endpoint: ACCOUNT_PROFILE_ENDPOINT,
+      locale: state.locale,
+      profile,
+      onSaved: async (saved) => {
+        state.profile = saved;
+        if (state.access) state.access.nickname = saved.nickname;
+        renderHeader();
+        notify(tr("账号资料已更新。", "Account profile updated."));
+      },
+    });
+  });
   accountActions.querySelector("[data-sign-out]").addEventListener("click", async () => {
     await getClient().auth.signOut();
     go("home");
@@ -461,6 +507,7 @@ function bindWebsiteLogin(root) {
     applyLastLoginHint(root, { method: "email", email: normalizedEmail });
     state.session = data.session;
     await loadAccess();
+    await loadProfile();
     renderHeader();
     go(postLoginPath());
   });
@@ -1741,6 +1788,7 @@ async function initialize() {
       }
     }
     await loadAccess();
+    await loadProfile();
     state.authReady = true;
     renderHeader();
     if (oauthReturnPath) {
@@ -1750,6 +1798,7 @@ async function initialize() {
       state.session = session;
       setTimeout(async () => {
         await loadAccess();
+        await loadProfile();
         renderHeader();
       }, 0);
     });

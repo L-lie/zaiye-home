@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.yucang-create-handoff-draft]
 verify_jwt = false
+
+[functions.yucang-update-profile]
+verify_jwt = false

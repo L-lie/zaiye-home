@@ -1,0 +1,26 @@
+.account-profile-button { display: inline-flex; gap: 9px; align-items: center; padding: 4px; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.account-avatar { display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px; overflow: hidden; border: 1px solid var(--line); border-radius: 50%; object-fit: cover; background: var(--panel-strong); }
+.account-avatar.fallback { color: var(--accent-strong); font-weight: 800; }
+.account-avatar.large { width: 88px; height: 88px; font-size: 26px; }
+.profile-dialog-layer { position: fixed; inset: 0; z-index: 170; display: grid; place-items: center; padding: 18px; }
+.profile-dialog-backdrop { position: absolute; inset: 0; border: 0; background: rgba(5,7,6,.66); backdrop-filter: blur(12px); }
+.profile-dialog { position: relative; z-index: 1; width: min(520px, 100%); max-height: calc(100vh - 36px); padding: 30px; overflow-y: auto; border: 1px solid var(--line); border-radius: 20px; background: #171915; box-shadow: 0 30px 100px rgba(0,0,0,.62); }
+.profile-dialog h2 { margin-bottom: 8px; }
+.profile-dialog-copy { color: var(--muted); line-height: 1.6; }
+.profile-dialog-close { position: absolute; top: 12px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: 50%; color: var(--muted); background: transparent; cursor: pointer; font-size: 27px; }
+.profile-dialog-close:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.profile-dialog form { display: grid; gap: 20px; margin-top: 24px; }
+.profile-avatar-editor { display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; align-items: center; }
+.profile-avatar-editor > div { grid-row: 1 / span 2; }
+.profile-avatar-editor > label { width: max-content; }
+.profile-avatar-editor > input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.profile-avatar-editor > small { color: var(--muted); line-height: 1.45; }
+.profile-form-status { min-height: 22px; margin: 0; color: var(--muted); }
+.profile-dialog-actions { display: flex; justify-content: flex-end; gap: 9px; }
+
+@media (max-width: 620px) {
+  .account-copy small { display: none; }
+  .profile-dialog { padding: 24px 20px; }
+  .profile-avatar-editor { grid-template-columns: 1fr; }
+  .profile-avatar-editor > div { grid-row: auto; }
+}
