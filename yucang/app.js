@@ -201,17 +201,17 @@ function communityPromptPayload(item) {
 }
 
 async function savePromptToVault(button, payload) {
-  setBusy(button, true, tr("正在收进语藏…", "Saving to Prompt Vault…"));
+  setBusy(button, true, tr("正在收藏…", "Saving…"));
   const result = await promptVaultBridge.save(payload);
   setBusy(button, false);
   if (result.ok && result.status === "created") {
-    button.textContent = tr("已收进 Prompt Vault", "Saved to Prompt Vault");
+    button.textContent = tr("已收藏", "Saved");
     button.disabled = true;
     notify(tr("已作为普通提示词收进 Prompt Vault。", "Saved as a regular Prompt Vault item."));
     return;
   }
   if (result.ok && result.status === "already_saved") {
-    button.textContent = tr("已在 Prompt Vault 中", "Already in Prompt Vault");
+    button.textContent = tr("已收藏", "Saved");
     button.disabled = true;
     notify(tr("这个公开版本已经收进 Prompt Vault。", "This public version is already in Prompt Vault."));
     return;
@@ -237,7 +237,9 @@ function bindPromptVaultButtons(root, getPayload) {
     if (!root.isConnected) return;
     root.querySelectorAll("[data-save-to-vault]").forEach((button) => {
       button.dataset.vaultInstalled = String(connection.installed);
-      if (connection.installed) button.title = tr("保存为扩展中的普通提示词条目", "Save as a regular Prompt Vault item");
+      button.title = connection.installed
+        ? tr("收藏进扩展", "Save to the extension")
+        : tr("安装 Prompt Vault 后收藏", "Install Prompt Vault to save");
     });
   });
 }
@@ -361,14 +363,15 @@ function requireCreator() {
   if (state.access?.is_creator) return true;
   app.innerHTML = `
     <section class="state-card narrow">
-      <p class="eyebrow">INVITE ONLY</p>
-      <h1>${tr("当前账号没有创作者资格", "This account is not a creator")}</h1>
+      <p class="eyebrow">ACCOUNT SETUP</p>
+      <h1>${tr("账号发布权限尚未就绪", "Publishing access is not ready")}</h1>
       <p class="lede">${tr(
-        "语藏 MVP 采用站方邀请制。普通登录用户可以浏览公开作品，但不能创建或提交作品。",
-        "Yucang MVP is invite-only for creators. Signed-in members can browse public works but cannot create or submit them.",
+        "所有登录用户都可以创建和提交免费 Prompt。请刷新页面；如果仍看到这里，说明账号资料初始化失败。",
+        "Every signed-in member can create and submit free Prompts. Refresh the page; if this remains, account profile initialization failed.",
       )}</p>
-      <a class="button primary" href="#/discover">${tr("浏览发现", "Browse Discover")}</a>
+      <button class="button primary" type="button" data-reload-access>${tr("刷新账号权限", "Refresh access")}</button>
     </section>`;
+  app.querySelector("[data-reload-access]")?.addEventListener("click", () => location.reload());
   return false;
 }
 
@@ -997,18 +1000,25 @@ function resourceSearchText(item) {
 }
 
 function renderResourceCard(item) {
+  const image = item.featuredImage
+    ? `<figure class="resource-card-image"><img src="${escapeHtml(item.featuredImage)}" alt="" loading="lazy" /></figure>`
+    : "";
   return `
-    <article class="resource-card">
+    <article class="resource-card${image ? " has-image" : ""}">
       <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
+        ${image}
+        <span class="resource-star" title="${tr("站方精选", "Official pick")}" aria-label="${tr("站方精选", "Official pick")}">★</span>
+        <div class="resource-card-copy">
         <div class="resource-card-meta">
           <span>${escapeHtml(resourceCategoryLabel(item.category))}</span>
           <span>${escapeHtml(item.model || tr("通用模型", "General model"))}</span>
         </div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
-        <footer><span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span><strong>${tr("打开使用", "Open")}</strong></footer>
+        <footer><span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span><strong>${tr("打开", "Open")}</strong></footer>
+        </div>
       </a>
-      <div class="resource-card-actions"><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button></div>
+      <div class="resource-card-actions"><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进扩展", "Save to the extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}">${tr("收藏", "Save")}</button></div>
     </article>`;
 }
 
@@ -1680,6 +1690,7 @@ async function renderRoute() {
   state.homeOrbitCleanup = null;
   const homeRoute = section === "home" || section === "login";
   document.body.classList.toggle("route-home", homeRoute);
+  document.body.classList.toggle("route-discover", section === "discover");
   document.body.classList.toggle("route-login", section === "login" && !state.session);
   document.querySelectorAll(".main-nav a").forEach((link) => {
     link.removeAttribute("aria-current");

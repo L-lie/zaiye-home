@@ -11,6 +11,7 @@ import {
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const migration = readFileSync(join(root, "supabase/migrations/20260825000100_yucang_slice1.sql"), "utf8");
+const openPublishingMigration = readFileSync(join(root, "supabase/migrations/20260826000300_yucang_open_publishing.sql"), "utf8");
 const app = readFileSync(join(root, "yucang/app.js"), "utf8");
 const appCss = readFileSync(join(root, "yucang/app.css"), "utf8");
 const html = readFileSync(join(root, "yucang/index.html"), "utf8");
@@ -52,6 +53,11 @@ assert(migration.includes("'authorNickname', p_version.author_nickname"), "autho
 assert(migration.includes("revoke all on public.yucang_versions from anon, authenticated"), "base-table DML/reads were not revoked");
 assert(!migration.includes("service_role"), "migration must not expose or depend on service_role");
 assert(!migration.includes("publish_portfolio"), "Yucang must not reuse mutable portfolio publication");
+assert.match(openPublishingMigration, /auth\.uid\(\) is not null and p_user_id = auth\.uid\(\)/);
+assert.match(openPublishingMigration, /after insert on auth\.users/);
+assert.match(openPublishingMigration, /insert into public\.yucang_creator_profiles/);
+assert.doesNotMatch(app, /INVITE ONLY/);
+assert.match(app, /所有登录用户都可以创建和提交免费 Prompt/);
 
 for (const rpc of [
   "yucang_create_work",
@@ -93,6 +99,14 @@ assert.deepEqual(
 );
 assert.match(app, /fetch\("\.\.\/prompt-vault-resources\.json"/);
 assert.match(app, /data-resource-search/);
+assert.match(app, /resource-card-image/);
+assert.match(app, /item\.featuredImage/);
+assert.match(app, /收藏进 Prompt Vault 扩展/);
+assert.match(app, /window\.open\("\.\.\/prompt-vault\.html"/);
+assert.match(appCss, /\.route-discover \.app-main \{ width: min\(1640px/);
+assert.match(appCss, /\.resource-grid \{ display: grid; grid-template-columns: repeat\(5/);
+assert.match(appCss, /@media \(max-width: 1450px\)[\s\S]*repeat\(4/);
+assert.match(appCss, /@media \(max-width: 1120px\)[\s\S]*repeat\(3/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /HOME_FEATURED_ART/);
 const featuredPromptIds = [...app.matchAll(/src: "assets\/featured\/[^"]+", promptId: "([^"]+)"/g)].map((match) => match[1]);
