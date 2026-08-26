@@ -68,6 +68,8 @@ a { color: inherit; }
 .product-visual img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(.16,1,.3,1); }
 .product-visual:hover img { transform: scale(1.025); }
 .vault-visual img { object-position: 10% 18%; }
+.library-visual { background: #171a17; }
+.library-visual img { object-fit: contain; padding: clamp(24px, 5vw, 72px); }
 .dock-visual img { object-position: 50% 2%; }
 .slicer-visual { display: grid; place-items: center; background-color: #e8e5de; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 48px 48px; }
 .slice { position: absolute; width: 38%; height: 32%; border: 1px dashed #a6a39b; background: rgba(242,240,234,0.84); }
