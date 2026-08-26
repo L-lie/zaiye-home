@@ -1613,10 +1613,7 @@ function renderOfficialResource(item) {
             <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
           </dl>
         </div>
-      </div>
-    </section>
-    <section class="resource-use-layout">
-      <div class="resource-variable-panel">
+        <div class="resource-variable-panel">
         <div class="tool-heading">
           <h2>${tr("修改变量", "Adjust variables")}</h2>
           <p>${tr("输入内容后，右侧 Prompt 会立即更新。", "The Prompt updates as you type.")}</p>
@@ -1637,6 +1634,7 @@ function renderOfficialResource(item) {
         <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
         <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
       </aside>
+      </div>
     </section>`;
   bindPromptTool({
     template: item.prompt,

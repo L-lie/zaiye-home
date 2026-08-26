@@ -124,8 +124,14 @@ assert.match(appCss, /\.resource-grid \{ display: grid; grid-template-columns: r
 assert.match(appCss, /@media \(max-width: 1450px\)[\s\S]*repeat\(4/);
 assert.match(appCss, /@media \(max-width: 1120px\)[\s\S]*repeat\(3/);
 assert.match(app, /resource-detail-overview\$\{item\.featuredImage \? " has-image" : ""\}/);
-assert.match(appCss, /\.resource-detail-overview\.has-image \{ grid-template-columns: minmax\(320px/);
-assert.match(appCss, /@media \(max-width: 860px\)[\s\S]*\.resource-detail-overview\.has-image \{ grid-template-columns: 1fr; \}/);
+assert.match(app, /<div class="resource-detail-copy">[\s\S]*?<\/div>\s*<div class="resource-variable-panel">[\s\S]*?<aside class="prompt-stage">/,
+  "the variable panel and final Prompt should share the same two-column detail grid");
+assert.match(appCss, /\.resource-detail-overview \{[^}]*grid-template-areas: "variables info" "\. prompt";/);
+assert.match(appCss, /\.resource-detail-overview\.has-image \{ grid-template-areas: "image info" "variables prompt"; \}/);
+assert.match(appCss, /\.resource-detail-copy \{[^}]*grid-area: info;/);
+assert.match(appCss, /\.resource-variable-panel \{[^}]*grid-area: variables;/);
+assert.match(appCss, /\.prompt-stage \{[^}]*grid-area: prompt;/);
+assert.match(appCss, /@media \(max-width: 860px\)[\s\S]*\.resource-detail-overview\.has-image \{ grid-template-areas: "image" "info" "variables" "prompt"; \}/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /image: publicAssetUrl\(item\.featuredImage\)/);
 assert.match(app, /app\.querySelector\("\[data-final-prompt\]"\)\?\.textContent/);
