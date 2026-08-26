@@ -295,6 +295,23 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
 .variable-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; }
 .icon-button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); background: transparent; cursor: pointer; }
 .prompt-output { min-height: 190px; margin: 0; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: 14px; white-space: pre-wrap; word-break: break-word; color: #f5e5c4; background: #0b0c0a; font-family: "Cascadia Code", Consolas, monospace; line-height: 1.7; }
+.prompt-output.compact { min-height: 90px; }
+.handoff-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .75fr); gap: 24px; align-items: start; }
+.handoff-preview { display: grid; gap: 18px; }
+.handoff-preview h1 { font-size: clamp(32px, 5vw, 56px); }
+.handoff-preview h2 { margin-top: 12px; }
+.handoff-choice { display: grid; gap: 14px; }
+.handoff-option { display: grid; grid-template-columns: auto 1fr; gap: 11px; align-items: start; padding: 14px; border: 1px solid var(--line); border-radius: 13px; cursor: pointer; }
+.handoff-option:has(input:checked) { border-color: rgba(213,166,91,.65); background: rgba(213,166,91,.08); }
+.handoff-option input { width: auto; margin-top: 4px; }
+.handoff-option span { display: grid; gap: 4px; }
+.handoff-option small, .handoff-status { color: var(--muted); line-height: 1.5; }
+.handoff-option.is-disabled { opacity: .5; cursor: not-allowed; }
+.handoff-status.error { color: #ffd7d2; }
+.handoff-media-warning { padding: 14px; border: 1px solid rgba(213,166,91,.42); border-radius: 13px; background: rgba(213,166,91,.08); }
+.handoff-media-warning p { margin: 7px 0 11px; color: var(--muted); line-height: 1.5; }
+.handoff-media-warning label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.handoff-media-warning input { width: auto; margin-top: 4px; }
 .detail-header { margin-bottom: 28px; }
 .detail-header h1 { font-size: clamp(32px, 5vw, 58px); }
 .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
@@ -323,7 +340,7 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
   .main-nav { grid-column: 1 / -1; order: 3; overflow-x: auto; }
   .header-actions { justify-self: end; }
   .header-product-link { display: none; }
-  .hero, .split-layout { grid-template-columns: 1fr; }
+  .hero, .split-layout, .handoff-layout { grid-template-columns: 1fr; }
   .sticky-panel { position: static; }
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .library-intro, .library-toolbar, .resource-use-layout { grid-template-columns: 1fr; }

@@ -9,7 +9,8 @@
     "test:supabase": "node scripts/test-supabase-integration.cjs",
     "test:yucang": "node scripts/test-yucang-slice1.mjs",
     "test:yucang-extension-auth": "node --experimental-strip-types scripts/test-yucang-extension-auth.mjs",
-    "test:yucang-website-session-auth": "node --experimental-strip-types scripts/test-yucang-website-session-auth.mjs"
+    "test:yucang-website-session-auth": "node --experimental-strip-types scripts/test-yucang-website-session-auth.mjs",
+    "test:yucang-publish-handoff": "node --experimental-strip-types scripts/test-yucang-publish-handoff.mjs"
   },
   "devDependencies": {
     "sharp": "^0.34.3"

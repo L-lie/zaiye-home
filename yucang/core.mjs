@@ -79,12 +79,15 @@ export function snapshotToViewModel(snapshot = {}) {
     summary: snapshot.summary || "",
     content_type: snapshot.contentType || snapshot.content_type || "image",
     prompt_text: snapshot.prompt || snapshot.prompt_text || "",
+    negative_prompt_text: snapshot.negativePrompt || snapshot.negative_prompt_text || "",
     variables: normalizeVariables(snapshot.variables),
     model_name: snapshot.model || snapshot.model_name || "",
     model_version: snapshot.modelVersion || snapshot.model_version || "",
     parameters: snapshot.parameters || {},
+    dependencies: Array.isArray(snapshot.dependencies) ? snapshot.dependencies : [],
     tags: Array.isArray(snapshot.tags) ? snapshot.tags : [],
     license_code: snapshot.licenseCode || snapshot.license_code || "personal",
+    instructions: snapshot.instructions || "",
     author_nickname: snapshot.authorNickname || snapshot.author_nickname || "",
   };
 }

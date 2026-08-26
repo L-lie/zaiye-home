@@ -63,7 +63,8 @@ for (const rpc of [
   "yucang_get_public_work",
 ]) {
   assert(migration.includes(`function public.${rpc}`), `missing RPC ${rpc}`);
-  assert(app.includes(`"${rpc}"`), `web app does not call ${rpc}`);
+  const appRpc = rpc === "yucang_create_work" || rpc === "yucang_update_draft" ? `${rpc}_v2` : rpc;
+  assert(app.includes(`"${appRpc}"`), `web app does not call ${appRpc}`);
 }
 
 for (const route of ["home", "discover", "login", "prompt", "publish", "preview", "my-publications", "admin"]) {

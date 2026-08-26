@@ -17,6 +17,7 @@ import {
 } from "../auth/login-experience.js";
 import { createPromptVaultBridge } from "./prompt-vault-bridge.mjs?v=20260825-import1";
 import { createPromptVaultWebsiteAuthBridge } from "./prompt-vault-auth-bridge.mjs?v=20260825-sso1";
+import { createPromptVaultPublishBridge, hashHandoffContent } from "./prompt-vault-publish-bridge.mjs?v=20260826-handoff2";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
@@ -24,6 +25,8 @@ const toast = document.getElementById("toast");
 const localeToggle = document.querySelector("[data-locale-toggle]");
 const promptVaultBridge = createPromptVaultBridge();
 const promptVaultWebsiteAuthBridge = createPromptVaultWebsiteAuthBridge();
+const promptVaultPublishBridge = createPromptVaultPublishBridge();
+const HANDOFF_DRAFT_ENDPOINT = "https://zbcdmtjmqpwtevjaewtl.supabase.co/functions/v1/yucang-create-handoff-draft";
 
 const RESOURCE_CATEGORY_LABELS = Object.freeze({
   all: ["全部", "All"],
@@ -56,6 +59,7 @@ const state = {
   authReady: false,
   resources: null,
   homeOrbitCleanup: null,
+  publishHandoff: null,
   locale: localStorage.getItem("yucangLocale")
     || (navigator.language?.toLowerCase().startsWith("zh") ? "zh" : "en"),
 };
@@ -244,6 +248,12 @@ function routeParts() {
 
 function go(path) {
   location.hash = `#/${path.replace(/^\//, "")}`;
+}
+
+function postLoginPath(fallback = "home") {
+  const pending = sessionStorage.getItem("yucangPostLoginPath");
+  sessionStorage.removeItem("yucangPostLoginPath");
+  return pending || fallback;
 }
 
 async function setLocale(locale) {
@@ -448,7 +458,7 @@ function bindWebsiteLogin(root) {
     state.session = data.session;
     await loadAccess();
     renderHeader();
-    go("home");
+    go(postLoginPath());
   });
 
   root.querySelectorAll("[data-oauth]").forEach((button) => button.addEventListener("click", async () => {
@@ -457,7 +467,7 @@ function bindWebsiteLogin(root) {
     sessionStorage.setItem(pendingAuthMethodKey, button.dataset.oauth);
     const { error } = await getClient().auth.signInWithOAuth({
       provider: button.dataset.oauth,
-      options: { redirectTo: `${location.origin}${location.pathname}#/home` },
+      options: { redirectTo: `${location.origin}${location.pathname}#/${encodeURI(sessionStorage.getItem("yucangPostLoginPath") || "home")}` },
     });
     if (error) {
       sessionStorage.removeItem(pendingAuthMethodKey);
@@ -907,10 +917,13 @@ function editorMarkup(record = {}) {
         <label class="field"><span>${tr("内容类型", "Content type")}</span><select name="content_type">${Object.keys(CONTENT_TYPE_LABELS).map((value) => `<option value="${value}" ${record.content_type === value ? "selected" : ""}>${contentTypeLabel(value)}</option>`).join("")}</select></label>
         <label class="field"><span>${tr("授权类型", "License")}</span><select name="license_code">${Object.keys(LICENSE_LABELS).map((value) => `<option value="${value}" ${record.license_code === value ? "selected" : ""}>${licenseLabel(value)}</option>`).join("")}</select></label>
         <label class="field full"><span>${tr("完整 Prompt", "Full Prompt")} *</span><textarea class="prompt-input" name="prompt_text" required placeholder="${tr("使用 {{变量名}} 插入可修改变量", "Use {{variable}} to insert an editable variable")}">${escapeHtml(record.prompt_text || "")}</textarea><small>${tr("示例：一张 {{主体}} 的电影感画面，使用 {{光线}}。", "Example: A cinematic image of {{subject}}, using {{lighting}}.")}</small></label>
+        <label class="field full"><span>${tr("负面 Prompt", "Negative Prompt")}</span><textarea name="negative_prompt_text" maxlength="20000">${escapeHtml(record.negative_prompt_text || "")}</textarea></label>
         <div class="field full"><span>${tr("变量与默认值", "Variables and defaults")}</span><div class="variable-list" id="variableList">${variables.map(renderVariableEditorRow).join("")}</div><button class="button" type="button" data-add-variable>${tr("添加变量", "Add variable")}</button></div>
         <label class="field"><span>${tr("模型", "Model")}</span><input name="model_name" maxlength="120" value="${escapeHtml(record.model_name || "")}" placeholder="${tr("例如 Midjourney", "e.g. Midjourney")}" /></label>
         <label class="field"><span>${tr("模型版本", "Model version")}</span><input name="model_version" maxlength="120" value="${escapeHtml(record.model_version || "")}" placeholder="${tr("例如 v7", "e.g. v7")}" /></label>
         <label class="field full"><span>${tr("基础参数", "Parameters")}</span><textarea name="parameters" placeholder="${tr("每行一个，例如：aspect_ratio=16:9", "One per line, e.g. aspect_ratio=16:9")}">${escapeHtml(formatKeyValueLines(record.parameters))}</textarea></label>
+        <label class="field full"><span>${tr("依赖（JSON 数组）", "Dependencies (JSON array)")}</span><textarea name="dependencies" placeholder='[{"name":"LoRA 名称","version":"1.0"}]'>${escapeHtml(JSON.stringify(record.dependencies || [], null, 2))}</textarea></label>
+        <label class="field full"><span>${tr("使用说明", "Instructions")}</span><textarea name="instructions" maxlength="10000">${escapeHtml(record.instructions || "")}</textarea></label>
         <label class="field full"><span>${tr("标签", "Tags")}</span><input name="tags" value="${escapeHtml((record.tags || []).join("，"))}" placeholder="${tr("电影感，角色设计，光影", "cinematic, character design, lighting")}" /></label>
         <div class="actions field full">
           <button class="button" type="submit" name="intent" value="save">${tr("保存草稿", "Save draft")}</button>
@@ -945,12 +958,21 @@ function collectEditor(form) {
     name: row.querySelector("[data-variable-name]").value.trim(),
     defaultValue: row.querySelector("[data-variable-default]").value.trim(),
   })).filter((item) => item.name);
+  let dependencies = [];
+  try {
+    dependencies = JSON.parse(String(data.get("dependencies") || "[]"));
+    if (!Array.isArray(dependencies)) throw new Error();
+  } catch {
+    throw new Error(tr("依赖必须是有效的 JSON 数组。", "Dependencies must be a valid JSON array."));
+  }
   return {
     p_title: data.get("title"), p_summary: data.get("summary"),
     p_content_type: data.get("content_type"), p_prompt_text: data.get("prompt_text"),
+    p_negative_prompt_text: data.get("negative_prompt_text"),
     p_variables: variables, p_model_name: data.get("model_name"),
     p_model_version: data.get("model_version"), p_parameters: parseKeyValueLines(data.get("parameters")),
-    p_tags: parseTags(data.get("tags")), p_license_code: data.get("license_code"),
+    p_dependencies: dependencies, p_tags: parseTags(data.get("tags")),
+    p_license_code: data.get("license_code"), p_instructions: data.get("instructions"),
   };
 }
 
@@ -958,13 +980,13 @@ async function saveEditor(form) {
   const payload = collectEditor(form);
   const versionId = form.dataset.versionId;
   if (!versionId) {
-    const result = firstRow(await rpc("yucang_create_work", payload));
+    const result = firstRow(await rpc("yucang_create_work_v2", payload));
     form.dataset.versionId = result.version_id;
     form.dataset.workId = result.work_id;
     form.dataset.revision = "1";
     return result.version_id;
   }
-  const revision = await rpc("yucang_update_draft", {
+  const revision = await rpc("yucang_update_draft_v2", {
     p_version_id: versionId,
     p_expected_revision: Number(form.dataset.revision),
     ...payload,
@@ -973,11 +995,155 @@ async function saveEditor(form) {
   return versionId;
 }
 
+function handoffErrorMessage(error) {
+  const code = String(error?.message || error || "");
+  const messages = {
+    prompt_vault_not_installed: tr("没有检测到 Prompt Vault 扩展，请安装或更新后重试。", "Prompt Vault was not detected. Install or update it and try again."),
+    claimed_elsewhere: tr("这次交接已在另一个语藏标签页中打开。", "This handoff is already open in another Yucang tab."),
+    expired: tr("这次交接已超过 5 分钟，请回到扩展重新发起。", "This handoff expired after 5 minutes. Start it again from Prompt Vault."),
+    handoff_expired: tr("这次交接已超过 5 分钟，请回到扩展重新发起。", "This handoff expired after 5 minutes. Start it again from Prompt Vault."),
+    creator_required: tr("当前账号还没有受邀创作者资格。", "This account does not have invited creator access."),
+    media_not_supported_yet: tr("当前切片还不能交接案例图或参考图，请先移除图片后重试。", "This slice cannot hand off media yet. Remove images and try again."),
+    media_confirmation_required: tr("请先确认本次仅发布文字、不包含图片，或取消交接。", "Confirm text-only publication without images, or cancel the handoff."),
+    paid_not_available: tr("付费发布尚未开放。", "Paid publication is not available yet."),
+  };
+  return messages[code] || code;
+}
+
+function handoffContentMarkup(content) {
+  const variables = Array.isArray(content.variables) ? content.variables : [];
+  const dependencies = Array.isArray(content.dependencies) ? content.dependencies : [];
+  return `
+    <div class="handoff-preview">
+      <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(content.contentType))}</span><span class="pill">${escapeHtml(licenseLabel(content.licenseCode))}</span></div>
+      <h1>${escapeHtml(content.title)}</h1>
+      <p class="lede">${escapeHtml(content.summary)}</p>
+      <dl class="data-list">
+        <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([content.model?.name, content.model?.version].filter(Boolean).join(" · ") || "—")}</dd></div>
+        <div><dt>${tr("标签", "Tags")}</dt><dd>${escapeHtml((content.tags || []).join(" / ") || "—")}</dd></div>
+        <div><dt>${tr("变量", "Variables")}</dt><dd>${variables.length ? variables.map((item) => `${escapeHtml(item.name)} = ${escapeHtml(item.defaultValue || "")}`).join("<br>") : "—"}</dd></div>
+        <div><dt>${tr("依赖", "Dependencies")}</dt><dd>${dependencies.length ? dependencies.map((item) => escapeHtml(item.name || "")).join(" / ") : "—"}</dd></div>
+      </dl>
+      <h2>${tr("完整 Prompt", "Full Prompt")}</h2>
+      <pre class="prompt-output">${escapeHtml(content.prompt)}</pre>
+      ${content.negativePrompt ? `<h2>${tr("负面 Prompt", "Negative Prompt")}</h2><pre class="prompt-output compact">${escapeHtml(content.negativePrompt)}</pre>` : ""}
+      ${content.instructions ? `<h2>${tr("使用说明", "Instructions")}</h2><p class="review-copy">${escapeHtml(content.instructions)}</p>` : ""}
+    </div>`;
+}
+
+async function createHandoffDraft(claim, content = claim.content, payloadHash = claim.payloadHash) {
+  const response = await fetch(HANDOFF_DRAFT_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${state.session.access_token}`,
+      "apikey": window.ZaiyeSupabase.config.publishableKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      protocolVersion: 1,
+      requestId: claim.requestId,
+      handoffId: claim.handoffId,
+      publicationMode: "free_public",
+      targetWorkId: null,
+      payloadHash,
+      content,
+    }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) throw new Error(result.error || `handoff_http_${response.status}`);
+  return result;
+}
+
+async function renderPublishHandoff(handoffId) {
+  if (!state.session) {
+    sessionStorage.setItem("yucangPostLoginPath", `publish/handoff/${handoffId}`);
+    go("login");
+    return;
+  }
+  if (!state.access?.is_creator) {
+    requireCreator();
+    return;
+  }
+  sessionStorage.removeItem("yucangPostLoginPath");
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在从 Prompt Vault 领取本次选择的一条 Prompt…", "Claiming the one selected Prompt from Prompt Vault…")}</p></section>`;
+  try {
+    let claim = state.publishHandoff?.handoffId === handoffId ? state.publishHandoff : null;
+    if (!claim) {
+      claim = await promptVaultPublishBridge.claim(handoffId);
+      state.publishHandoff = claim;
+    }
+    if (claim.expiresAt && new Date(claim.expiresAt).getTime() <= Date.now()) throw new Error("handoff_expired");
+    const content = claim.content;
+    const imageCount = Array.isArray(content.images) ? content.images.length : 0;
+    const imageLabels = imageCount
+      ? content.images.slice(0, 4).map((item, index) => escapeHtml(item?.name || item?.title || `${tr("图片", "Image")} ${index + 1}`)).join("、")
+      : "";
+    app.innerHTML = `
+      <section class="handoff-layout">
+        <div class="panel">${handoffContentMarkup(content)}</div>
+        <aside class="panel sticky-panel handoff-choice">
+          <p class="eyebrow">PROMPT VAULT · SINGLE ITEM HANDOFF</p>
+          <h2>${tr("选择这一次的发布方式", "Choose how to handle this item")}</h2>
+          <p class="lede">${tr("这只是扩展中本次明确选择的一条 Prompt。网站不能浏览你的完整私库。", "This is only the one Prompt you explicitly selected. The website cannot browse your private library.")}</p>
+          <label class="handoff-option"><input type="radio" name="publicationMode" value="private" /><span><strong>${tr("仅自己", "Only me")}</strong><small>${tr("不上传到网站，结束本次交接。", "Do not upload; end this handoff.")}</small></span></label>
+          <label class="handoff-option"><input type="radio" name="publicationMode" value="free_public" checked /><span><strong>${tr("免费公开", "Free public")}</strong><small>${tr("创建发布草稿，随后继续公开预览和二次确认。", "Create a publication draft, then continue to public preview and second confirmation.")}</small></span></label>
+          <label class="handoff-option is-disabled"><input type="radio" name="publicationMode" value="paid" disabled /><span><strong>${tr("付费发布", "Paid")}</strong><small>${tr("MVP 暂未开放", "Not available in the MVP")}</small></span></label>
+          ${imageCount ? `<div class="handoff-media-warning"><strong>${tr(`这条 Prompt 含 ${imageCount} 张图片`, `This Prompt contains ${imageCount} image(s)`)}</strong><p>${imageLabels}${imageCount > 4 ? tr(" 等", " and more") : ""}</p><p>${tr("当前切片尚不支持上传案例图或参考图。图片不会被静默上传或删除。", "This slice does not upload examples or references. Images will not be silently uploaded or deleted.")}</p><label><input type="checkbox" data-exclude-handoff-images /> <span>${tr("我确认本次仅发布文字，不包含图片", "I confirm this publication will include text only, without images")}</span></label></div>` : ""}
+          <div class="actions"><button class="button primary" type="button" data-handoff-continue>${tr("继续", "Continue")}</button><button class="button" type="button" data-handoff-cancel>${tr("取消交接", "Cancel handoff")}</button></div>
+          <p class="handoff-status" data-handoff-status>${tr("在创建网站草稿前，Prompt 仍只存在于扩展本地。", "Before a website draft is created, the Prompt remains only in the extension.")}</p>
+        </aside>
+      </section>`;
+    const status = app.querySelector("[data-handoff-status]");
+    const continueButton = app.querySelector("[data-handoff-continue]");
+    const cancelButton = app.querySelector("[data-handoff-cancel]");
+    const excludeImages = app.querySelector("[data-exclude-handoff-images]");
+    continueButton.addEventListener("click", async () => {
+      const mode = app.querySelector('input[name="publicationMode"]:checked')?.value;
+      setBusy(continueButton, true, mode === "private" ? tr("正在保留…", "Keeping private…") : tr("正在创建草稿…", "Creating draft…"));
+      try {
+        if (mode === "private") {
+          await promptVaultPublishBridge.discard(claim);
+          state.publishHandoff = null;
+          notify(tr("未上传，Prompt 仍只保留在你的扩展中。", "Nothing was uploaded. The Prompt remains only in your extension."));
+          go("my-publications");
+          return;
+        }
+        if (imageCount && !excludeImages.checked) throw new Error("media_confirmation_required");
+        const publicationContent = imageCount ? { ...content, images: [] } : content;
+        const publicationHash = imageCount ? await hashHandoffContent(publicationContent) : claim.payloadHash;
+        const result = await createHandoffDraft(claim, publicationContent, publicationHash);
+        await promptVaultPublishBridge.complete(claim, result);
+        state.publishHandoff = null;
+        notify(tr("发布草稿已创建，请继续检查并生成公开预览。", "Publication draft created. Review it and continue to public preview."));
+        go(`publish/${result.versionId}`);
+      } catch (error) {
+        status.textContent = handoffErrorMessage(error);
+        status.classList.add("error");
+        setBusy(continueButton, false);
+      }
+    });
+    cancelButton.addEventListener("click", async () => {
+      setBusy(cancelButton, true, tr("正在取消…", "Cancelling…"));
+      try {
+        await promptVaultPublishBridge.discard(claim);
+        state.publishHandoff = null;
+        go("home");
+      } catch (error) {
+        status.textContent = handoffErrorMessage(error);
+        status.classList.add("error");
+        setBusy(cancelButton, false);
+      }
+    });
+  } catch (error) {
+    renderError(new Error(handoffErrorMessage(error)), tr("无法继续这次 Prompt 交接", "Unable to continue this Prompt handoff"));
+  }
+}
+
 async function renderEditor(versionId = "") {
   if (!requireCreator()) return;
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在打开发布草稿…", "Opening publication draft…")}</p></section>`;
   try {
-    const record = versionId ? firstRow(await rpc("yucang_get_my_version", { p_version_id: versionId })) : {};
+    const record = versionId ? firstRow(await rpc("yucang_get_my_version_v2", { p_version_id: versionId })) : {};
     if (versionId && !record) throw new Error(tr("没有找到可访问的版本。", "No accessible version was found."));
     if (record?.status && record.status !== "draft") throw new Error(tr("当前版本不处于可编辑 draft 状态。", "The current version is not an editable draft."));
     app.innerHTML = editorMarkup(record || {});
@@ -1018,6 +1184,8 @@ function snapshotDetail(view, { includePrompt = true } = {}) {
       <div><dt>${tr("参数", "Parameters")}</dt><dd>${escapeHtml(formatKeyValueLines(view.parameters) || "—").replaceAll("\n", "<br>")}</dd></div>
       <div><dt>${tr("标签", "Tags")}</dt><dd><span class="tag-list">${(view.tags || []).map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("") || "—"}</span></dd></div>
       <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(view.license_code))}</dd></div>
+      ${view.negative_prompt_text ? `<div><dt>${tr("负面 Prompt", "Negative Prompt")}</dt><dd>${escapeHtml(view.negative_prompt_text)}</dd></div>` : ""}
+      ${view.instructions ? `<div><dt>${tr("使用说明", "Instructions")}</dt><dd>${escapeHtml(view.instructions)}</dd></div>` : ""}
     </dl>
     ${includePrompt ? `<h2 style="margin-top:30px">${tr("完整 Prompt", "Full Prompt")}</h2><pre class="prompt-output">${escapeHtml(view.prompt_text)}</pre>` : ""}`;
 }
@@ -1348,7 +1516,7 @@ async function renderSubmission(submissionId) {
 }
 
 async function renderRoute() {
-  const [section, id] = routeParts();
+  const [section, id, childId] = routeParts();
   state.homeOrbitCleanup?.();
   state.homeOrbitCleanup = null;
   const homeRoute = section === "home" || section === "login";
@@ -1363,6 +1531,7 @@ async function renderRoute() {
   if (section === "discover") return renderDiscover();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
+  if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
   if (section === "publish" && id === "new") return renderEditor();
   if (section === "publish" && id) return renderEditor(id);
   if (section === "preview" && id) return renderPreview(id);

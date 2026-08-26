@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.yucang-website-session-token]
 verify_jwt = false
+
+[functions.yucang-create-handoff-draft]
+verify_jwt = false
