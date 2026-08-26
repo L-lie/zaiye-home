@@ -87,10 +87,21 @@ Deno.serve(async (request) => {
           position: media.position,
         });
       }
-      const { error: manifestError } = await admin
-        .from("yucang_version_media")
-        .upsert(manifest, { onConflict: "version_id,position" });
-      if (manifestError) throw new HandoffError(500, "media_manifest_failed", "Unable to attach publication media.");
+      const { data: attachedCount, error: manifestError } = await admin.rpc("yucang_attach_version_media", {
+        p_author_id: userData.user.id,
+        p_version_id: row.version_id,
+        p_manifest: manifest.map(({ version_id: _versionId, author_id: _authorId, ...item }) => item),
+      });
+      if (manifestError || Number(attachedCount) !== manifest.length) {
+        console.error("publication media manifest failed", {
+          code: manifestError?.code || "count_mismatch",
+          details: manifestError?.details || "",
+          expected: manifest.length,
+          actual: Number(attachedCount),
+        });
+        await admin.storage.from("yucang-publication-media").remove(manifest.map((item) => item.storage_path));
+        throw new HandoffError(500, "media_manifest_failed", "Unable to attach publication media.");
+      }
     }
     const status = row.result_status === "already_created" ? "already_created" : "created";
     return json(status === "created" ? 201 : 200, {

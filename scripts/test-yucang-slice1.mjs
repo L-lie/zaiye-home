@@ -18,6 +18,10 @@ const html = readFileSync(join(root, "yucang/index.html"), "utf8");
 const loginExperience = readFileSync(join(root, "auth/login-experience.js"), "utf8");
 const resources = JSON.parse(readFileSync(join(root, "prompt-vault-resources.json"), "utf8"));
 
+assert(app.includes("确认并立即发布"), "frozen preview must publish immediately after confirmation");
+assert(app.includes("进入公开提示词库"), "successful publication must report public visibility");
+assert(!app.includes("我确认以上全部内容将作为冻结的待审核版本提交"), "manual-review confirmation copy must be removed");
+
 const requiredTables = [
   "yucang_creator_profiles",
   "yucang_creator_grants",
@@ -110,6 +114,7 @@ assert.match(resourceCardSource, /event\.stopPropagation\(\)/);
 assert.doesNotMatch(resourceCardSource, /item\.model/);
 assert.doesNotMatch(resourceCardSource, /<strong>\$\{tr\("打开"/);
 assert.match(html, /id="accountDrawer" class="account-drawer"/);
+assert.match(html, /class="app-workspace"[\s\S]*id="app"[\s\S]*id="accountDrawer"/);
 assert.match(app, /data-account-drawer-toggle/);
 assert.match(app, /function setAccountDrawer\(open\)/);
 assert.match(app, /function renderAccountDrawer\(\)/);
@@ -138,6 +143,9 @@ assert.match(appCss, /\.resource-detail-overview\.has-image \{ grid-template-are
 assert.doesNotMatch(appCss, /\.resource-featured-image \{[^}]*position:\s*sticky/);
 assert.doesNotMatch(appCss, /body\.account-drawer-open \{[^}]*padding-right/);
 assert.doesNotMatch(appCss, /\.route-home\.account-drawer-open \.app-header/);
+assert.match(appCss, /\.app-workspace \{[^}]*grid-template-columns: minmax\(0, 1fr\) 0/);
+assert.match(appCss, /\.account-drawer-open \.app-workspace \{[^}]*grid-template-columns: minmax\(0, 1fr\) var\(--account-drawer-width\)/);
+assert.match(appCss, /\.account-drawer \{[^}]*position: sticky/);
 assert.match(appCss, /\.resource-detail-head h1 \{[^}]*font-size: clamp\(30px, 3vw, 46px\)/);
 assert.match(appCss, /\.resource-prompt-output \{[^}]*max-height: none;[^}]*overflow: visible;/);
 assert.match(appCss, /\.resource-detail-copy \{[^}]*grid-area: info;/);

@@ -10,13 +10,13 @@
     <title>语藏 · Prompt Community</title>
     <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
     <link rel="stylesheet" href="../auth/login-experience.css" />
-    <link rel="stylesheet" href="app.css?v=20260826-ui2" />
+    <link rel="stylesheet" href="app.css?v=20260827-cardsidebar1" />
     <link rel="stylesheet" href="account-profile.css?v=20260826-profile1" />
     <link rel="stylesheet" href="interactions.css?v=20260827-interactions1" />
     <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="../supabase-config.js" defer></script>
     <script src="../supabase-client.js" defer></script>
-    <script type="module" src="app.js?v=20260827-interactions1"></script>
+    <script type="module" src="app.js?v=20260827-cardsidebar1"></script>
   </head>
   <body>
     <header class="app-header">
@@ -38,14 +38,16 @@
       </div>
     </header>
 
-    <main id="app" class="app-main" tabindex="-1">
-      <section class="loading-state" aria-live="polite">
-        <span class="spinner"></span>
-        <p>正在进入语藏…</p>
-      </section>
-    </main>
+    <div class="app-workspace">
+      <main id="app" class="app-main" tabindex="-1">
+        <section class="loading-state" aria-live="polite">
+          <span class="spinner"></span>
+          <p>正在进入语藏…</p>
+        </section>
+      </main>
 
-    <aside id="accountDrawer" class="account-drawer" aria-label="我的" aria-hidden="true" hidden></aside>
+      <aside id="accountDrawer" class="account-drawer" aria-label="我的" aria-hidden="true" hidden></aside>
+    </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 

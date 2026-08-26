@@ -127,7 +127,9 @@ assert.equal(sent[2].message.action, "discard");
 
 const migration = read("supabase/migrations/20260826000100_yucang_publish_handoff.sql")
   + read("supabase/migrations/20260826000200_yucang_handoff_rate_guard.sql")
-  + read("supabase/migrations/20260826000600_yucang_publication_media.sql");
+  + read("supabase/migrations/20260826000600_yucang_publication_media.sql")
+  + read("supabase/migrations/20260827000100_yucang_media_manifest_rpc.sql")
+  + read("supabase/migrations/20260827000200_yucang_auto_publish.sql");
 for (const required of [
   "private.yucang_handoff_receipts",
   "unique (author_id, handoff_id)",
@@ -144,6 +146,11 @@ for (const required of [
   "yucang-publication-media",
   "yucang_version_media",
   "yucang_can_access_version_media",
+  "private.yucang_attach_version_media",
+  "grant execute on function private.yucang_attach_version_media",
+  "to service_role",
+  "auto_publish_after_confirmation",
+  "post_publication",
 ]) assert.ok(migration.includes(required), `migration missing ${required}`);
 assert.ok(migration.indexOf("return query select 'already_created'") < migration.indexOf("raise exception 'rate_limited'"), "idempotent replay must be checked before rate limiting");
 assert.ok(!migration.includes("private_notebooks"), "handoff must not touch the private sync domain");
@@ -154,6 +161,8 @@ assert.ok(edge.includes('client.auth.getUser(token)'));
 assert.ok(edge.includes('known === "rate_limited" ? 429'));
 assert.ok(edge.includes("client.auth.getUser(token)"), "the user must be authenticated before privileged media storage is used");
 assert.ok(edge.includes("SUPABASE_SERVICE_ROLE_KEY"), "private publication media must be stored by the controlled server boundary");
+assert.ok(edge.includes('admin.rpc("yucang_attach_version_media"'), "media manifest must use the service-only idempotent RPC");
+assert.ok(edge.includes('remove(manifest.map((item) => item.storage_path))'), "failed media attachment must clean up uploaded objects");
 assert.ok(!edge.includes("prompt: row"), "server response must not echo Prompt content");
 const mediaEdge = read("supabase/functions/yucang-version-media/index.ts");
 assert.ok(mediaEdge.includes("yucang_can_access_version_media"));

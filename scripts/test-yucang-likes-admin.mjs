@@ -26,5 +26,12 @@ assert.ok(app.includes("yucang_toggle_like"), "likes must use the database RPC")
 assert.ok(app.includes("yucang_admin_set_work_restricted"), "admin restriction must use the database RPC");
 assert.ok(css.includes(".resource-hover-tools"));
 assert.ok(css.includes(".resource-category-badge"));
+assert.match(css, /\.resource-like \{[^}]*top: 10px; right: 10px/);
+assert.match(css, /\.resource-hover-tools \{[^}]*opacity: 0/);
+assert.match(css, /\.resource-card:hover \.resource-hover-tools/);
+assert.match(css, /\.resource-category-badge \{[^}]*background: rgba\(13,14,13,\.58\)/);
+const imageCard = app.slice(app.indexOf("function renderResourceCard"), app.indexOf("async function hydrateResourceLikes"));
+assert.match(imageCard, /\$\{image \? "" : `<div class="resource-card-copy">/);
+assert.match(imageCard, /class="resource-like"[\s\S]*class="resource-hover-tools"/);
 
 console.log("Yucang likes and admin controls contract tests passed.");

@@ -1203,7 +1203,7 @@ async function hydrateCommunityShelf() {
     const items = await rpc("yucang_list_public_works");
     if (!items.length || !shelf.isConnected) return;
     shelf.innerHTML = `
-      <div class="section-head"><div><h2>${tr("社区公开作品", "Community Works")}</h2><p>${tr("已经通过审核的创作者作品", "Creator works that passed review")}</p></div></div>
+      <div class="section-head"><div><h2>${tr("社区公开作品", "Community Works")}</h2><p>${tr("创作者确认发布的公开作品", "Public works confirmed by their creators")}</p></div></div>
       <div class="card-grid">${items.map(renderWorkCard).join("")}</div>`;
     shelf.hidden = false;
   } catch (error) {
@@ -1224,17 +1224,17 @@ function renderResourceCard(item) {
     <article class="resource-card${image ? " has-image" : ""}">
       <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
         ${image}
-        <div class="resource-card-copy">
-        ${image ? "" : `<div class="resource-card-meta"><span>${escapeHtml(resourceCategoryLabel(item.category))}</span></div>`}
+        ${image ? "" : `<div class="resource-card-copy">
+        <div class="resource-card-meta"><span>${escapeHtml(resourceCategoryLabel(item.category))}</span></div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
         <footer><span>${escapeHtml((item.tags || []).slice(0, 2).join(" / "))}</span></footer>
-        </div>
+        </div>`}
       </a>
       ${image ? `<span class="resource-category-badge">${escapeHtml(resourceCategoryLabel(item.category))}</span>
+      <button class="resource-like" type="button" data-like-resource="${escapeHtml(resourceKey)}" title="${tr("点赞", "Like")}" aria-label="${tr("点赞", "Like")}">♡ <span>0</span></button>
       <div class="resource-hover-tools">
         <span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>
-        <button class="resource-like" type="button" data-like-resource="${escapeHtml(resourceKey)}" title="${tr("点赞", "Like")}" aria-label="${tr("点赞", "Like")}">♡ <span>0</span></button>
         <button type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
         <button type="button" data-copy-resource="${escapeHtml(item.id)}" title="${tr("复制 Prompt", "Copy Prompt")}" aria-label="${tr("复制 Prompt", "Copy Prompt")}">⧉</button>
       </div>` : `<button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
@@ -1337,8 +1337,8 @@ function editorMarkup(record = {}) {
       <p class="eyebrow">CREATOR STUDIO · ${record.version_id ? `V${record.version_no}` : "NEW"}</p>
       <h1>${record.version_id ? tr("编辑发布草稿", "Edit publication draft") : tr("新建公开作品", "Create public work")}</h1>
       <p class="lede">${tr(
-        "保存只进入发布流程域。只有公开预览、二次确认并审核通过后，作品才会出现在发现页。",
-        "Saving only creates publication-process data. A work appears in Discover only after preview, second confirmation, and approval.",
+        "保存只进入发布流程域。完成公开预览并再次确认后，作品会立即出现在发现页；违规内容可在发布后被限制访问。",
+        "Saving only creates publication-process data. After preview and second confirmation, the work appears in Discover immediately; violating content may be restricted afterward.",
       )}</p>
       <form id="workEditor" class="form-grid" data-version-id="${escapeHtml(record.version_id || "")}" data-work-id="${escapeHtml(record.work_id || "")}" data-revision="${Number(record.revision || 1)}">
         <label class="field full"><span>${tr("标题", "Title")} *</span><input name="title" maxlength="120" required value="${escapeHtml(record.title || "")}" /></label>
@@ -1632,12 +1632,12 @@ async function renderPreview(versionId) {
         <label class="confirm-box">
           <input type="checkbox" data-confirm-publish />
           <span>${tr(
-            "我确认以上全部内容将作为冻结的待审核版本提交。审核期间不能直接修改；只有审核通过后才会公开。",
-            "I confirm that all content above will be submitted as a frozen version for review. It cannot be edited during review and becomes public only after approval.",
+            "我确认以上全部内容将作为不可变公开版本立即发布。发布后如有违规，可由平台限制访问。",
+            "I confirm that all content above will be published immediately as an immutable public version. The platform may restrict it later for violations.",
           )}</span>
         </label>
         <div class="actions">
-          <button class="button primary" type="button" data-submit-review disabled>${tr("确认并提交审核", "Confirm & submit")}</button>
+          <button class="button primary" type="button" data-submit-review disabled>${tr("确认并立即发布", "Confirm & publish")}</button>
           <a class="button" href="#/publish/${encodeURIComponent(versionId)}">${tr("返回修改", "Back to edit")}</a>
         </div>
       </section>`;
@@ -1645,13 +1645,13 @@ async function renderPreview(versionId) {
     const button = app.querySelector("[data-submit-review]");
     checkbox.addEventListener("change", () => { button.disabled = !checkbox.checked; });
     button.addEventListener("click", async () => {
-      setBusy(button, true, tr("正在冻结并提交…", "Freezing and submitting…"));
+      setBusy(button, true, tr("正在冻结并发布…", "Freezing and publishing…"));
       try {
         await rpc("yucang_submit_for_review", {
           p_version_id: versionId,
           p_expected_hash: preview.content_hash,
         });
-        notify(tr("已提交审核，版本内容现已冻结。", "Submitted for review. The version is now frozen."));
+        notify(tr("已发布。版本内容现已冻结，并进入公开提示词库。", "Published. The version is now immutable and visible in the public library."));
         go("my-publications");
       } catch (error) {
         notify(error.message);
@@ -1675,7 +1675,7 @@ async function renderMyPublications() {
           <article class="table-row">
             <div><span class="status">${escapeHtml(item.version_status)}</span><h3>${escapeHtml(item.title || tr("未命名草稿", "Untitled draft"))}</h3><p>v${item.version_no} · ${escapeHtml(item.summary || tr("暂无简介", "No description"))} · ${formatDate(item.updated_at)}</p></div>
             <div class="actions" style="margin:0">
-              ${item.version_status === "draft" ? `<a class="button" href="#/publish/${item.version_id}">${tr("编辑", "Edit")}</a><a class="button primary" href="#/preview/${item.version_id}">${tr("预览提交", "Preview & submit")}</a>` : ""}
+              ${item.version_status === "draft" ? `<a class="button" href="#/publish/${item.version_id}">${tr("编辑", "Edit")}</a><a class="button primary" href="#/preview/${item.version_id}">${tr("预览并发布", "Preview & publish")}</a>` : ""}
               ${item.version_status === "pending_review" ? `<button class="button" type="button" data-withdraw="${item.version_id}">${tr("撤回审核", "Withdraw review")}</button>` : ""}
               ${item.version_status === "changes_requested" ? `<button class="button" type="button" data-reopen="${item.version_id}">${tr("继续修改", "Continue editing")}</button>` : ""}
               ${item.version_status === "approved" && item.current_public_version_id === item.version_id ? `<a class="button" href="#/prompt/${item.work_id}">${tr("查看公开页", "View public page")}</a>` : ""}
@@ -1895,8 +1895,8 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
     }
     const item = firstRow(await rpc("yucang_get_public_work", { p_work_id: workId }));
     if (!item) throw new Error(tr(
-      "作品不存在、尚未审核通过或当前不可公开访问。",
-      "This work does not exist, is not approved, or is not publicly accessible.",
+      "作品不存在、尚未公开或当前不可公开访问。",
+      "This work does not exist, is not public, or is not publicly accessible.",
     ));
     const variables = normalizeVariables(item.variables);
     const images = await loadVersionMedia(item.version_id);
