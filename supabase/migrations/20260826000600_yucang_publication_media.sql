@@ -56,7 +56,7 @@ as $$
 $$;
 
 create or replace function public.yucang_get_version_media_manifest(p_version_id uuid)
-returns table (storage_path text, mime_type text, byte_size integer, position smallint)
+returns table (storage_path text, mime_type text, byte_size integer, media_position smallint)
 language plpgsql
 stable
 security definer
