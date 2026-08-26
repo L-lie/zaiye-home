@@ -162,10 +162,29 @@ function publicPromptUrl(workId) {
   return `https://zaiye.art/yucang/#/prompt/${encodeURIComponent(workId)}`;
 }
 
-function officialPromptPayload(item) {
+function publicAssetUrl(value) {
+  if (!value) return "";
+  try {
+    return new URL(value, `${location.origin}${location.pathname}`).toString();
+  } catch {
+    return "";
+  }
+}
+
+function resolvedOfficialPrompt(item) {
+  const variables = officialResourceVariables(item);
+  const values = Object.fromEntries(variables.map((entry) => [
+    entry.name,
+    entry.defaultValue || `@${entry.name}`,
+  ]));
+  return renderPromptTemplate(item.prompt, variables, values);
+}
+
+function officialPromptPayload(item, prompt = resolvedOfficialPrompt(item)) {
   return {
     title: item.title,
-    prompt: item.prompt,
+    prompt,
+    image: publicAssetUrl(item.featuredImage),
     project: tr("语藏站方精选", "Yucang Official Picks"),
     category: item.category || "",
     type: item.type || item.category || "scene",
@@ -1625,7 +1644,10 @@ function renderOfficialResource(item) {
     output: app.querySelector("[data-final-prompt]"),
     copyButton: app.querySelector("[data-copy-prompt]"),
   });
-  bindPromptVaultButtons(app, () => officialPromptPayload(item));
+  bindPromptVaultButtons(app, () => officialPromptPayload(
+    item,
+    app.querySelector("[data-final-prompt]")?.textContent || resolvedOfficialPrompt(item),
+  ));
 }
 
 async function renderPublicPrompt(workId) {

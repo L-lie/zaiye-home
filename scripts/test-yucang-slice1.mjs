@@ -127,6 +127,8 @@ assert.match(app, /resource-detail-overview\$\{item\.featuredImage \? " has-imag
 assert.match(appCss, /\.resource-detail-overview\.has-image \{ grid-template-columns: minmax\(320px/);
 assert.match(appCss, /@media \(max-width: 860px\)[\s\S]*\.resource-detail-overview\.has-image \{ grid-template-columns: 1fr; \}/);
 assert.match(app, /bindPromptTool/);
+assert.match(app, /image: publicAssetUrl\(item\.featuredImage\)/);
+assert.match(app, /app\.querySelector\("\[data-final-prompt\]"\)\?\.textContent/);
 assert.match(app, /HOME_FEATURED_ART/);
 const featuredPromptIds = [...app.matchAll(/src: "assets\/featured\/[^"]+", promptId: "([^"]+)"/g)].map((match) => match[1]);
 assert.equal(featuredPromptIds.length, 12, "homepage must link all 12 featured images");
