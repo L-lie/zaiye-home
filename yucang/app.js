@@ -471,7 +471,7 @@ function bindWebsiteLogin(root) {
     sessionStorage.setItem(pendingAuthMethodKey, button.dataset.oauth);
     const { error } = await getClient().auth.signInWithOAuth({
       provider: button.dataset.oauth,
-      options: { redirectTo: `${location.origin}${location.pathname}#/${encodeURI(sessionStorage.getItem("yucangPostLoginPath") || "home")}` },
+      options: { redirectTo: `${location.origin}${location.pathname}` },
     });
     if (error) {
       sessionStorage.removeItem(pendingAuthMethodKey);
@@ -1723,9 +1723,11 @@ async function initialize() {
     if (error) throw error;
     state.session = data.session;
     const pendingAuthMethod = sessionStorage.getItem("yucangPendingAuthMethod") || "";
+    let oauthReturnPath = "";
     if (state.session && ["github", "google"].includes(pendingAuthMethod)) {
       localStorage.setItem("yucangLastAuthMethod", pendingAuthMethod);
       sessionStorage.removeItem("yucangPendingAuthMethod");
+      oauthReturnPath = postLoginPath();
     }
     if (!state.session) {
       const extensionSession = await promptVaultWebsiteAuthBridge.signInFromExtension();
@@ -1741,6 +1743,9 @@ async function initialize() {
     await loadAccess();
     state.authReady = true;
     renderHeader();
+    if (oauthReturnPath) {
+      history.replaceState(null, "", `${location.pathname}${location.search}#/${oauthReturnPath.replace(/^\//, "")}`);
+    }
     client.auth.onAuthStateChange((_event, session) => {
       state.session = session;
       setTimeout(async () => {
