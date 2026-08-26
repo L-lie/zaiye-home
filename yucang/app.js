@@ -26,6 +26,7 @@ import {
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
+const accountDrawer = document.getElementById("accountDrawer");
 const toast = document.getElementById("toast");
 const localeToggle = document.querySelector("[data-locale-toggle]");
 const promptVaultBridge = createPromptVaultBridge();
@@ -355,6 +356,7 @@ function renderHeader() {
   });
 
   if (!state.session) {
+    setAccountDrawer(false);
     accountActions.innerHTML = `<a class="button ghost" href="#/login">${tr("登录", "Sign in")}</a>`;
     return;
   }
@@ -363,12 +365,16 @@ function renderHeader() {
     avatarUrl: state.session.user.user_metadata?.avatar_url || state.session.user.user_metadata?.picture || "",
   };
   accountActions.innerHTML = `
-    <a class="account-profile-button" href="#/my" title="${tr("进入我的", "Open My account")}">
+    <button class="account-profile-button" type="button" data-account-drawer-toggle aria-expanded="${String(document.body.classList.contains("account-drawer-open"))}" aria-controls="accountDrawer" title="${tr("打开我的", "Open My account")}">
       ${profileAvatarMarkup(profile, state.locale)}
       <span class="account-copy">
         <strong>${escapeHtml(profile.nickname)}</strong>
       </span>
-    </a>`;
+    </button>`;
+  accountActions.querySelector("[data-account-drawer-toggle]").addEventListener("click", () => {
+    setAccountDrawer(!document.body.classList.contains("account-drawer-open"));
+  });
+  renderAccountDrawer();
 }
 
 function openProfileEditorFromAccount() {
@@ -385,49 +391,55 @@ function openProfileEditorFromAccount() {
       state.profile = saved;
       if (state.access) state.access.nickname = saved.nickname;
       renderHeader();
-      await renderMyAccount();
+      renderAccountDrawer();
       notify(tr("账号资料已更新。", "Account profile updated."));
     },
   });
 }
 
-async function renderMyAccount() {
-  if (!requireLogin()) return;
+function setAccountDrawer(open) {
+  const visible = Boolean(open && state.session);
+  document.body.classList.toggle("account-drawer-open", visible);
+  accountDrawer.hidden = !visible;
+  accountDrawer.setAttribute("aria-hidden", String(!visible));
+  accountActions.querySelector("[data-account-drawer-toggle]")?.setAttribute("aria-expanded", String(visible));
+}
+
+function renderAccountDrawer() {
+  if (!state.session) {
+    accountDrawer.innerHTML = "";
+    setAccountDrawer(false);
+    return;
+  }
   const profile = state.profile || {
     nickname: state.access?.nickname || state.session.user.email || tr("已登录", "Signed in"),
     avatarUrl: "",
   };
-  app.innerHTML = `
-    <section class="my-account-page">
-      <header class="my-account-header">
+  accountDrawer.innerHTML = `
+    <div class="account-drawer-head">
+      <strong>${tr("我的", "My Yucang")}</strong>
+      <button class="icon-button" type="button" data-account-drawer-close aria-label="${tr("收起我的侧栏", "Close account drawer")}">×</button>
+    </div>
+    <div class="account-drawer-body">
+      <header class="account-drawer-profile">
         ${profileAvatarMarkup(profile, state.locale, true)}
-        <div><p class="eyebrow">MY YUCANG</p><h1>${escapeHtml(profile.nickname)}</h1><p>${escapeHtml(state.session.user.email || "")}</p></div>
-        <button class="button" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
+        <div><h2>${escapeHtml(profile.nickname)}</h2><p>${escapeHtml(state.session.user.email || "")}</p></div>
       </header>
-      <div class="my-account-grid">
-        <a class="my-account-card" href="#/my-publications">
-          <span>${tr("创作管理", "Creator workspace")}</span>
-          <h2>${tr("我的发布", "My publications")}</h2>
-          <p>${tr("查看草稿、审核进度和已公开版本。", "See drafts, review progress, and published versions.")}</p>
-        </a>
-        <a class="my-account-card" href="#/ai-service">
-          <span>${tr("账号服务", "Account service")}</span>
-          <h2>${tr("AI 服务", "AI service")}</h2>
-          <p>${tr("查看托管 AI 的价格公示、BYOK 与安全边界。", "View hosted AI pricing, BYOK, and security boundaries.")}</p>
-        </a>
-        ${state.access?.is_creator ? `<div class="my-account-card my-account-actions-card">
-          <span>${tr("发布入口", "Publishing")}</span>
-          <h2>${tr("发布 Prompt", "Publish a Prompt")}</h2>
-          <p>${tr("建议先在 Prompt Vault 中整理后分享；也可以在网站直接新建。", "Sharing from Prompt Vault is recommended; direct website creation remains available.")}</p>
-          <div class="actions"><a class="button primary" href="../prompt-vault.html">${tr("打开 Prompt Vault", "Open Prompt Vault")}</a><a class="button ghost" href="#/publish/new">${tr("网站新建", "Create on website")}</a></div>
-        </div>` : ""}
-      </div>
-      <footer class="my-account-footer">
+      <button class="button account-drawer-edit" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
+      <nav class="account-drawer-nav" aria-label="${tr("我的功能", "My account sections")}">
+        <a href="#/my-publications"><span>${tr("创作管理", "Creator workspace")}</span><strong>${tr("我的发布", "My publications")}</strong></a>
+        <a href="#/ai-service"><span>${tr("账号服务", "Account service")}</span><strong>${tr("AI 服务", "AI service")}</strong></a>
+        ${state.access?.is_creator ? `<a href="#/publish/new"><span>${tr("发布入口", "Publishing")}</span><strong>${tr("网站新建 Prompt", "Create Prompt on website")}</strong></a>` : ""}
+        <a href="../prompt-vault.html"><span>Prompt Vault</span><strong>${tr("打开扩展介绍", "Open extension page")}</strong></a>
+      </nav>
+      <footer class="account-drawer-footer">
         <button class="button ghost" type="button" data-sign-out>${tr("退出当前账号", "Sign out of this account")}</button>
       </footer>
-    </section>`;
-  app.querySelector("[data-edit-profile]").addEventListener("click", openProfileEditorFromAccount);
-  app.querySelector("[data-sign-out]").addEventListener("click", async () => {
+    </div>`;
+  accountDrawer.querySelector("[data-account-drawer-close]").addEventListener("click", () => setAccountDrawer(false));
+  accountDrawer.querySelector("[data-edit-profile]").addEventListener("click", openProfileEditorFromAccount);
+  accountDrawer.querySelector("[data-sign-out]").addEventListener("click", async () => {
+    setAccountDrawer(false);
     await getClient().auth.signOut();
     go("home");
   });
@@ -1567,18 +1579,22 @@ function renderOfficialResource(item) {
   app.innerHTML = `
     <section class="resource-detail-head">
       <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
-      ${item.featuredImage ? `<figure class="resource-featured-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)}" /></figure>` : ""}
-      <div class="detail-meta">
-        <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
-        <span class="pill">${tr("站方模板", "Official template")}</span>
+      <div class="resource-detail-overview${item.featuredImage ? " has-image" : ""}">
+        ${item.featuredImage ? `<figure class="resource-featured-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)}" /></figure>` : ""}
+        <div class="resource-detail-copy">
+          <div class="detail-meta">
+            <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
+            <span class="pill">${tr("站方模板", "Official template")}</span>
+          </div>
+          <h1>${escapeHtml(item.title)}</h1>
+          <p>${escapeHtml(item.summary)}</p>
+          <dl class="resource-facts">
+            <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml(item.model || tr("通用模型", "General model"))}</dd></div>
+            <div><dt>${tr("来源", "Source")}</dt><dd>${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</dd></div>
+            <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
+          </dl>
+        </div>
       </div>
-      <h1>${escapeHtml(item.title)}</h1>
-      <p>${escapeHtml(item.summary)}</p>
-      <dl class="resource-facts">
-        <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml(item.model || tr("通用模型", "General model"))}</dd></div>
-        <div><dt>${tr("来源", "Source")}</dt><dd>${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</dd></div>
-        <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
-      </dl>
     </section>
     <section class="resource-use-layout">
       <div class="resource-variable-panel">
@@ -1776,7 +1792,11 @@ async function renderRoute() {
   app.focus({ preventScroll: true });
   if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
-  if (section === "my") return renderMyAccount();
+  if (section === "my") {
+    if (!requireLogin()) return;
+    setAccountDrawer(true);
+    return renderHome();
+  }
   if (section === "ai-service") return renderAiService();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
