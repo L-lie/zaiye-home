@@ -1,4 +1,6 @@
 .account-profile-button { display: inline-flex; gap: 9px; align-items: center; padding: 4px; border: 0; color: inherit; background: transparent; cursor: pointer; }
+.account-profile-button:hover .account-copy strong { color: var(--accent-strong); }
+.account-profile-button:focus-visible { outline: 3px solid rgba(213,166,91,.25); outline-offset: 4px; border-radius: 10px; }
 .account-avatar { display: grid; place-items: center; flex: 0 0 auto; width: 38px; height: 38px; overflow: hidden; border: 1px solid var(--line); border-radius: 50%; object-fit: cover; background: var(--panel-strong); }
 .account-avatar.fallback { color: var(--accent-strong); font-weight: 800; }
 .account-avatar.large { width: 88px; height: 88px; font-size: 26px; }

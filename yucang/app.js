@@ -104,15 +104,11 @@ function updateStaticLocale() {
   const navLabels = {
     home: tr("首页", "Home"),
     discover: tr("提示词库", "Prompt Library"),
-    "ai-service": tr("AI 服务", "AI Service"),
   };
   Object.entries(navLabels).forEach(([key, label]) => {
     const link = document.querySelector(`[data-nav="${key}"]`);
     if (link) link.textContent = label;
   });
-  const creatorLinks = [...document.querySelectorAll("[data-creator-link]")];
-  if (creatorLinks[0]) creatorLinks[0].textContent = tr("新建作品", "Create");
-  if (creatorLinks[1]) creatorLinks[1].textContent = tr("我的发布", "My Works");
   const staffLink = document.querySelector("[data-staff-link]");
   if (staffLink) staffLink.textContent = tr("审核", "Review");
   const vaultLink = document.querySelector("[data-prompt-vault-link]");
@@ -354,9 +350,6 @@ async function loadProfile() {
 }
 
 function renderHeader() {
-  document.querySelectorAll("[data-creator-link]").forEach((item) => {
-    item.hidden = !state.access?.is_creator;
-  });
   document.querySelectorAll("[data-staff-link]").forEach((item) => {
     item.hidden = !(state.access?.is_admin || state.access?.is_reviewer);
   });
@@ -370,29 +363,71 @@ function renderHeader() {
     avatarUrl: state.session.user.user_metadata?.avatar_url || state.session.user.user_metadata?.picture || "",
   };
   accountActions.innerHTML = `
-    <button class="account-profile-button" type="button" data-edit-profile title="${tr("编辑昵称和头像", "Edit nickname and avatar")}">
+    <a class="account-profile-button" href="#/my" title="${tr("进入我的", "Open My account")}">
       ${profileAvatarMarkup(profile, state.locale)}
       <span class="account-copy">
         <strong>${escapeHtml(profile.nickname)}</strong>
-        <small>${escapeHtml(state.session.user.email || "")}</small>
       </span>
-    </button>
-    <button class="button ghost" type="button" data-sign-out>${tr("退出", "Sign out")}</button>`;
-  accountActions.querySelector("[data-edit-profile]").addEventListener("click", () => {
-    openAccountProfileEditor({
-      client: getClient(),
-      endpoint: ACCOUNT_PROFILE_ENDPOINT,
-      locale: state.locale,
-      profile,
-      onSaved: async (saved) => {
-        state.profile = saved;
-        if (state.access) state.access.nickname = saved.nickname;
-        renderHeader();
-        notify(tr("账号资料已更新。", "Account profile updated."));
-      },
-    });
+    </a>`;
+}
+
+function openProfileEditorFromAccount() {
+  const profile = state.profile || {
+    nickname: state.access?.nickname || state.session?.user?.email || tr("已登录", "Signed in"),
+    avatarUrl: "",
+  };
+  openAccountProfileEditor({
+    client: getClient(),
+    endpoint: ACCOUNT_PROFILE_ENDPOINT,
+    locale: state.locale,
+    profile,
+    onSaved: async (saved) => {
+      state.profile = saved;
+      if (state.access) state.access.nickname = saved.nickname;
+      renderHeader();
+      await renderMyAccount();
+      notify(tr("账号资料已更新。", "Account profile updated."));
+    },
   });
-  accountActions.querySelector("[data-sign-out]").addEventListener("click", async () => {
+}
+
+async function renderMyAccount() {
+  if (!requireLogin()) return;
+  const profile = state.profile || {
+    nickname: state.access?.nickname || state.session.user.email || tr("已登录", "Signed in"),
+    avatarUrl: "",
+  };
+  app.innerHTML = `
+    <section class="my-account-page">
+      <header class="my-account-header">
+        ${profileAvatarMarkup(profile, state.locale, true)}
+        <div><p class="eyebrow">MY YUCANG</p><h1>${escapeHtml(profile.nickname)}</h1><p>${escapeHtml(state.session.user.email || "")}</p></div>
+        <button class="button" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
+      </header>
+      <div class="my-account-grid">
+        <a class="my-account-card" href="#/my-publications">
+          <span>${tr("创作管理", "Creator workspace")}</span>
+          <h2>${tr("我的发布", "My publications")}</h2>
+          <p>${tr("查看草稿、审核进度和已公开版本。", "See drafts, review progress, and published versions.")}</p>
+        </a>
+        <a class="my-account-card" href="#/ai-service">
+          <span>${tr("账号服务", "Account service")}</span>
+          <h2>${tr("AI 服务", "AI service")}</h2>
+          <p>${tr("查看托管 AI 的价格公示、BYOK 与安全边界。", "View hosted AI pricing, BYOK, and security boundaries.")}</p>
+        </a>
+        ${state.access?.is_creator ? `<div class="my-account-card my-account-actions-card">
+          <span>${tr("发布入口", "Publishing")}</span>
+          <h2>${tr("发布 Prompt", "Publish a Prompt")}</h2>
+          <p>${tr("建议先在 Prompt Vault 中整理后分享；也可以在网站直接新建。", "Sharing from Prompt Vault is recommended; direct website creation remains available.")}</p>
+          <div class="actions"><a class="button primary" href="../prompt-vault.html">${tr("打开 Prompt Vault", "Open Prompt Vault")}</a><a class="button ghost" href="#/publish/new">${tr("网站新建", "Create on website")}</a></div>
+        </div>` : ""}
+      </div>
+      <footer class="my-account-footer">
+        <button class="button ghost" type="button" data-sign-out>${tr("退出当前账号", "Sign out of this account")}</button>
+      </footer>
+    </section>`;
+  app.querySelector("[data-edit-profile]").addEventListener("click", openProfileEditorFromAccount);
+  app.querySelector("[data-sign-out]").addEventListener("click", async () => {
     await getClient().auth.signOut();
     go("home");
   });
@@ -1048,24 +1083,21 @@ function resourceSearchText(item) {
 
 function renderResourceCard(item) {
   const image = item.featuredImage
-    ? `<figure class="resource-card-image"><img src="${escapeHtml(item.featuredImage)}" alt="" loading="lazy" /></figure>`
+    ? `<figure class="resource-card-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)} ${tr("效果图", "example image")}" loading="lazy" decoding="async" /></figure>`
     : "";
   return `
     <article class="resource-card${image ? " has-image" : ""}">
       <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
         ${image}
-        <span class="resource-star" title="${tr("站方精选", "Official pick")}" aria-label="${tr("站方精选", "Official pick")}">★</span>
+        <span class="resource-like" title="${tr("点赞尚未开放", "Likes are not open yet")}" aria-label="${tr("0 个赞", "0 likes")}">♡ 0</span>
         <div class="resource-card-copy">
-        <div class="resource-card-meta">
-          <span>${escapeHtml(resourceCategoryLabel(item.category))}</span>
-          <span>${escapeHtml(item.model || tr("通用模型", "General model"))}</span>
-        </div>
+        <div class="resource-card-meta"><span>${escapeHtml(resourceCategoryLabel(item.category))}</span></div>
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
-        <footer><span>${escapeHtml((item.tags || []).slice(0, 3).join(" / "))}</span><strong>${tr("打开", "Open")}</strong></footer>
+        <footer><span>${escapeHtml((item.tags || []).slice(0, 2).join(" / "))}</span></footer>
         </div>
       </a>
-      <div class="resource-card-actions"><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进扩展", "Save to the extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}">${tr("收藏", "Save")}</button></div>
+      <button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
     </article>`;
 }
 
@@ -1746,7 +1778,8 @@ async function renderRoute() {
   app.focus({ preventScroll: true });
   if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
-  if (section === "ai-service") return renderAiService();
+  if (section === "my") return renderMyAccount();
+  if (section === "ai-service") return requireLogin() && renderAiService();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);

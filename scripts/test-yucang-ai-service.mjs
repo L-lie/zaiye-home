@@ -9,8 +9,9 @@ const html = read("yucang/index.html");
 const css = read("yucang/app.css");
 const pricing = read("YUCANG_HOSTED_AI_PRICING.md");
 
-assert.match(html, /href="#\/ai-service" data-nav="ai-service"/);
-assert.match(app, /section === "ai-service"\) return renderAiService\(\)/);
+assert.doesNotMatch(html, /href="#\/ai-service" data-nav="ai-service"/);
+assert.match(app, /class="my-account-card" href="#\/ai-service"/);
+assert.match(app, /section === "ai-service"\) return requireLogin\(\) && renderAiService\(\)/);
 assert.match(app, /function renderAiService\(\)/);
 assert.match(css, /\.ai-service-page/);
 
