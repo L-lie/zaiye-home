@@ -1,0 +1,146 @@
+.community-discussion {
+  margin-top: 56px;
+  padding-top: 36px;
+  border-top: 1px solid var(--line);
+}
+.community-discussion-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: 22px;
+}
+.community-discussion-head h2 { margin: 0; }
+.community-discussion-head > span { color: var(--muted); font-size: 13px; }
+.interaction-composer {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 30px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(22, 24, 21, .72);
+}
+.interaction-kind { display: flex; flex-wrap: wrap; gap: 8px; }
+.interaction-kind label { cursor: pointer; }
+.interaction-kind input { position: absolute; opacity: 0; pointer-events: none; }
+.interaction-kind span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.interaction-kind input:checked + span {
+  color: #1b150d;
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  font-weight: 750;
+}
+.interaction-kind input:focus-visible + span { outline: 3px solid rgba(213,166,91,.25); outline-offset: 2px; }
+.interaction-input textarea { min-height: 104px; }
+.interaction-submit-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+.interaction-submit-row small { color: var(--muted); }
+.interaction-login-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 28px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+.interaction-login-note p { margin: 0; color: var(--muted); }
+.interaction-threads { display: grid; gap: 12px; }
+.interaction-thread { border: 1px solid var(--line); border-radius: 15px; background: rgba(22,24,21,.52); }
+.interaction-thread:target, .interaction-reply:target { border-color: rgba(213,166,91,.68); box-shadow: 0 0 0 3px rgba(213,166,91,.1); }
+.interaction-thread.is-notification-target, .interaction-reply.is-notification-target {
+  border-color: rgba(213,166,91,.68);
+  box-shadow: 0 0 0 3px rgba(213,166,91,.1);
+}
+.interaction-root { padding: 18px; }
+.interaction-root > p, .interaction-reply > p { margin: 10px 0 0; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+.interaction-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.interaction-meta strong { font-size: 14px; }
+.interaction-meta time { margin-left: auto; color: var(--muted); font-size: 12px; }
+.interaction-badge { padding: 3px 7px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; }
+.interaction-badge.question { color: var(--accent-strong); border-color: rgba(213,166,91,.35); }
+.interaction-badge.author { color: #b9d7c0; border-color: rgba(131,189,132,.32); }
+.interaction-reply-trigger { margin-top: 12px; padding: 0; border: 0; color: var(--accent-strong); background: none; cursor: pointer; font-size: 13px; }
+.interaction-replies { display: grid; gap: 1px; border-top: 1px solid var(--line); background: var(--line); }
+.interaction-reply { padding: 15px 18px 15px 42px; background: #121411; }
+.interaction-inline-reply { padding: 0 18px 18px 42px; }
+.interaction-inline-reply form { display: grid; gap: 9px; }
+.interaction-inline-reply textarea { min-height: 82px; }
+.interaction-inline-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.interaction-empty { padding: 34px 20px; border: 1px dashed var(--line); border-radius: 15px; text-align: center; }
+.interaction-empty p { margin: 0; color: var(--muted); }
+
+.notification-shell { position: relative; }
+.notification-toggle {
+  position: relative;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 54px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+}
+.notification-toggle:hover, .notification-toggle:focus-visible { border-color: rgba(213,166,91,.55); outline: none; }
+.notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+  color: #1b150d;
+  background: var(--accent-strong);
+  font-size: 10px;
+  font-weight: 800;
+}
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 40;
+  width: min(390px, calc(100vw - 28px));
+  max-height: min(560px, calc(100vh - 100px));
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #161815;
+  box-shadow: 0 24px 70px rgba(0,0,0,.52);
+}
+.notification-panel-head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; gap: 15px; align-items: center; padding: 15px 16px; border-bottom: 1px solid var(--line); background: rgba(22,24,21,.97); }
+.notification-panel-head button { padding: 0; border: 0; color: var(--accent-strong); background: transparent; cursor: pointer; font-size: 12px; }
+.notification-list { display: grid; }
+.notification-item { display: grid; gap: 5px; width: 100%; padding: 14px 16px; border: 0; border-bottom: 1px solid var(--line); color: var(--text); background: transparent; cursor: pointer; text-align: left; }
+.notification-item:hover { background: rgba(255,255,255,.035); }
+.notification-item.is-unread { box-shadow: inset 3px 0 var(--accent-strong); background: rgba(213,166,91,.055); }
+.notification-item span { line-height: 1.45; }
+.notification-item small { color: var(--muted); }
+.notification-item em { overflow: hidden; color: #cfcbc0; font-size: 12px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.notification-empty { margin: 0; padding: 30px 18px; color: var(--muted); text-align: center; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+@media (max-width: 720px) {
+  .community-discussion-head, .interaction-login-note, .interaction-submit-row { align-items: stretch; flex-direction: column; }
+  .interaction-meta time { width: 100%; margin-left: 0; }
+  .interaction-reply, .interaction-inline-reply { padding-left: 24px; }
+}

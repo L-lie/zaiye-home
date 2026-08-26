@@ -23,6 +23,10 @@ import {
   openAccountProfileEditor,
   profileAvatarMarkup,
 } from "./account-profile.mjs?v=20260826-profile1";
+import {
+  commentsSectionMarkup,
+  notificationPanelMarkup,
+} from "./interactions.mjs?v=20260827-interactions1";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
@@ -65,6 +69,7 @@ const state = {
   session: null,
   access: null,
   profile: null,
+  notificationUnread: 0,
   authReady: false,
   resources: null,
   homeOrbitCleanup: null,
@@ -396,6 +401,69 @@ async function loadProfile() {
   }
 }
 
+function updateNotificationBadge() {
+  const badge = accountActions.querySelector("[data-notification-count]");
+  const button = accountActions.querySelector("[data-notification-toggle]");
+  if (!badge || !button) return;
+  const count = Number(state.notificationUnread || 0);
+  badge.hidden = count < 1;
+  badge.textContent = count > 99 ? "99+" : String(count);
+  button.setAttribute("aria-label", count
+    ? tr(`${count} 条未读互动通知`, `${count} unread notifications`)
+    : tr("互动通知", "Notifications"));
+}
+
+async function refreshNotificationCount() {
+  if (!state.session) return;
+  try {
+    state.notificationUnread = Number(await rpc("yucang_notification_unread_count")) || 0;
+    updateNotificationBadge();
+  } catch (error) {
+    if (!isSchemaMissing(error)) console.error(error);
+  }
+}
+
+async function toggleNotificationPanel() {
+  const panel = accountActions.querySelector("[data-notification-panel]");
+  const toggle = accountActions.querySelector("[data-notification-toggle]");
+  if (!panel || !toggle) return;
+  if (!panel.hidden) {
+    panel.hidden = true;
+    toggle.setAttribute("aria-expanded", "false");
+    return;
+  }
+  panel.hidden = false;
+  toggle.setAttribute("aria-expanded", "true");
+  panel.innerHTML = `<p class="notification-empty">${tr("正在读取通知…", "Loading notifications…")}</p>`;
+  try {
+    const notifications = (await rpc("yucang_list_notifications", { p_limit: 20 })).map((item) => ({
+      ...item,
+      created_at_label: formatDate(item.created_at),
+    }));
+    panel.innerHTML = notificationPanelMarkup(notifications, state.locale);
+    panel.querySelector("[data-notification-read-all]")?.addEventListener("click", async () => {
+      await rpc("yucang_mark_all_notifications_read");
+      state.notificationUnread = 0;
+      updateNotificationBadge();
+      panel.querySelectorAll(".notification-item.is-unread").forEach((item) => item.classList.remove("is-unread"));
+      panel.querySelector("[data-notification-read-all]")?.remove();
+    });
+    panel.querySelectorAll("[data-notification-id]").forEach((item) => item.addEventListener("click", async () => {
+      if (item.classList.contains("is-unread")) {
+        await rpc("yucang_mark_notification_read", { p_notification_id: item.dataset.notificationId });
+        state.notificationUnread = Math.max(0, state.notificationUnread - 1);
+        updateNotificationBadge();
+      }
+      panel.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      go(`prompt/${item.dataset.notificationWork}/comment/${item.dataset.notificationComment}`);
+    }));
+  } catch (error) {
+    panel.innerHTML = `<p class="notification-empty">${escapeHtml(tr("通知暂时无法读取。", "Notifications are temporarily unavailable."))}</p>`;
+    if (!isSchemaMissing(error)) console.error(error);
+  }
+}
+
 function renderHeader() {
   document.querySelectorAll("[data-staff-link]").forEach((item) => {
     item.hidden = !(state.access?.is_admin || state.access?.is_reviewer);
@@ -411,12 +479,22 @@ function renderHeader() {
     avatarUrl: state.session.user.user_metadata?.avatar_url || state.session.user.user_metadata?.picture || "",
   };
   accountActions.innerHTML = `
+    <div class="notification-shell">
+      <button class="notification-toggle" type="button" data-notification-toggle aria-expanded="false" aria-haspopup="true" aria-label="${tr("互动通知", "Notifications")}">
+        <span>${tr("通知", "Alerts")}</span>
+        <span class="notification-count" data-notification-count hidden>0</span>
+      </button>
+      <div class="notification-panel" data-notification-panel hidden></div>
+    </div>
     <button class="account-profile-button" type="button" data-account-drawer-toggle aria-expanded="${String(document.body.classList.contains("account-drawer-open"))}" aria-controls="accountDrawer" title="${tr("打开我的", "Open My account")}">
       ${profileAvatarMarkup(profile, state.locale)}
       <span class="account-copy">
         <strong>${escapeHtml(profile.nickname)}</strong>
       </span>
     </button>`;
+  accountActions.querySelector("[data-notification-toggle]").addEventListener("click", toggleNotificationPanel);
+  updateNotificationBadge();
+  refreshNotificationCount();
   accountActions.querySelector("[data-account-drawer-toggle]").addEventListener("click", () => {
     setAccountDrawer(!document.body.classList.contains("account-drawer-open"));
   });
@@ -1721,7 +1799,92 @@ function renderOfficialResource(item) {
   ));
 }
 
-async function renderPublicPrompt(workId) {
+async function createCommunityComment(workId, kind, body, parentId = null) {
+  return firstRow(await rpc("yucang_create_comment", {
+    p_work_id: workId,
+    p_kind: kind,
+    p_body: body,
+    p_parent_id: parentId,
+  }));
+}
+
+function bindCommunityDiscussion(workId, focusCommentId = "") {
+  const discussion = app.querySelector("[data-community-discussion]");
+  if (!discussion) return;
+
+  discussion.querySelector("[data-comment-form]")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector("[data-comment-submit]");
+    const body = form.querySelector("[data-comment-body]").value.trim();
+    const kind = form.querySelector('[name="interaction-kind"]:checked')?.value || "comment";
+    if (!body) return;
+    setBusy(button, true, tr("正在发布…", "Posting…"));
+    try {
+      const created = await createCommunityComment(workId, kind, body);
+      notify(kind === "question" ? tr("问题已公开发布。", "Question posted publicly.") : tr("评论已发布。", "Comment posted."));
+      await renderPublicPrompt(workId, created?.comment_id || "");
+    } catch (error) {
+      notify(/rate_limited/i.test(error.message || "")
+        ? tr("发布太频繁，请稍后再试。", "You are posting too quickly. Try again shortly.")
+        : error.message);
+      setBusy(button, false);
+    }
+  });
+
+  discussion.querySelectorAll("[data-reply-to]").forEach((trigger) => trigger.addEventListener("click", () => {
+    const parentId = trigger.dataset.replyTo;
+    const slot = discussion.querySelector(`[data-reply-form-for="${CSS.escape(parentId)}"]`);
+    if (!slot) return;
+    discussion.querySelectorAll("[data-reply-form-for]").forEach((item) => {
+      if (item !== slot) { item.hidden = true; item.replaceChildren(); }
+    });
+    slot.hidden = false;
+    slot.innerHTML = `
+      <form data-inline-reply-form>
+        <label class="interaction-input">
+          <span class="sr-only">${tr("回复内容", "Reply")}</span>
+          <textarea maxlength="2000" required data-reply-body placeholder="${escapeHtml(tr(`回复 ${trigger.dataset.replyAuthor || ""}`, `Reply to ${trigger.dataset.replyAuthor || ""}`))}"></textarea>
+        </label>
+        <div class="interaction-inline-actions">
+          <button class="button ghost" type="button" data-reply-cancel>${tr("取消", "Cancel")}</button>
+          <button class="button primary" type="submit" data-reply-submit>${tr("公开回复", "Post reply")}</button>
+        </div>
+      </form>`;
+    slot.querySelector("[data-reply-cancel]").addEventListener("click", () => {
+      slot.hidden = true;
+      slot.replaceChildren();
+    });
+    slot.querySelector("textarea").focus();
+    slot.querySelector("[data-inline-reply-form]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const button = event.currentTarget.querySelector("[data-reply-submit]");
+      const body = event.currentTarget.querySelector("[data-reply-body]").value.trim();
+      if (!body) return;
+      setBusy(button, true, tr("正在回复…", "Replying…"));
+      try {
+        const created = await createCommunityComment(workId, "reply", body, parentId);
+        notify(tr("回复已公开发布。", "Reply posted publicly."));
+        await renderPublicPrompt(workId, created?.comment_id || "");
+      } catch (error) {
+        notify(/rate_limited/i.test(error.message || "")
+          ? tr("发布太频繁，请稍后再试。", "You are posting too quickly. Try again shortly.")
+          : error.message);
+        setBusy(button, false);
+      }
+    });
+  }));
+
+  if (focusCommentId) {
+    requestAnimationFrame(() => {
+      const target = document.getElementById(`comment-${focusCommentId}`);
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      target?.classList.add("is-notification-target");
+    });
+  }
+}
+
+async function renderPublicPrompt(workId, focusCommentId = "") {
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取 Prompt...", "Loading Prompt...")}</p></section>`;
   try {
     const resources = await loadResources();
@@ -1737,6 +1900,15 @@ async function renderPublicPrompt(workId) {
     ));
     const variables = normalizeVariables(item.variables);
     const images = await loadVersionMedia(item.version_id);
+    let comments = [];
+    try {
+      comments = (await rpc("yucang_list_comments", { p_work_id: workId })).map((comment) => ({
+        ...comment,
+        created_at_label: formatDate(comment.created_at),
+      }));
+    } catch (error) {
+      if (!isSchemaMissing(error)) throw error;
+    }
     app.innerHTML = `
       <section class="detail-header">
         <p class="eyebrow">PUBLIC PROMPT · APPROVED CURRENT VERSION</p>
@@ -1756,7 +1928,8 @@ async function renderPublicPrompt(workId) {
           <pre class="prompt-output" data-final-prompt></pre>
           <div class="prompt-actions" style="margin-top:16px"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button>` : ""}</div>
         </aside>
-      </section>`;
+      </section>
+      ${commentsSectionMarkup({ comments, isLoggedIn: Boolean(state.session), locale: state.locale })}`;
     bindPromptTool({
       template: item.prompt_text,
       variables,
@@ -1764,6 +1937,7 @@ async function renderPublicPrompt(workId) {
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
     bindPromptVaultButtons(app, () => communityPromptPayload(item, images[0]?.url || ""));
+    bindCommunityDiscussion(workId, focusCommentId);
     app.querySelector("[data-admin-restrict]")?.addEventListener("click", async (event) => {
       const reason = window.prompt(tr("请输入下架原因（会写入审计记录）", "Enter a restriction reason (saved to the audit log)"), "")?.trim();
       if (!reason) return;
@@ -1884,7 +2058,7 @@ async function renderSubmission(submissionId) {
 }
 
 async function renderRoute() {
-  const [section, id, childId] = routeParts();
+  const [section, id, childId, detailId] = routeParts();
   state.homeOrbitCleanup?.();
   state.homeOrbitCleanup = null;
   const homeRoute = section === "home" || section === "login";
@@ -1906,7 +2080,7 @@ async function renderRoute() {
   }
   if (section === "ai-service") return renderAiService();
   if (section === "login") return renderLogin();
-  if (section === "prompt" && id) return renderPublicPrompt(id);
+  if (section === "prompt" && id) return renderPublicPrompt(id, childId === "comment" ? detailId : "");
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
   if (section === "publish" && id === "new") return renderEditor();
   if (section === "publish" && id) return renderEditor(id);
