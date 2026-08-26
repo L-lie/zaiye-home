@@ -97,6 +97,7 @@ function updateStaticLocale() {
   const navLabels = {
     home: tr("首页", "Home"),
     discover: tr("提示词库", "Prompt Library"),
+    "ai-service": tr("AI 服务", "AI Service"),
   };
   Object.entries(navLabels).forEach(([key, label]) => {
     const link = document.querySelector(`[data-nav="${key}"]`);
@@ -818,6 +819,164 @@ async function renderDiscover() {
   }
 }
 
+function renderAiService() {
+  const plans = [
+    {
+      name: tr("体验", "Trial"),
+      price: tr("注册后赠送", "Registration gift"),
+      credits: tr("30 额度", "30 credits"),
+      validity: tr("30 天有效", "Valid for 30 days"),
+    },
+    {
+      name: tr("轻量", "Light"),
+      price: "¥9.9",
+      credits: tr("240 额度", "240 credits"),
+      validity: tr("180 天有效", "Valid for 180 days"),
+    },
+    {
+      name: tr("创作者", "Creator"),
+      price: "¥29",
+      credits: tr("750 额度", "750 credits"),
+      validity: tr("365 天有效", "Valid for 365 days"),
+    },
+    {
+      name: tr("工作室", "Studio"),
+      price: "¥69",
+      credits: tr("1800 额度", "1,800 credits"),
+      validity: tr("365 天有效", "Valid for 365 days"),
+    },
+  ];
+  const planMarkup = plans.map((plan, index) => `
+    <article class="ai-plan${index === 2 ? " is-emphasized" : ""}">
+      <h3>${plan.name}</h3>
+      <strong class="ai-plan-price">${plan.price}</strong>
+      <p>${plan.credits}</p>
+      <small>${plan.validity}</small>
+      <span class="ai-plan-status">${tr("购买尚未开放", "Purchases not open")}</span>
+    </article>`).join("");
+
+  app.innerHTML = `
+    <div class="ai-service-page">
+      <section class="ai-service-hero" aria-labelledby="ai-service-title">
+        <div class="ai-service-intro">
+          <p class="ai-kicker">${tr("托管 AI 服务", "Hosted AI service")}</p>
+          <h1 id="ai-service-title">${tr("无需配置 API Key，按需调用 AI", "Hosted AI without your own API key")}</h1>
+          <p>${tr(
+            "语藏计划提供按额度计费的托管调用。当前仅公示计费标准，购买和托管调用尚未开放。",
+            "Yucang plans to offer credit-based hosted AI calls. Pricing is published for review; purchases and hosted calls are not yet available.",
+          )}</p>
+        </div>
+        <aside class="ai-service-state" aria-label="${tr("当前开放状态", "Current availability")}">
+          <span>${tr("当前状态", "Current status")}</span>
+          <strong>${tr("价格公示", "Pricing published")}</strong>
+          <p>${tr("购买尚未开放", "Purchases not open")}</p>
+        </aside>
+      </section>
+
+      <section class="ai-billing-rule" aria-labelledby="ai-billing-title">
+        <div>
+          <h2 id="ai-billing-title">${tr("一个额度，代表一个计费块", "One credit represents one billing block")}</h2>
+          <p>${tr(
+            "每个计费块最多包含 4,000 输入 token 和 2,000 输出 token。任一方向超出后按块向上取整，不提供无限量套餐。",
+            "Each billing block includes up to 4,000 input tokens and 2,000 output tokens. Usage rounds up by block when either limit is exceeded. No unlimited plans are offered.",
+          )}</p>
+        </div>
+        <div class="ai-multiplier-list" aria-label="${tr("模型额度倍率", "Model credit multipliers")}">
+          <div><span>${tr("标准文本", "Standard text")}</span><strong>1x</strong><small>DeepSeek V4 Flash · ${tr("计划接入", "Planned")}</small></div>
+          <div><span>${tr("图像理解", "Image understanding")}</span><strong>2x</strong><small>Qwen3-VL-Flash · ${tr("计划接入", "Planned")}</small></div>
+          <div><span>${tr("进阶推理", "Advanced reasoning")}</span><strong>3x</strong><small>DeepSeek V4 Pro · ${tr("计划接入", "Planned")}</small></div>
+        </div>
+      </section>
+
+      <section class="ai-plans" aria-labelledby="ai-plans-title">
+        <div class="ai-section-copy">
+          <h2 id="ai-plans-title">${tr("一次性额度套餐", "One-time credit packages")}</h2>
+          <p>${tr("不自动续费。价格调整只影响以后新购买，不追溯已经购买的额度。", "No automatic renewal. Price changes apply only to future purchases and never retroactively alter purchased credits.")}</p>
+        </div>
+        <div class="ai-plan-grid">${planMarkup}</div>
+      </section>
+
+      <section class="ai-byok" aria-labelledby="ai-byok-title">
+        <div>
+          <h2 id="ai-byok-title">BYOK ${tr("继续保留", "remains available")}</h2>
+          <p>${tr(
+            "继续使用自己的 API Key 时，平台不收取 AI 服务费，Key 只保存在本机。",
+            "When you use your own API key, Yucang charges no AI service fee and the key stays only on your device.",
+          )}</p>
+        </div>
+        <div>
+          <h3>${tr("托管模式", "Hosted mode")}</h3>
+          <p>${tr(
+            "平台 Key 只保存在服务端，永不下发到扩展，也不会进入 URL。",
+            "Platform keys remain server-side, are never sent to the extension, and never appear in a URL.",
+          )}</p>
+        </div>
+      </section>
+
+      <section class="ai-explain-grid" aria-label="${tr("计费说明", "Billing explanation")}">
+        <article>
+          <h2>${tr("为什么这样计费", "Why billing works this way")}</h2>
+          <p>${tr(
+            "模型、输入长度和输出长度都会改变真实成本。额度块让调用前的预计费用可读，也为不同模型保留清楚的倍率。",
+            "Model choice, input length, and output length all affect real cost. Credit blocks make estimates readable and keep model multipliers explicit.",
+          )}</p>
+        </article>
+        <article>
+          <h2>${tr("额度示例", "Credit examples")}</h2>
+          <p>${tr(
+            "标准文本在一个计费块内消耗 1 额度；图像理解消耗 2 额度；进阶推理消耗 3 额度。超出一个块时按块数乘以对应倍率。",
+            "Within one block, standard text uses 1 credit, image understanding uses 2, and advanced reasoning uses 3. Additional blocks multiply by the same rate.",
+          )}</p>
+          <small>${tr("调用前显示预计额度。成功后按实际块结算；第三方或平台失败且没有有效输出时不扣额度。", "Estimated credits are shown before a call. Successful calls settle by actual blocks; third-party or platform failures with no valid output consume no credits.")}</small>
+        </article>
+      </section>
+
+      <section class="ai-policy-layout">
+        <article class="ai-refund" aria-labelledby="ai-refund-title">
+          <h2 id="ai-refund-title">${tr("退款规则公示", "Refund policy")}</h2>
+          <ul>
+            <li>${tr("购买后 7 天内且未使用，可申请全额原路退款。", "Within 7 days of purchase, unused packages may be refunded in full to the original payment method.")}</li>
+            <li>${tr("已经使用后，扣除实际消费的付费额度，退还未使用的付费部分。", "After usage, consumed paid credits are deducted and the unused paid portion is refunded.")}</li>
+            <li>${tr("赠送额度不折现。", "Gift credits have no cash value.")}</li>
+            <li>${tr("服务终止或平台无法继续提供时，退还未使用的付费部分。", "If the service ends or the platform cannot continue providing it, the unused paid portion is refunded.")}</li>
+          </ul>
+        </article>
+        <article class="ai-safety" aria-labelledby="ai-safety-title">
+          <h2 id="ai-safety-title">${tr("隐私与安全边界", "Privacy and security boundaries")}</h2>
+          <p>${tr(
+            "一次调用只处理用户明确提交的当前 Prompt 或图片。服务不会扫描、搜索或枚举扩展私库；登录不会上传本地 Prompt，云同步仍然关闭。",
+            "A call processes only the current Prompt or image explicitly submitted by the user. The service does not scan, search, or enumerate the extension's private library. Signing in does not upload local Prompts, and cloud sync remains off.",
+          )}</p>
+        </article>
+      </section>
+
+      <section class="ai-readiness" aria-labelledby="ai-readiness-title">
+        <h2 id="ai-readiness-title">${tr("开放前还缺什么", "What is required before launch")}</h2>
+        <div class="ai-readiness-items">
+          <span>${tr("服务端账户限速", "Server-side account rate limits")}</span>
+          <span>${tr("IP 限速", "IP rate limits")}</span>
+          <span>${tr("单请求 token 上限", "Per-request token caps")}</span>
+          <span>${tr("全局预算", "Global budget controls")}</span>
+          <span>${tr("幂等处理", "Idempotency")}</span>
+          <span>${tr("不可变用量账本", "Immutable usage ledger")}</span>
+        </div>
+        <p>${tr("这些安全与账务能力完成并经过验证后，平台才会开放购买。", "Purchases will open only after these security and accounting controls are implemented and verified.")}</p>
+      </section>
+
+      <section class="ai-sources" aria-labelledby="ai-sources-title">
+        <div>
+          <h2 id="ai-sources-title">${tr("第三方模型与价格可能调整", "Third-party models and prices may change")}</h2>
+          <p>${tr("模型名称、可用性和上游价格以正式接入时的供应商公示为准。平台会在新购买前公开调整，不追溯已购额度。", "Model names, availability, and upstream prices are subject to provider information at launch. Changes will be published before new purchases and will not alter existing credits.")}</p>
+        </div>
+        <nav aria-label="${tr("官方价格来源", "Official pricing sources")}">
+          <a href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/" target="_blank" rel="noopener noreferrer">DeepSeek ${tr("官方价格", "official pricing")}</a>
+          <a href="https://help.aliyun.com/zh/model-studio/model-pricing" target="_blank" rel="noopener noreferrer">${tr("阿里云百炼价格", "Alibaba Cloud Model Studio pricing")}</a>
+          <a href="https://supabase.com/docs/guides/functions/pricing" target="_blank" rel="noopener noreferrer">Supabase Edge Functions ${tr("价格", "pricing")}</a>
+        </nav>
+      </section>
+    </div>`;
+}
+
 async function hydrateCommunityShelf() {
   const shelf = app.querySelector("[data-community-shelf]");
   if (!shelf) return;
@@ -1529,6 +1688,7 @@ async function renderRoute() {
   app.focus({ preventScroll: true });
   if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
+  if (section === "ai-service") return renderAiService();
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id);
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
