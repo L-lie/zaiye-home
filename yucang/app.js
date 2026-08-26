@@ -1141,20 +1141,67 @@ function renderResourceCard(item) {
   const image = item.featuredImage
     ? `<figure class="resource-card-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)} ${tr("效果图", "example image")}" loading="lazy" decoding="async" /></figure>`
     : "";
+  const resourceKey = `official:${item.id}`;
   return `
     <article class="resource-card${image ? " has-image" : ""}">
       <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
         ${image}
-        <span class="resource-like" title="${tr("点赞尚未开放", "Likes are not open yet")}" aria-label="${tr("0 个赞", "0 likes")}">♡ 0</span>
         <div class="resource-card-copy">
-        <div class="resource-card-meta"><span>${escapeHtml(resourceCategoryLabel(item.category))}</span></div>
+        ${image ? "" : `<div class="resource-card-meta"><span>${escapeHtml(resourceCategoryLabel(item.category))}</span></div>`}
         <h3>${escapeHtml(item.title)}</h3>
         <p>${escapeHtml(item.summary)}</p>
         <footer><span>${escapeHtml((item.tags || []).slice(0, 2).join(" / "))}</span></footer>
         </div>
       </a>
-      <button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+      ${image ? `<span class="resource-category-badge">${escapeHtml(resourceCategoryLabel(item.category))}</span>
+      <div class="resource-hover-tools">
+        <span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>
+        <button class="resource-like" type="button" data-like-resource="${escapeHtml(resourceKey)}" title="${tr("点赞", "Like")}" aria-label="${tr("点赞", "Like")}">♡ <span>0</span></button>
+        <button type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+        <button type="button" data-copy-resource="${escapeHtml(item.id)}" title="${tr("复制 Prompt", "Copy Prompt")}" aria-label="${tr("复制 Prompt", "Copy Prompt")}">⧉</button>
+      </div>` : `<button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
     </article>`;
+}
+
+async function hydrateResourceLikes(root, items) {
+  const buttons = [...root.querySelectorAll("[data-like-resource]")];
+  if (!buttons.length) return;
+  try {
+    const counts = await rpc("yucang_get_like_counts", { p_resource_keys: buttons.map((button) => button.dataset.likeResource) });
+    const byKey = new Map(counts.map((item) => [item.resource_key, item]));
+    buttons.forEach((button) => {
+      const item = byKey.get(button.dataset.likeResource);
+      button.classList.toggle("is-liked", Boolean(item?.liked_by_me));
+      button.querySelector("span").textContent = String(Number(item?.like_count || 0));
+    });
+  } catch { /* Likes remain at zero until the migration is available. */ }
+  buttons.forEach((button) => button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!state.session) {
+      sessionStorage.setItem("yucangPostLoginPath", location.hash.replace(/^#\/?/, "") || "discover");
+      go("login");
+      return;
+    }
+    try {
+      const result = firstRow(await rpc("yucang_toggle_like", { p_resource_key: button.dataset.likeResource }));
+      button.classList.toggle("is-liked", Boolean(result?.liked));
+      button.querySelector("span").textContent = String(Number(result?.like_count || 0));
+    } catch (error) { notify(error.message); }
+  }));
+}
+
+function bindResourceCardActions(root, items) {
+  bindPromptVaultButtons(root, (itemId) => officialPromptPayload(items.find((item) => item.id === itemId)));
+  root.querySelectorAll("[data-copy-resource]").forEach((button) => button.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const item = items.find((entry) => entry.id === button.dataset.copyResource);
+    if (!item) return;
+    await navigator.clipboard.writeText(resolvedOfficialPrompt(item));
+    notify(tr("Prompt 已复制", "Prompt copied"));
+  }));
+  hydrateResourceLikes(root, items);
 }
 
 function bindResourceLibrary(items) {
@@ -1174,7 +1221,7 @@ function bindResourceLibrary(items) {
     grid.innerHTML = filtered.length
       ? filtered.map(renderResourceCard).join("")
       : `<div class="library-empty"><h3>${tr("没有找到匹配的 Prompt", "No matching Prompts")}</h3><p>${tr("换一个关键词，或者切换到其他分类。", "Try another keyword or category.")}</p></div>`;
-    bindPromptVaultButtons(grid, (itemId) => officialPromptPayload(items.find((item) => item.id === itemId)));
+    bindResourceCardActions(grid, items);
   };
 
   search.addEventListener("input", update);
@@ -1320,6 +1367,7 @@ function handoffContentMarkup(content) {
   const dependencies = Array.isArray(content.dependencies) ? content.dependencies : [];
   return `
     <div class="handoff-preview">
+      <nav class="handoff-back-nav" aria-label="${tr("页面导航", "Page navigation")}"><a href="#/home">${tr("返回首页", "Home")}</a><a href="#/discover">${tr("返回提示词库", "Prompt Library")}</a></nav>
       <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(content.contentType))}</span><span class="pill">${escapeHtml(licenseLabel(content.licenseCode))}</span></div>
       <h1>${escapeHtml(content.title)}</h1>
       <p class="lede">${escapeHtml(content.summary)}</p>
@@ -1706,7 +1754,7 @@ async function renderPublicPrompt(workId) {
         <aside class="panel sticky-panel">
           <div class="section-head"><div><p class="eyebrow">FINAL PROMPT</p><h2>${tr("最终 Prompt", "Final Prompt")}</h2></div></div>
           <pre class="prompt-output" data-final-prompt></pre>
-          <div class="prompt-actions" style="margin-top:16px"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
+          <div class="prompt-actions" style="margin-top:16px"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button>` : ""}</div>
         </aside>
       </section>`;
     bindPromptTool({
@@ -1716,6 +1764,17 @@ async function renderPublicPrompt(workId) {
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
     bindPromptVaultButtons(app, () => communityPromptPayload(item, images[0]?.url || ""));
+    app.querySelector("[data-admin-restrict]")?.addEventListener("click", async (event) => {
+      const reason = window.prompt(tr("请输入下架原因（会写入审计记录）", "Enter a restriction reason (saved to the audit log)"), "")?.trim();
+      if (!reason) return;
+      const button = event.currentTarget;
+      setBusy(button, true, tr("正在下架…", "Restricting…"));
+      try {
+        await rpc("yucang_admin_set_work_restricted", { p_work_id: item.work_id, p_restricted: true, p_reason: reason });
+        notify(tr("作品已从公开入口下架，历史与审计记录已保留。", "The work is no longer public; history and audit records were retained."));
+        go("discover");
+      } catch (error) { notify(error.message); setBusy(button, false); }
+    });
   } catch (error) {
     renderError(error, tr("无法打开 Prompt", "Unable to open Prompt"));
   }
@@ -1841,7 +1900,7 @@ async function renderRoute() {
   if (section === "discover") return renderDiscover();
   if (section === "my") {
     if (!requireLogin()) return;
-    setAccountDrawer(true);
+    setAccountDrawer(false);
     history.replaceState(null, "", `${location.pathname}${location.search}#/home`);
     return renderHome();
   }
