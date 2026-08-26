@@ -19,8 +19,7 @@
 html { background: var(--bg); }
 body { margin: 0; min-width: 320px; color: var(--text); background:
   radial-gradient(circle at 15% -10%, rgba(213,166,91,.15), transparent 32rem),
-  var(--bg); transition: padding-right .22s ease; }
-body.account-drawer-open { padding-right: var(--account-drawer-width); }
+  var(--bg); }
 button, input, textarea, select { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 a { color: inherit; text-decoration: none; }
@@ -72,7 +71,6 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(180deg, rgba(10, 18, 15, .94), rgba(10, 18, 15, .42) 72%, transparent);
   backdrop-filter: none;
 }
-.route-home.account-drawer-open .app-header { right: var(--account-drawer-width); }
 .route-home .app-main { width: 100%; min-height: 100svh; padding: 0; }
 .route-discover .app-main { width: min(1640px, calc(100% - clamp(36px, 6vw, 104px))); }
 .home-hero {
@@ -255,13 +253,13 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 .account-drawer-footer .button { width: 100%; }
 
 .resource-detail-head { margin-bottom: 32px; }
-.resource-detail-overview { display: grid; grid-template-columns: minmax(300px, .95fr) minmax(0, 1.05fr); grid-template-areas: "variables info" ". prompt"; gap: 32px clamp(28px, 5vw, 70px); align-items: start; }
+.resource-detail-overview { display: grid; grid-template-columns: minmax(280px, .9fr) minmax(420px, 1.1fr); grid-template-areas: "variables info" ". prompt"; gap: 20px clamp(28px, 4vw, 60px); align-items: start; }
 .resource-detail-overview.has-image { grid-template-areas: "image info" "variables prompt"; }
-.resource-featured-image { grid-area: image; position: sticky; top: 96px; margin: 0; }
-.resource-featured-image img { display: block; width: 100%; max-height: calc(100vh - 130px); object-fit: contain; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); }
+.resource-featured-image { grid-area: image; display: flex; align-items: flex-start; justify-content: center; align-self: start; margin: 0; }
+.resource-featured-image img { display: block; width: auto; max-width: 100%; height: auto; max-height: min(74vh, 760px); object-fit: contain; border: 1px solid var(--line); border-radius: 22px; background: var(--panel); }
 .resource-detail-copy { grid-area: info; min-width: 0; padding-top: 6px; }
 .back-link { display: inline-flex; margin-bottom: 20px; color: var(--accent-strong); font-size: 14px; }
-.resource-detail-head h1 { max-width: 900px; font-size: clamp(38px, 5vw, 64px); }
+.resource-detail-head h1 { max-width: 900px; margin-bottom: 12px; font-size: clamp(30px, 3vw, 46px); }
 .resource-detail-copy > p { max-width: 760px; color: var(--muted); font-size: 18px; line-height: 1.7; }
 .resource-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin: 26px 0 0; }
 .resource-facts div { min-width: 0; padding-top: 13px; border-top: 1px solid var(--line); }
@@ -274,10 +272,10 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 .tool-heading h2 { margin-bottom: 6px; font-size: 26px; }
 .tool-heading p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .prompt-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.resource-variable-list { display: grid; gap: 14px; max-height: 60vh; padding-right: 4px; overflow-y: auto; }
+.resource-variable-list { display: grid; gap: 14px; padding-right: 4px; }
 .resource-variable { display: grid; gap: 7px; }
 .resource-variable span { color: #d5d2c8; font-size: 13px; font-weight: 650; }
-.resource-prompt-output { min-height: 320px; max-height: 58vh; }
+.resource-prompt-output { min-height: 240px; max-height: none; overflow: visible; }
 .resource-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 16px; }
 .resource-tags span { padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 12px; }
 
@@ -520,8 +518,6 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
 }
 
 @media (max-width: 780px) {
-  body.account-drawer-open { padding-right: 0; }
-  .route-home.account-drawer-open .app-header { right: 0; }
   .account-drawer { top: 64px; width: min(390px, 92vw); }
 }
 

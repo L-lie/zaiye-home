@@ -1815,6 +1815,7 @@ async function renderRoute() {
   if (section === "my") {
     if (!requireLogin()) return;
     setAccountDrawer(true);
+    history.replaceState(null, "", `${location.pathname}${location.search}#/home`);
     return renderHome();
   }
   if (section === "ai-service") return renderAiService();
@@ -1835,6 +1836,9 @@ async function initialize() {
     updateStaticLocale();
     localeToggle.addEventListener("click", () => {
       setLocale(state.locale === "en" ? "zh" : "en");
+    });
+    document.querySelectorAll(".main-nav a").forEach((link) => {
+      link.addEventListener("click", () => setAccountDrawer(false));
     });
     const client = getClient();
     const { data, error } = await client.auth.getSession();
