@@ -33,13 +33,14 @@ function dbError(error: { message?: string } | null) {
     "account_not_available", "group_accounts_not_available", "friend_request_not_found",
     "group_invite_not_found", "group_not_available", "owner_must_close_group",
     "daily_share_limit_reached", "idempotency_conflict", "friend_not_available",
-    "invalid_share_payload", "invalid_share_request", "invalid_share_target",
+    "invalid_share_payload", "invalid_share_request", "invalid_share_target", "forbidden",
   ].find((code) => message.includes(code));
   if (known === "account_not_available" || known === "group_accounts_not_available") {
     return new FriendGroupError(422, "account_not_available", "One or more accounts cannot be used for this action.");
   }
   if (known === "daily_share_limit_reached") return new FriendGroupError(429, known, "The daily free sharing limit has been reached.");
   if (known === "idempotency_conflict") return new FriendGroupError(409, known, "The request identifier was already used for different content.");
+  if (known === "forbidden") return new FriendGroupError(403, known, "This action requires an administrator account.");
   if (known) return new FriendGroupError(422, known, "The requested operation could not be completed.");
   return new FriendGroupError(500, "operation_failed", "The requested operation could not be completed.");
 }
@@ -108,10 +109,15 @@ Deno.serve(async (request) => {
     } else if (action === "list_group_members") {
       const result = await userClient.rpc("yucang_list_group_members", { p_group_id: uuid(base.groupId, "invalid_group_id") });
       data = result.data; error = result.error;
-    } else if (action === "list_received") {
+    } else if (action === "list_received" || action === "list_sent" || action === "list_feedback_inbox") {
       const limit = Number(base.limit ?? 50);
       if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new FriendGroupError(422, "invalid_limit", "Limit must be between 1 and 100.");
-      const result = await userClient.rpc("yucang_list_received_prompt_shares", { p_limit: limit }); data = result.data; error = result.error;
+      const rpc = action === "list_received"
+        ? "yucang_list_received_prompt_shares"
+        : action === "list_sent"
+          ? "yucang_list_sent_prompt_shares"
+          : "yucang_list_admin_feedback_inbox";
+      const result = await userClient.rpc(rpc, { p_limit: limit }); data = result.data; error = result.error;
     } else if (action === "share_prompt") {
       const share = exactObject(base.share, ["targetKind", "targetId", "title", "prompt", "project", "category", "contentType", "tags", "variables", "model", "modelVersion", "parameters", "license", "negativePrompt", "usageInstruction", "sourceItemId"]);
       const result = await userClient.rpc("yucang_share_prompt", {
@@ -138,7 +144,9 @@ Deno.serve(async (request) => {
       throw new FriendGroupError(422, "unsupported_action", "The action is not supported.");
     }
     if (error) throw dbError(error);
-    return json(200, origin, { ok: true, requestId, data });
+    const entitlementResult = await userClient.rpc("yucang_get_collaboration_entitlement");
+    if (entitlementResult.error) throw dbError(entitlementResult.error);
+    return json(200, origin, { ok: true, requestId, data, entitlement: first(entitlementResult.data) });
   } catch (error) {
     const item = error instanceof FriendGroupError ? error : new FriendGroupError(500, "internal_error", "The request could not be completed.");
     return json(item.status, origin, { ok: false, error: item.code, message: item.message });
