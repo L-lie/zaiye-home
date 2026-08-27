@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.yucang-friend-groups]
 verify_jwt = false
+
+[functions.yucang-submit-feedback]
+verify_jwt = false
