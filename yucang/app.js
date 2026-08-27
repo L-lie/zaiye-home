@@ -255,9 +255,40 @@ function communityPromptPayload(item, image = "") {
   };
 }
 
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")), { once: true });
+    reader.addEventListener("error", () => reject(reader.error || new Error("image_read_failed")), { once: true });
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function portableVaultPayload(payload) {
+  const image = String(payload?.image || "").trim();
+  if (!image || /^data:image\/(?:png|jpeg|webp);base64,/i.test(image)) return payload;
+  const response = await fetch(image, { cache: "force-cache" });
+  if (!response.ok) throw new Error("image_download_failed");
+  const blob = await response.blob();
+  if (!/^image\/(?:png|jpeg|webp)$/i.test(blob.type) || blob.size > 5 * 1024 * 1024) {
+    throw new Error("image_not_portable");
+  }
+  const portableImage = await blobToDataUrl(blob);
+  if (!portableImage) throw new Error("image_read_failed");
+  return { ...payload, image: portableImage };
+}
+
 async function savePromptToVault(button, payload) {
   setBusy(button, true, tr("正在收藏…", "Saving…"));
-  const result = await promptVaultBridge.save(payload);
+  let portablePayload;
+  try {
+    portablePayload = await portableVaultPayload(payload);
+  } catch {
+    setBusy(button, false);
+    notify(tr("图片未能安全保存到扩展，请稍后重试。", "The image could not be saved safely. Try again later."));
+    return;
+  }
+  const result = await promptVaultBridge.save(portablePayload);
   setBusy(button, false);
   if (result.ok && result.status === "created") {
     button.textContent = tr("已收藏", "Saved");
@@ -1750,41 +1781,45 @@ function renderOfficialResource(item) {
     <section class="resource-detail-head">
       <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
       <div class="resource-detail-overview${item.featuredImage ? " has-image" : ""}">
-        ${item.featuredImage ? `<figure class="resource-featured-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)}" /></figure>` : ""}
-        <div class="resource-detail-copy">
-          <div class="detail-meta">
-            <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
-            <span class="pill">${tr("站方模板", "Official template")}</span>
+        <div class="resource-detail-left">
+          ${item.featuredImage ? `<figure class="resource-featured-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)}" /></figure>` : ""}
+          <div class="resource-variable-panel">
+            <div class="tool-heading">
+              <h2>${tr("修改变量", "Adjust variables")}</h2>
+              <p>${tr("输入内容后，右侧 Prompt 会立即更新。", "The Prompt updates as you type.")}</p>
+            </div>
+            <div class="resource-variable-list">
+              ${variables.length ? variables.map((entry) => `
+                <label class="resource-variable">
+                  <span>${escapeHtml(entry.label)}</span>
+                  <input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" placeholder="${escapeHtml(entry.placeholder)}" />
+                </label>`).join("") : `<p class="lede">${tr("这条 Prompt 没有变量，可以直接复制。", "This Prompt has no variables and can be copied directly.")}</p>`}
+            </div>
           </div>
-          <h1>${escapeHtml(item.title)}</h1>
-          <p>${escapeHtml(item.summary)}</p>
-          <dl class="resource-facts">
-            <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml(item.model || tr("通用模型", "General model"))}</dd></div>
-            <div><dt>${tr("来源", "Source")}</dt><dd>${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</dd></div>
-            <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
-          </dl>
         </div>
-        <div class="resource-variable-panel">
-        <div class="tool-heading">
-          <h2>${tr("修改变量", "Adjust variables")}</h2>
-          <p>${tr("输入内容后，右侧 Prompt 会立即更新。", "The Prompt updates as you type.")}</p>
+        <div class="resource-detail-right">
+          <div class="resource-detail-copy">
+            <div class="detail-meta">
+              <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
+              <span class="pill">${tr("站方模板", "Official template")}</span>
+            </div>
+            <h1>${escapeHtml(item.title)}</h1>
+            <p>${escapeHtml(item.summary)}</p>
+            <dl class="resource-facts">
+              <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml(item.model || tr("通用模型", "General model"))}</dd></div>
+              <div><dt>${tr("来源", "Source")}</dt><dd>${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</dd></div>
+              <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(item.license || tr("请查看发布说明", "See publishing terms"))}</dd></div>
+            </dl>
+          </div>
+          <aside class="prompt-stage">
+            <div class="tool-heading">
+              <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
+              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
+            </div>
+            <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
+            <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+          </aside>
         </div>
-        <div class="resource-variable-list">
-          ${variables.length ? variables.map((entry) => `
-            <label class="resource-variable">
-              <span>${escapeHtml(entry.label)}</span>
-              <input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" placeholder="${escapeHtml(entry.placeholder)}" />
-            </label>`).join("") : `<p class="lede">${tr("这条 Prompt 没有变量，可以直接复制。", "This Prompt has no variables and can be copied directly.")}</p>`}
-        </div>
-      </div>
-      <aside class="prompt-stage">
-        <div class="tool-heading">
-          <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
-          <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
-        </div>
-        <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
-        <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
-      </aside>
       </div>
     </section>`;
   bindPromptTool({

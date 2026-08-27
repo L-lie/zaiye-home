@@ -136,10 +136,10 @@ assert.match(app, /class="handoff-back-nav"/);
 assert.match(appCss, /@media \(max-width: 1450px\)[\s\S]*repeat\(4/);
 assert.match(appCss, /@media \(max-width: 1120px\)[\s\S]*repeat\(3/);
 assert.match(app, /resource-detail-overview\$\{item\.featuredImage \? " has-image" : ""\}/);
-assert.match(app, /<div class="resource-detail-copy">[\s\S]*?<\/div>\s*<div class="resource-variable-panel">[\s\S]*?<aside class="prompt-stage">/,
-  "the variable panel and final Prompt should share the same two-column detail grid");
-assert.match(appCss, /\.resource-detail-overview \{[^}]*grid-template-areas: "variables info" "\. prompt";/);
-assert.match(appCss, /\.resource-detail-overview\.has-image \{ grid-template-areas: "image info" "variables prompt"; \}/);
+assert.match(app, /<div class="resource-detail-left">[\s\S]*?resource-featured-image[\s\S]*?resource-variable-panel[\s\S]*?<div class="resource-detail-right">[\s\S]*?resource-detail-copy[\s\S]*?<aside class="prompt-stage">/,
+  "the image and variables must stack on the left while details and final Prompt stack on the right");
+assert.match(appCss, /\.resource-detail-overview \{[^}]*grid-template-columns: minmax\(280px, \.9fr\) minmax\(420px, 1\.1fr\)/);
+assert.match(appCss, /\.resource-detail-left, \.resource-detail-right \{[^}]*display: grid;/);
 assert.doesNotMatch(appCss, /\.resource-featured-image \{[^}]*position:\s*sticky/);
 assert.doesNotMatch(appCss, /body\.account-drawer-open \{[^}]*padding-right/);
 assert.doesNotMatch(appCss, /\.route-home\.account-drawer-open \.app-header/);
@@ -148,10 +148,7 @@ assert.match(appCss, /\.account-drawer-open \.app-workspace \{[^}]*grid-template
 assert.match(appCss, /\.account-drawer \{[^}]*position: sticky/);
 assert.match(appCss, /\.resource-detail-head h1 \{[^}]*font-size: clamp\(30px, 3vw, 46px\)/);
 assert.match(appCss, /\.resource-prompt-output \{[^}]*max-height: none;[^}]*overflow: visible;/);
-assert.match(appCss, /\.resource-detail-copy \{[^}]*grid-area: info;/);
-assert.match(appCss, /\.resource-variable-panel \{[^}]*grid-area: variables;/);
-assert.match(appCss, /\.prompt-stage \{[^}]*grid-area: prompt;/);
-assert.match(appCss, /@media \(max-width: 860px\)[\s\S]*\.resource-detail-overview\.has-image \{ grid-template-areas: "image" "info" "variables" "prompt"; \}/);
+assert.match(appCss, /@media \(max-width: 860px\)[\s\S]*\.resource-featured-image \{ order: 1; \}[\s\S]*\.resource-detail-copy \{ order: 2; \}[\s\S]*\.resource-variable-panel \{ order: 3; \}[\s\S]*\.prompt-stage \{ order: 4; \}/);
 assert.match(app, /bindPromptTool/);
 assert.match(app, /image: publicAssetUrl\(item\.featuredImage\)/);
 assert.match(app, /app\.querySelector\("\[data-final-prompt\]"\)\?\.textContent/);

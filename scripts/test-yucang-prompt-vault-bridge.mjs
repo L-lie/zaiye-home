@@ -29,6 +29,7 @@ function fakeRuntime({ installed = true, saveStatus = "created", saveError = "" 
 const payload = {
   title: "测试 Prompt",
   prompt: "生成 @主题",
+  image: "data:image/png;base64,aW1hZ2U=",
   category: "image",
   type: "task",
   tags: ["测试"],
@@ -46,6 +47,7 @@ const created = await bridge.save(payload);
 assert.equal(created.status, "created");
 assert.equal(runtime.calls.filter(({ message }) => message.action === "save").length, 1);
 assert.equal(runtime.calls.at(-1).message.payload.category, "image");
+assert.equal(runtime.calls.at(-1).message.payload.image, "data:image/png;base64,aW1hZ2U=");
 assert.match(runtime.calls.at(-1).message.requestId, /^yucang-/);
 
 const duplicateRuntime = fakeRuntime({ saveStatus: "already_saved" });
@@ -66,6 +68,9 @@ assert.equal(failedRuntime.calls.filter(({ message }) => message.action === "sav
 const appSource = readFileSync(new URL("../yucang/app.js", import.meta.url), "utf8");
 assert.match(appSource, /data-save-to-vault/);
 assert.match(appSource, /https:\/\/zaiye\.art\/yucang\/#\/prompt/);
+assert.match(appSource, /portableVaultPayload/);
+assert.match(appSource, /blobToDataUrl/);
+assert.match(appSource, /image: publicAssetUrl\(item\.featuredImage\)/);
 assert.doesNotMatch(appSource, /favorite\s*:/);
 
 console.log("Yucang Prompt Vault website bridge tests passed.");
