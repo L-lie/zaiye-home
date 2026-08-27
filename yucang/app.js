@@ -1313,6 +1313,29 @@ function bindResourceCardActions(root, items) {
   hydrateResourceLikes(root, items);
 }
 
+let resourceMasonryObserver;
+
+function layoutResourceMasonry(grid) {
+  resourceMasonryObserver?.disconnect();
+  const layout = () => {
+    const style = getComputedStyle(grid);
+    const row = Number.parseFloat(style.gridAutoRows) || 4;
+    const gap = Number.parseFloat(style.rowGap) || 16;
+    grid.querySelectorAll(".resource-card").forEach((card) => {
+      const span = Math.ceil((card.getBoundingClientRect().height + gap) / (row + gap));
+      const value = `span ${span}`;
+      if (card.style.gridRowEnd !== value) card.style.gridRowEnd = value;
+    });
+  };
+  grid.querySelectorAll("img").forEach((image) => {
+    if (!image.complete) image.addEventListener("load", layout, { once: true });
+  });
+  resourceMasonryObserver = new ResizeObserver(layout);
+  resourceMasonryObserver.observe(grid);
+  grid.querySelectorAll(".resource-card").forEach((card) => resourceMasonryObserver.observe(card));
+  requestAnimationFrame(layout);
+}
+
 function bindResourceLibrary(items) {
   const grid = app.querySelector("[data-resource-grid]");
   const search = app.querySelector("[data-resource-search]");
@@ -1331,6 +1354,7 @@ function bindResourceLibrary(items) {
       ? filtered.map(renderResourceCard).join("")
       : `<div class="library-empty"><h3>${tr("没有找到匹配的 Prompt", "No matching Prompts")}</h3><p>${tr("换一个关键词，或者切换到其他分类。", "Try another keyword or category.")}</p></div>`;
     bindResourceCardActions(grid, items);
+    layoutResourceMasonry(grid);
   };
 
   search.addEventListener("input", update);

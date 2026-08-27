@@ -14,3 +14,13 @@
 - 手机窄屏保留覆盖式抽屉，避免将正文压缩到不可用宽度。
 
 最终结果：passed
+
+## 五列瀑布流补充验收
+
+- 参考图：`C:/Users/comic/AppData/Local/Temp/codex-clipboard-f05aeedf-9c53-45bb-89f0-1a10408ba145.png`。
+- 实现截图：`E:/work/3.工作室/yucang-masonry-implementation.png`。
+- 验收视口：1600 × 900；游客状态；全部分类。
+- 桌面端保持五个等宽列；图片按原始宽高比展示，不再统一裁切。
+- 不同高度的图片卡与文字卡采用瀑布流紧密排列，没有重叠或整行留白。
+
+补充结果：passed

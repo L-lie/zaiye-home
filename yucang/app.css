@@ -213,17 +213,17 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 .category-tabs button:hover { color: var(--text); border-color: rgba(213,166,91,.45); }
 .category-tabs button[aria-pressed="true"] { color: #1b150d; border-color: var(--accent); background: var(--accent-strong); font-weight: 750; }
 .category-tabs button:focus-visible, .resource-card a:focus-visible, .resource-save-button:focus-visible, .back-link:focus-visible { outline: 3px solid rgba(213,166,91,.28); outline-offset: 3px; }
-.resource-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-.resource-card { position: relative; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: rgba(22,24,21,.76); transition: border-color .18s ease, transform .18s ease; }
+.resource-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); grid-auto-rows: 4px; grid-auto-flow: row dense; gap: 16px; align-items: start; }
+.resource-card { position: relative; width: 100%; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: rgba(22,24,21,.76); transition: border-color .18s ease, transform .18s ease; }
 .resource-card:hover { border-color: rgba(213,166,91,.42); transform: translateY(-2px); }
 .resource-card-link { position: relative; display: grid; height: 100%; min-height: 220px; }
 .resource-card-copy { display: grid; align-content: start; padding: 14px 15px 15px; }
-.resource-card-image { position: relative; margin: 0; overflow: hidden; aspect-ratio: 16 / 10; background: #111310; }
+.resource-card-image { position: relative; margin: 0; overflow: hidden; background: #111310; }
 .resource-card-image::after { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 26px rgba(225,236,226,.08); pointer-events: none; }
-.resource-card-image img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .28s ease, filter .28s ease; }
+.resource-card-image img { display: block; width: 100%; height: auto; transition: transform .28s ease, filter .28s ease; }
 .resource-card:hover .resource-card-image img { transform: scale(1.018); filter: brightness(1.04); }
 .resource-card.has-image .resource-card-link { display: block; min-height: 0; }
-.resource-card.has-image .resource-card-image { width: 100%; aspect-ratio: 4 / 3; }
+.resource-card.has-image .resource-card-image { width: 100%; }
 .resource-category-badge { position: absolute; top: 10px; left: 10px; z-index: 5; padding: 5px 9px; border: 1px solid rgba(240,238,230,.2); border-radius: 999px; color: #f6f2e8; background: rgba(13,14,13,.58); font-size: 12px; backdrop-filter: blur(8px); }
 .resource-like { position: absolute; top: 10px; right: 10px; z-index: 5; display: inline-grid; grid-auto-flow: column; place-items: center; gap: 4px; min-width: 38px; height: 34px; padding: 0 9px; border: 1px solid rgba(240,238,230,.24); border-radius: 999px; color: #f6f2e8; background: rgba(13,14,13,.58); cursor: pointer; backdrop-filter: blur(8px); }
 .resource-like:hover, .resource-like.is-liked { color: #19140d; border-color: var(--accent); background: var(--accent-strong); }
