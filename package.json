@@ -11,7 +11,8 @@
     "test:yucang-extension-auth": "node --experimental-strip-types scripts/test-yucang-extension-auth.mjs",
     "test:yucang-website-session-auth": "node --experimental-strip-types scripts/test-yucang-website-session-auth.mjs",
     "test:yucang-publish-handoff": "node --experimental-strip-types scripts/test-yucang-publish-handoff.mjs",
-    "test:yucang-ai-service": "node scripts/test-yucang-ai-service.mjs"
+    "test:yucang-ai-service": "node scripts/test-yucang-ai-service.mjs",
+    "test:yucang-friend-groups": "node scripts/test-yucang-friend-groups.mjs"
   },
   "devDependencies": {
     "sharp": "^0.34.3"
