@@ -33,12 +33,16 @@ function dbError(error: { message?: string } | null) {
     "account_not_available", "group_accounts_not_available", "friend_request_not_found",
     "group_invite_not_found", "group_not_available", "owner_must_close_group",
     "daily_share_limit_reached", "idempotency_conflict", "friend_not_available",
+    "member_not_available", "group_member_limit_reached", "group_permission_denied",
     "invalid_share_payload", "invalid_share_request", "invalid_share_target", "forbidden",
   ].find((code) => message.includes(code));
   if (known === "account_not_available" || known === "group_accounts_not_available") {
     return new FriendGroupError(422, "account_not_available", "One or more accounts cannot be used for this action.");
   }
   if (known === "daily_share_limit_reached") return new FriendGroupError(429, known, "The daily free sharing limit has been reached.");
+  if (known === "group_member_limit_reached") return new FriendGroupError(409, known, "The group member limit has been reached.");
+  if (known === "group_permission_denied") return new FriendGroupError(403, known, "Only the group owner or an administrator can add members.");
+  if (known === "member_not_available") return new FriendGroupError(422, known, "One or more accounts cannot be invited.");
   if (known === "idempotency_conflict") return new FriendGroupError(409, known, "The request identifier was already used for different content.");
   if (known === "forbidden") return new FriendGroupError(403, known, "This action requires an administrator account.");
   if (known) return new FriendGroupError(422, known, "The requested operation could not be completed.");
@@ -67,7 +71,7 @@ Deno.serve(async (request) => {
 
     let raw: unknown;
     try { raw = await request.json(); } catch { throw new FriendGroupError(400, "invalid_json", "Valid JSON is required."); }
-    const base = exactObject(raw, ["action", "requestId", "email", "friendRequestId", "accept", "friendUserId", "name", "memberEmails", "groupId", "limit", "share"]);
+    const base = exactObject(raw, ["action", "requestId", "email", "friendRequestId", "accept", "friendUserId", "name", "memberEmails", "groupId", "friendUserIds", "friendAccountIds", "emails", "limit", "share"]);
     const action = requiredString(base.action, "invalid_action", 40);
     const requestId = uuid(base.requestId, "invalid_request_id");
     let data: unknown;
@@ -100,6 +104,25 @@ Deno.serve(async (request) => {
       if (typeof base.accept !== "boolean") throw new FriendGroupError(422, "invalid_accept", "Accept must be a boolean.");
       const result = await userClient.rpc("yucang_respond_group_invite", { p_group_id: uuid(base.groupId, "invalid_group_id"), p_accept: base.accept });
       data = { status: result.data }; error = result.error;
+    } else if (action === "add_group_members" || action === "invite_group_members") {
+      const rawFriendUserIds = base.friendUserIds ?? base.friendAccountIds;
+      const rawMemberEmails = base.memberEmails ?? base.emails;
+      if (!Array.isArray(rawFriendUserIds) || !Array.isArray(rawMemberEmails)) {
+        throw new FriendGroupError(422, "invalid_group_members", "Friend account IDs and emails must be arrays.");
+      }
+      if (rawFriendUserIds.length + rawMemberEmails.length < 1 || rawFriendUserIds.length + rawMemberEmails.length > 49) {
+        throw new FriendGroupError(422, "invalid_group_members", "Invite between 1 and 49 accounts at a time.");
+      }
+      const friendAccountIds = rawFriendUserIds.map((item) => uuid(item, "invalid_friend_user_id"));
+      const emails = rawMemberEmails.map(email);
+      const result = await adminClient.rpc("yucang_invite_group_members_by_accounts", {
+        p_actor_id: userData.user.id,
+        p_request_id: requestId,
+        p_group_id: uuid(base.groupId, "invalid_group_id"),
+        p_friend_account_ids: friendAccountIds,
+        p_emails: emails,
+      });
+      data = result.data; error = result.error;
     } else if (action === "leave_group" || action === "close_group") {
       const rpc = action === "leave_group" ? "yucang_leave_group" : "yucang_close_group";
       const result = await userClient.rpc(rpc, { p_group_id: uuid(base.groupId, "invalid_group_id") });

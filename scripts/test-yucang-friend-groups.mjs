@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const migration = fs.readFileSync(path.join(root, "supabase/migrations/20260827000400_yucang_friend_group_sharing.sql"), "utf8");
 const sentMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000200_yucang_list_sent_prompt_shares.sql"), "utf8");
 const feedbackInboxMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000300_yucang_feedback_owner_inbox.sql"), "utf8");
+const addMembersMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000600_yucang_group_add_members.sql"), "utf8");
 const shared = fs.readFileSync(path.join(root, "supabase/functions/_shared/yucang-friend-groups.ts"), "utf8");
 const fn = fs.readFileSync(path.join(root, "supabase/functions/yucang-friend-groups/index.ts"), "utf8");
 
@@ -32,6 +33,12 @@ assert.doesNotMatch(shared, /chrome-extension:\/\/\*/);
 assert.match(fn, /auth\.getUser\(token\)/);
 assert.match(fn, /action === "request_friend"/);
 assert.match(fn, /action === "create_group"/);
+assert.match(fn, /action === "add_group_members" \|\| action === "invite_group_members"/);
+assert.match(fn, /base\.friendUserIds \?\? base\.friendAccountIds/);
+assert.match(fn, /base\.memberEmails \?\? base\.emails/);
+assert.match(fn, /"yucang_invite_group_members_by_accounts"/);
+assert.match(fn, /p_friend_account_ids: friendAccountIds/);
+assert.match(fn, /p_emails: emails/);
 assert.match(fn, /action === "share_prompt"/);
 assert.match(fn, /action === "list_received"/);
 assert.match(fn, /action === "list_received" \|\| action === "list_sent"/);
@@ -66,5 +73,19 @@ assert.match(sentMigration, /if not unlimited_sharing and used_today >= 3 then r
 assert.match(sentMigration, /remaining_free_shares := case when unlimited_sharing then null/);
 assert.doesNotMatch(sentMigration, /@|gmail|qq\.com|163\.com/i);
 assert.doesNotMatch(sentMigration, /private_notebooks|chrome\.storage|cloud.?sync/i);
+
+assert.match(addMembersMigration, /function public\.yucang_invite_group_members_by_accounts\(/);
+assert.match(addMembersMigration, /group_row\.owner_id <> p_actor_id and not is_admin/);
+assert.match(addMembersMigration, /friendship\.status = 'accepted'/);
+assert.match(addMembersMigration, /where lower\(user_row\.email\) = any\(normalized_emails\)/);
+assert.match(addMembersMigration, /raise exception 'member_not_available'/);
+assert.match(addMembersMigration, /reserved_count \+ new_count > 50/);
+assert.match(addMembersMigration, /primary key \(actor_id, request_id\)/);
+assert.match(addMembersMigration, /pg_advisory_xact_lock/);
+assert.match(addMembersMigration, /if receipt_row\.request_hash <> request_hash then raise exception 'idempotency_conflict'/);
+assert.match(addMembersMigration, /status = 'invited'/);
+assert.match(addMembersMigration, /grant execute on function public\.yucang_invite_group_members_by_accounts[\s\S]*to service_role/);
+assert.doesNotMatch(addMembersMigration, /grant execute[\s\S]*to authenticated/);
+assert.doesNotMatch(addMembersMigration, /private_notebooks|prompt_text|chrome\.storage|cloud.?sync/i);
 
 console.log("Yucang friend/group endpoint contract tests passed.");
