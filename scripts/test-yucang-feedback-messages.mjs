@@ -5,6 +5,10 @@ const sql = await readFile(
   new URL("../supabase/migrations/20260828000400_yucang_feedback_messages.sql", import.meta.url),
   "utf8",
 );
+const digestFix = await readFile(
+  new URL("../supabase/migrations/20260828000800_yucang_feedback_message_digest_fix.sql", import.meta.url),
+  "utf8",
+);
 
 assert.match(sql, /create table if not exists public\.yucang_system_messages/);
 assert.match(sql, /message_type in \('feedback_reply', 'broadcast'\)/);
@@ -21,5 +25,9 @@ assert.match(sql, /grant select on table public\.yucang_system_messages to authe
 assert.match(sql, /yucang_admin_reply_feedback/);
 assert.match(sql, /yucang_admin_broadcast_system_message/);
 assert.match(sql, /yucang_list_my_system_messages/);
+assert.match(digestFix, /create or replace function public\.yucang_admin_reply_feedback/);
+assert.match(digestFix, /create or replace function public\.yucang_admin_broadcast_system_message/);
+assert.equal((digestFix.match(/extensions\.digest\(convert_to\(/g) || []).length, 2);
+assert.doesNotMatch(digestFix, /encode\(digest\(/);
 
 console.log("Yucang feedback message contract checks passed.");
