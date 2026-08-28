@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const migration = await readFile(new URL("../supabase/migrations/20260828000100_yucang_feedback.sql", import.meta.url), "utf8");
+const submitFix = await readFile(new URL("../supabase/migrations/20260828000700_yucang_feedback_submit_fix.sql", import.meta.url), "utf8");
 const shared = await readFile(new URL("../supabase/functions/_shared/yucang-feedback.ts", import.meta.url), "utf8");
 const fn = await readFile(new URL("../supabase/functions/yucang-submit-feedback/index.ts", import.meta.url), "utf8");
 const config = await readFile(new URL("../supabase/config.toml", import.meta.url), "utf8");
@@ -15,6 +16,10 @@ assert.match(migration, /idempotency_conflict/);
 assert.match(migration, /yucang_list_my_feedback/);
 assert.match(migration, /yucang_admin_update_feedback/);
 assert.doesNotMatch(executableMigration, /prompt_text|private_notebooks|clipboard|browsing_history/i);
+assert.match(submitFix, /feedback\.created_at >= now\(\) - interval '1 hour'/);
+assert.match(submitFix, /feedback\.author_id = caller/);
+assert.match(submitFix, /feedback\.request_id = p_request_id/);
+assert.doesNotMatch(submitFix, /\bwhere author_id = caller\b|\band created_at >=/);
 
 assert.match(shared, /chrome-extension:\/\/fapladhajicfoiadhcpmbmfkodekkckg/);
 assert.match(shared, /chrome-extension:\/\/idiemjhonlahnlnalpanhplbgjcfbpnl/);
