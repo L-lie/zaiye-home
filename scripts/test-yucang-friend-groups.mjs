@@ -8,6 +8,7 @@ const migration = fs.readFileSync(path.join(root, "supabase/migrations/202608270
 const sentMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000200_yucang_list_sent_prompt_shares.sql"), "utf8");
 const feedbackInboxMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000300_yucang_feedback_owner_inbox.sql"), "utf8");
 const addMembersMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000600_yucang_group_add_members.sql"), "utf8");
+const shareMediaMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000900_yucang_prompt_share_media.sql"), "utf8");
 const shared = fs.readFileSync(path.join(root, "supabase/functions/_shared/yucang-friend-groups.ts"), "utf8");
 const fn = fs.readFileSync(path.join(root, "supabase/functions/yucang-friend-groups/index.ts"), "utf8");
 
@@ -40,6 +41,12 @@ assert.match(fn, /"yucang_invite_group_members_by_accounts"/);
 assert.match(fn, /p_friend_account_ids: friendAccountIds/);
 assert.match(fn, /p_emails: emails/);
 assert.match(fn, /action === "share_prompt"/);
+assert.match(fn, /"image", "examples", "references"/);
+assert.match(fn, /const media = shareMedia\(share\)/);
+assert.match(fn, /p_image: media\.image/);
+assert.match(fn, /15_000_000/);
+assert.match(fn, /p_examples: media\.examples/);
+assert.match(fn, /p_references: media\.references/);
 assert.match(fn, /action === "list_received"/);
 assert.match(fn, /action === "list_received" \|\| action === "list_sent"/);
 assert.match(fn, /"yucang_list_sent_prompt_shares"/);
@@ -87,5 +94,20 @@ assert.match(addMembersMigration, /status = 'invited'/);
 assert.match(addMembersMigration, /grant execute on function public\.yucang_invite_group_members_by_accounts[\s\S]*to service_role/);
 assert.doesNotMatch(addMembersMigration, /grant execute[\s\S]*to authenticated/);
 assert.doesNotMatch(addMembersMigration, /private_notebooks|prompt_text|chrome\.storage|cloud.?sync/i);
+
+assert.match(shared, /export function shareMedia/);
+assert.match(shared, /png\|jpeg\|webp/);
+assert.match(shared, /must contain real image bytes matching its MIME type/);
+assert.match(shared, /SHARE_MEDIA_ITEM_LIMIT = 4/);
+assert.match(shared, /SHARE_MEDIA_TOTAL_BYTES = 10 \* 1024 \* 1024/);
+assert.match(shareMediaMigration, /add column if not exists image text/);
+assert.match(shareMediaMigration, /add column if not exists examples jsonb/);
+assert.match(shareMediaMigration, /add column if not exists reference_images jsonb/);
+assert.match(shareMediaMigration, /private\.yucang_share_image_is_safe/);
+assert.match(shareMediaMigration, /'image', clean_image/);
+assert.match(shareMediaMigration, /shared\.image, shared\.examples, shared\.reference_images/);
+assert.match(shareMediaMigration, /where auth\.uid\(\) is not null/);
+assert.match(shareMediaMigration, /where shared\.sender_id = caller/);
+assert.doesNotMatch(shareMediaMigration, /private_notebooks|chrome\.storage|cloud.?sync/i);
 
 console.log("Yucang friend/group endpoint contract tests passed.");

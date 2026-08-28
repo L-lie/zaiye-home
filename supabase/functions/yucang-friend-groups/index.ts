@@ -6,6 +6,7 @@ import {
   FRIEND_GROUP_ORIGINS,
   FriendGroupError,
   requiredString,
+  shareMedia,
   uuid,
 } from "../_shared/yucang-friend-groups.ts";
 
@@ -55,7 +56,7 @@ Deno.serve(async (request) => {
     if (!FRIEND_GROUP_ORIGINS.has(origin)) return json(403, origin, { ok: false, error: "origin_not_allowed" });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(origin) });
     if (request.method !== "POST") return json(405, origin, { ok: false, error: "method_not_allowed" });
-    if (Number(request.headers.get("content-length") || 0) > 160_000) throw new FriendGroupError(413, "payload_too_large", "The request is too large.");
+    if (Number(request.headers.get("content-length") || 0) > 15_000_000) throw new FriendGroupError(413, "payload_too_large", "The request is too large.");
 
     const token = bearer(request);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -142,7 +143,8 @@ Deno.serve(async (request) => {
           : "yucang_list_admin_feedback_inbox";
       const result = await userClient.rpc(rpc, { p_limit: limit }); data = result.data; error = result.error;
     } else if (action === "share_prompt") {
-      const share = exactObject(base.share, ["targetKind", "targetId", "title", "prompt", "project", "category", "contentType", "tags", "variables", "model", "modelVersion", "parameters", "license", "negativePrompt", "usageInstruction", "sourceItemId"]);
+      const share = exactObject(base.share, ["targetKind", "targetId", "title", "prompt", "project", "category", "contentType", "tags", "variables", "model", "modelVersion", "parameters", "license", "negativePrompt", "usageInstruction", "sourceItemId", "image", "examples", "references"]);
+      const media = shareMedia(share);
       const result = await userClient.rpc("yucang_share_prompt", {
         p_request_id: requestId,
         p_target_kind: requiredString(share.targetKind, "invalid_share_target", 10),
@@ -161,6 +163,9 @@ Deno.serve(async (request) => {
         p_negative_prompt: typeof share.negativePrompt === "string" ? share.negativePrompt : "",
         p_usage_instruction: typeof share.usageInstruction === "string" ? share.usageInstruction : "",
         p_source_item_id: typeof share.sourceItemId === "string" ? share.sourceItemId : "",
+        p_image: media.image,
+        p_examples: media.examples,
+        p_references: media.references,
       });
       data = first(result.data); error = result.error;
     } else {

@@ -53,3 +53,57 @@ export function email(value: unknown) {
   return item;
 }
 
+const SHARE_MEDIA_ITEM_LIMIT = 4;
+const SHARE_MEDIA_ITEM_BYTES = 5 * 1024 * 1024;
+const SHARE_MEDIA_TOTAL_BYTES = 10 * 1024 * 1024;
+
+function decodeShareImage(value: string, label: string) {
+  const match = value.match(/^data:(image\/(?:png|jpeg|webp));base64,([a-z0-9+/=]+)$/i);
+  if (!match) throw new FriendGroupError(422, "invalid_media", `${label} must be an embedded JPEG, PNG, or WebP image.`);
+  let binary = "";
+  try { binary = atob(match[2]); } catch {
+    throw new FriendGroupError(422, "invalid_media", `${label} is not valid base64.`);
+  }
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  if (!bytes.length || bytes.length > SHARE_MEDIA_ITEM_BYTES) {
+    throw new FriendGroupError(422, "media_too_large", `${label} must be between 1 byte and 5 MB.`);
+  }
+  const png = bytes.length >= 8 && [137, 80, 78, 71, 13, 10, 26, 10].every((item, index) => bytes[index] === item);
+  const jpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const webp = bytes.length >= 12
+    && String.fromCharCode(...bytes.slice(0, 4)) === "RIFF"
+    && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
+  const actualMime = png ? "image/png" : jpeg ? "image/jpeg" : webp ? "image/webp" : "";
+  if (!actualMime || actualMime !== match[1].toLowerCase()) {
+    throw new FriendGroupError(422, "invalid_media", `${label} must contain real image bytes matching its MIME type.`);
+  }
+  return bytes.length;
+}
+
+export function shareMedia(value: { image?: unknown; examples?: unknown; references?: unknown }) {
+  const image = value.image == null || value.image === "" ? "" : value.image;
+  if (typeof image !== "string") throw new FriendGroupError(422, "invalid_media", "image must be an embedded image.");
+  const examples = value.examples ?? [];
+  const references = value.references ?? [];
+  if (!Array.isArray(examples) || !Array.isArray(references)) {
+    throw new FriendGroupError(422, "invalid_media", "examples and references must be arrays.");
+  }
+  const items = [
+    ...(image ? [{ value: image, label: "image" }] : []),
+    ...examples.map((item, index) => ({ value: item, label: `examples[${index}]` })),
+    ...references.map((item, index) => ({ value: item, label: `references[${index}]` })),
+  ];
+  if (items.length > SHARE_MEDIA_ITEM_LIMIT) {
+    throw new FriendGroupError(422, "too_many_media", `A shared Prompt may contain at most ${SHARE_MEDIA_ITEM_LIMIT} images.`);
+  }
+  let totalBytes = 0;
+  for (const item of items) {
+    if (typeof item.value !== "string") throw new FriendGroupError(422, "invalid_media", `${item.label} must be an embedded image.`);
+    totalBytes += decodeShareImage(item.value, item.label);
+  }
+  if (totalBytes > SHARE_MEDIA_TOTAL_BYTES) {
+    throw new FriendGroupError(422, "media_too_large", "Combined shared images must not exceed 10 MB.");
+  }
+  return { image, examples, references };
+}
+
