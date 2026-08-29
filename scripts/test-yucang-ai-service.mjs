@@ -10,10 +10,14 @@ const css = read("yucang/app.css");
 const pricing = read("YUCANG_HOSTED_AI_PRICING.md");
 
 assert.doesNotMatch(html, /href="#\/ai-service" data-nav="ai-service"/);
-assert.match(app, /class="account-drawer-nav"[\s\S]*href="#\/ai-service"/);
-assert.match(app, /section === "ai-service"\) return renderAiService\(\)/);
+assert.doesNotMatch(app, /href="#\/ai-service"/);
+assert.doesNotMatch(app, /section === "ai-service"\) return renderAiService\(\)/);
+assert.match(app, /section === "ai-service"\)[\s\S]*history\.replaceState\(null, "", `[\s\S]*#\/home`\)[\s\S]*return renderHome\(\)/);
 assert.match(app, /function renderAiService\(\)/);
 assert.match(css, /\.ai-service-page/);
+assert.match(pricing, /内部停用底稿/);
+assert.match(pricing, /未启用、未对外展示/);
+assert.match(pricing, /官网不提供此页面、导航、充值、付款或购买入口/);
 
 const pageStart = app.indexOf("function renderAiService()");
 const pageEnd = app.indexOf("\nasync function ", pageStart);

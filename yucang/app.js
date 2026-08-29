@@ -583,7 +583,6 @@ function renderAccountDrawer() {
       <button class="button account-drawer-edit" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
       <nav class="account-drawer-nav" aria-label="${tr("我的功能", "My account sections")}">
         <a href="#/my-publications"><span>${tr("创作管理", "Creator workspace")}</span><strong>${tr("我的发布", "My publications")}</strong></a>
-        <a href="#/ai-service"><span>${tr("账号服务", "Account service")}</span><strong>${tr("AI 服务", "AI service")}</strong></a>
         ${state.access?.is_creator ? `<a href="#/publish/new"><span>${tr("发布入口", "Publishing")}</span><strong>${tr("网站新建 Prompt", "Create Prompt on website")}</strong></a>` : ""}
         <a href="../prompt-vault.html"><span>Prompt Vault</span><strong>${tr("打开扩展介绍", "Open extension page")}</strong></a>
       </nav>
@@ -2137,7 +2136,10 @@ async function renderRoute() {
     history.replaceState(null, "", `${location.pathname}${location.search}#/home`);
     return renderHome();
   }
-  if (section === "ai-service") return renderAiService();
+  if (section === "ai-service") {
+    history.replaceState(null, "", `${location.pathname}${location.search}#/home`);
+    return renderHome();
+  }
   if (section === "login") return renderLogin();
   if (section === "prompt" && id) return renderPublicPrompt(id, childId === "comment" ? detailId : "");
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);

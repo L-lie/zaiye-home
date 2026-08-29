@@ -122,7 +122,7 @@ assert.match(app, /history\.replaceState\(null, "", `\$\{location\.pathname\}\$\
 assert.match(app, /document\.querySelectorAll\("\.main-nav a"\)[\s\S]*setAccountDrawer\(false\)/);
 assert.match(app, /account-drawer-nav/);
 assert.match(app, /href="#\/my-publications"/);
-assert.match(app, /href="#\/ai-service"/);
+assert.doesNotMatch(app, /href="#\/ai-service"/);
 assert.match(app, /data-account-drawer-close/);
 assert.match(app, /section === "my"/);
 assert.match(app, /section === "my"[\s\S]*setAccountDrawer\(false\)/);
