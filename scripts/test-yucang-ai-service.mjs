@@ -11,6 +11,7 @@ const pricing = read("YUCANG_HOSTED_AI_PRICING.md");
 
 assert.doesNotMatch(html, /href="#\/ai-service" data-nav="ai-service"/);
 assert.doesNotMatch(app, /href="#\/ai-service"/);
+assert.doesNotMatch(app, /name="publicationMode" value="paid"/);
 assert.doesNotMatch(app, /section === "ai-service"\) return renderAiService\(\)/);
 assert.match(app, /section === "ai-service"\)[\s\S]*history\.replaceState\(null, "", `[\s\S]*#\/home`\)[\s\S]*return renderHome\(\)/);
 assert.match(app, /function renderAiService\(\)/);
