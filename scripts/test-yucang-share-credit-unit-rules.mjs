@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const migrationUrl = new URL('../supabase/migrations/20260829000100_yucang_share_credit_unit_rules.sql', import.meta.url);
 const sql = await readFile(migrationUrl, 'utf8');
+const currentSql = await readFile(new URL('../supabase/migrations/20260830000100_yucang_five_daily_share_units.sql', import.meta.url), 'utf8');
 
 for (const needle of [
   'add column if not exists charge_units integer',
@@ -26,5 +27,9 @@ assert.doesNotMatch(sql, /share_unlimited := is_admin or is_paid/);
 assert.doesNotMatch(sql, /public\.yucang_group_membership_periods/);
 assert.doesNotMatch(sql, /free_charge := least\(target_recipient_count, free_remaining\)/);
 assert.doesNotMatch(sql, /permanent_charge := target_recipient_count - free_charge/);
+assert.match(currentSql, /daily_free_limit := 5/);
+assert.match(currentSql, /greatest\(0, 5 - used_today\)/);
+assert.match(currentSql, /share_charge_units integer := 1/);
+assert.doesNotMatch(currentSql, /target_recipient_count - free_charge/);
 
 console.log('Yucang one-target share units and first-publication reward checks passed.');

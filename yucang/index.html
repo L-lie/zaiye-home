@@ -10,13 +10,14 @@
     <title>语藏 · Prompt Community</title>
     <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
     <link rel="stylesheet" href="../auth/login-experience.css" />
-    <link rel="stylesheet" href="app.css?v=20260827-masonry2" />
+    <script>document.documentElement.dataset.theme = localStorage.getItem("yucangTheme") || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");</script>
+    <link rel="stylesheet" href="app.css?v=20260901-theme1" />
     <link rel="stylesheet" href="account-profile.css?v=20260826-profile1" />
     <link rel="stylesheet" href="interactions.css?v=20260827-interactions1" />
     <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="../supabase-config.js" defer></script>
     <script src="../supabase-client.js" defer></script>
-    <script type="module" src="app.js?v=20260827-masonry2"></script>
+    <script type="module" src="app.js?v=20260901-backlog1"></script>
   </head>
   <body>
     <header class="app-header">
@@ -27,10 +28,11 @@
       <nav class="main-nav" aria-label="主导航">
         <a href="#/home" data-nav="home">首页</a>
         <a href="#/discover" data-nav="discover">提示词库</a>
-        <a href="#/admin/review" data-staff-link hidden>审核</a>
+        <a href="#/admin/review" data-staff-link hidden>管理</a>
       </nav>
       <div class="header-actions">
         <a class="header-product-link" href="../prompt-vault.html" data-prompt-vault-link>安装 Prompt Vault</a>
+        <button class="locale-toggle theme-toggle" type="button" data-theme-toggle aria-label="切换日夜模式">☀</button>
         <button class="locale-toggle" type="button" data-locale-toggle aria-label="Switch to English">EN</button>
         <div class="account-actions" id="accountActions">
           <a class="button ghost" href="#/login">登录</a>

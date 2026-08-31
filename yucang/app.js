@@ -33,6 +33,7 @@ const accountActions = document.getElementById("accountActions");
 const accountDrawer = document.getElementById("accountDrawer");
 const toast = document.getElementById("toast");
 const localeToggle = document.querySelector("[data-locale-toggle]");
+const themeToggle = document.querySelector("[data-theme-toggle]");
 const promptVaultBridge = createPromptVaultBridge();
 const promptVaultWebsiteAuthBridge = createPromptVaultWebsiteAuthBridge();
 const promptVaultPublishBridge = createPromptVaultPublishBridge();
@@ -117,11 +118,12 @@ function updateStaticLocale() {
     if (link) link.textContent = label;
   });
   const staffLink = document.querySelector("[data-staff-link]");
-  if (staffLink) staffLink.textContent = tr("审核", "Review");
+  if (staffLink) staffLink.textContent = tr("管理", "Manage");
   const vaultLink = document.querySelector("[data-prompt-vault-link]");
   if (vaultLink) vaultLink.textContent = tr("安装 Prompt Vault", "Get Prompt Vault");
   localeToggle.textContent = en ? "中" : "EN";
   localeToggle.setAttribute("aria-label", en ? "切换到中文" : "Switch to English");
+  updateThemeToggle();
   document.querySelector(".loading-state p")?.replaceChildren(tr("正在进入语藏…", "Entering Yucang…"));
 }
 
@@ -628,11 +630,10 @@ function requireStaff() {
   app.innerHTML = `
     <section class="state-card narrow">
       <p class="eyebrow">STAFF ONLY</p>
-      <h1>${tr("没有审核权限", "No review access")}</h1>
-      <p class="lede">${tr("审核后台仅向审核员和管理员开放。", "The review workspace is available only to reviewers and administrators.")}</p>
-      <button class="button" type="button" data-bootstrap-admin>${tr("以站点 owner 初始化首位管理员", "Initialize the first admin as site owner")}</button>
+      <h1>${tr("没有管理权限", "No management access")}</h1>
+      <p class="lede">${tr("内容管理仅向已由服务端授权的管理员开放。普通用户不能申请或自行获得该权限。", "Content management is available only to server-authorized administrators. Regular users cannot request or grant themselves access.")}</p>
+      <a class="button" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
     </section>`;
-  app.querySelector("[data-bootstrap-admin]").addEventListener("click", bootstrapAdmin);
   return false;
 }
 
@@ -1031,15 +1032,17 @@ function renderHome({ showLogin = false } = {}) {
 async function renderDiscover() {
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取提示词库...", "Loading Prompt Library...")}</p></section>`;
   try {
-    const items = await loadResources();
+    const officialItems = await loadResources();
+    const communityItems = await loadCommunityResources();
+    const items = [...communityItems, ...officialItems];
     app.innerHTML = `
       <section class="library-intro">
         <div>
           <p class="eyebrow">${tr("语藏提示词库", "YUCANG PROMPT LIBRARY")}</p>
           <h1>${tr("找到 Prompt，改好变量，直接使用", "Find a Prompt. Adjust it. Use it.")}</h1>
           <p>${tr(
-            "无需登录。浏览站方整理的真实模板，在页面里完成变量替换并复制最终 Prompt。",
-            "No sign-in required. Browse curated templates, replace variables, and copy the final Prompt.",
+            "无需登录。站方精选与用户公开作品都在这里，在页面里完成变量替换并复制最终 Prompt。",
+            "No sign-in required. Official picks and public creator works live together here; replace variables and copy the final Prompt.",
           )}</p>
         </div>
         <aside class="library-count" aria-label="${tr("提示词数量", "Prompt count")}">
@@ -1061,10 +1064,8 @@ async function renderDiscover() {
           ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === "all"}">${resourceCategoryLabel(category)}</button>`).join("")}
         </div>
         <div class="resource-grid" data-resource-grid></div>
-      </section>
-      <section class="community-shelf" data-community-shelf hidden></section>`;
+      </section>`;
     bindResourceLibrary(items);
-    hydrateCommunityShelf();
   } catch (error) {
     renderError(error, tr("提示词库暂时不可用", "Prompt Library is unavailable"));
   }
@@ -1226,30 +1227,58 @@ function renderAiService() {
     </div>`;
 }
 
-async function hydrateCommunityShelf() {
-  const shelf = app.querySelector("[data-community-shelf]");
-  if (!shelf) return;
+function communityCategory(contentType) {
+  return ({ image: "image", video: "video", text_office: "writing", programming: "coding" })[contentType] || "writing";
+}
+
+function updateThemeToggle() {
+  const light = document.documentElement.dataset.theme === "light";
+  themeToggle.textContent = light ? "☾" : "☀";
+  themeToggle.setAttribute("aria-label", light
+    ? tr("切换到夜间模式", "Switch to dark mode")
+    : tr("切换到日间模式", "Switch to light mode"));
+  themeToggle.setAttribute("aria-pressed", String(light));
+}
+
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem("yucangTheme", next);
+  updateThemeToggle();
+}
+
+async function loadCommunityResources() {
   try {
-    const items = await rpc("yucang_list_public_works");
-    if (!items.length || !shelf.isConnected) return;
-    shelf.innerHTML = `
-      <div class="section-head"><div><h2>${tr("社区公开作品", "Community Works")}</h2><p>${tr("创作者确认发布的公开作品", "Public works confirmed by their creators")}</p></div></div>
-      <div class="card-grid">${items.map(renderWorkCard).join("")}</div>`;
-    shelf.hidden = false;
+    const works = await rpc("yucang_list_public_works");
+    return Promise.all(works.map(async (work) => {
+      const images = await loadVersionMedia(work.version_id);
+      return {
+        ...work,
+        id: work.work_id,
+        category: communityCategory(work.content_type),
+        model: [work.model_name, work.model_version].filter(Boolean).join(" "),
+        usage: work.summary || "",
+        featuredImage: images[0]?.url || "",
+        sourceName: work.author_nickname || tr("语藏用户", "Yucang creator"),
+        sourceKind: "community",
+        communityImages: images,
+      };
+    }));
   } catch (error) {
-    if (!isSchemaMissing(error)) console.warn("Community shelf unavailable", error);
+    if (!isSchemaMissing(error)) console.warn("Community works unavailable", error);
+    return [];
   }
 }
 
 function resourceSearchText(item) {
-  return [item.title, item.summary, item.model, item.usage, ...(item.tags || [])].join(" ").toLocaleLowerCase("zh-CN");
+  return [item.title, item.summary, item.model, item.usage, item.sourceName, ...(item.tags || [])].join(" ").toLocaleLowerCase("zh-CN");
 }
 
 function renderResourceCard(item) {
   const image = item.featuredImage
     ? `<figure class="resource-card-image"><img src="${escapeHtml(item.featuredImage)}" alt="${escapeHtml(item.title)} ${tr("效果图", "example image")}" loading="lazy" decoding="async" /></figure>`
     : "";
-  const resourceKey = `official:${item.id}`;
+  const resourceKey = item.sourceKind === "community" ? `work:${item.id}` : `official:${item.id}`;
   return `
     <article class="resource-card${image ? " has-image" : ""}">
       <a class="resource-card-link" href="#/prompt/${encodeURIComponent(item.id)}">
@@ -1300,13 +1329,23 @@ async function hydrateResourceLikes(root, items) {
 }
 
 function bindResourceCardActions(root, items) {
-  bindPromptVaultButtons(root, (itemId) => officialPromptPayload(items.find((item) => item.id === itemId)));
+  bindPromptVaultButtons(root, (itemId) => {
+    const item = items.find((entry) => entry.id === itemId);
+    return item?.sourceKind === "community"
+      ? communityPromptPayload(item, item.featuredImage)
+      : officialPromptPayload(item);
+  });
   root.querySelectorAll("[data-copy-resource]").forEach((button) => button.addEventListener("click", async (event) => {
     event.preventDefault();
     event.stopPropagation();
     const item = items.find((entry) => entry.id === button.dataset.copyResource);
     if (!item) return;
-    await navigator.clipboard.writeText(resolvedOfficialPrompt(item));
+    const prompt = item.sourceKind === "community"
+      ? renderPromptTemplate(item.prompt_text, normalizeVariables(item.variables), Object.fromEntries(
+        normalizeVariables(item.variables).map((entry) => [entry.name, entry.defaultValue || `@${entry.name}`]),
+      ))
+      : resolvedOfficialPrompt(item);
+    await navigator.clipboard.writeText(prompt);
     notify(tr("Prompt 已复制", "Prompt copied"));
   }));
   hydrateResourceLikes(root, items);
@@ -1731,7 +1770,9 @@ async function renderMyPublications() {
               ${item.version_status === "draft" ? `<a class="button" href="#/publish/${item.version_id}">${tr("编辑", "Edit")}</a><a class="button primary" href="#/preview/${item.version_id}">${tr("预览并发布", "Preview & publish")}</a>` : ""}
               ${item.version_status === "pending_review" ? `<button class="button" type="button" data-withdraw="${item.version_id}">${tr("撤回审核", "Withdraw review")}</button>` : ""}
               ${item.version_status === "changes_requested" ? `<button class="button" type="button" data-reopen="${item.version_id}">${tr("继续修改", "Continue editing")}</button>` : ""}
-              ${item.version_status === "approved" && item.current_public_version_id === item.version_id ? `<a class="button" href="#/prompt/${item.work_id}">${tr("查看公开页", "View public page")}</a>` : ""}
+              ${item.version_status === "approved" && item.current_public_version_id === item.version_id ? `<a class="button" href="#/prompt/${item.work_id}">${tr("查看公开页", "View public page")}</a><button class="button" type="button" data-work-visibility="private" data-work-id="${item.work_id}">${tr("改为不公开", "Make private")}</button>` : ""}
+              ${item.version_status === "approved" && item.work_status === "withdrawn" ? `<button class="button" type="button" data-work-visibility="public" data-work-id="${item.work_id}">${tr("重新公开", "Make public")}</button>` : ""}
+              <button class="button danger" type="button" data-delete-work="${item.work_id}">${tr("删除", "Delete")}</button>
             </div>
           </article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("还没有发布流程", "No publication flow yet")}</h3><p>${tr("从新建公开作品开始。", "Start by creating a public work.")}</p></div>`}
       </section>`;
@@ -1748,6 +1789,26 @@ async function renderMyPublications() {
       try {
         await rpc("yucang_reopen_changes", { p_version_id: button.dataset.reopen });
         go(`publish/${button.dataset.reopen}`);
+      } catch (error) { notify(error.message); setBusy(button, false); }
+    }));
+    app.querySelectorAll("[data-work-visibility]").forEach((button) => button.addEventListener("click", async () => {
+      setBusy(button, true);
+      try {
+        await rpc("yucang_set_my_work_public", {
+          p_work_id: button.dataset.workId,
+          p_public: button.dataset.workVisibility === "public",
+        });
+        notify(button.dataset.workVisibility === "public" ? tr("作品已重新公开。", "The work is public again.") : tr("作品已改为不公开。", "The work is now private."));
+        renderMyPublications();
+      } catch (error) { notify(error.message); setBusy(button, false); }
+    }));
+    app.querySelectorAll("[data-delete-work]").forEach((button) => button.addEventListener("click", async () => {
+      if (!window.confirm(tr("确定删除这条发布吗？删除后不会再出现在提示词库或“我的发布”。", "Delete this work? It will disappear from the library and My Works."))) return;
+      setBusy(button, true);
+      try {
+        await rpc("yucang_delete_work", { p_work_id: button.dataset.deleteWork, p_reason: "" });
+        notify(tr("发布已删除，审计记录已安全保留。", "The work was deleted; its audit record was retained."));
+        renderMyPublications();
       } catch (error) { notify(error.message); setBusy(button, false); }
     }));
   } catch (error) {
@@ -1967,24 +2028,35 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
       if (!isSchemaMissing(error)) throw error;
     }
     app.innerHTML = `
-      <section class="detail-header">
-        <p class="eyebrow">PUBLIC PROMPT · APPROVED CURRENT VERSION</p>
-        ${mediaGalleryMarkup(images)}
-        ${snapshotDetail(item, { includePrompt: false })}
-      </section>
-      <section class="split-layout">
-        <div class="panel">
-          <h2>${tr("修改变量", "Adjust variables")}</h2>
-          <p class="lede">${tr("变量只在当前页面生成最终 Prompt，不会修改公开版本。", "Variables only change the generated Prompt on this page; the public version stays unchanged.")}</p>
-          <div class="form-grid" data-variable-inputs>
-            ${variables.length ? variables.map((entry) => `<label class="field"><span>${escapeHtml(entry.name)}</span><input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" /></label>`).join("") : `<p class="lede field full">${tr("这个 Prompt 没有声明变量，可直接复制。", "This Prompt has no declared variables and can be copied directly.")}</p>`}
+      <section class="resource-detail-head">
+        <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
+        <div class="resource-detail-overview${images.length ? " has-image" : ""}">
+          <div class="resource-detail-left">
+            ${images.length ? `<div class="community-detail-media">${mediaGalleryMarkup(images)}</div>` : ""}
+            <div class="resource-variable-panel">
+              <div class="tool-heading"><h2>${tr("修改变量", "Adjust variables")}</h2><p>${tr("输入内容后，右侧 Prompt 会立即更新。", "The Prompt updates as you type.")}</p></div>
+              <div class="resource-variable-list" data-variable-inputs>
+                ${variables.length ? variables.map((entry) => `<label class="resource-variable"><span>${escapeHtml(entry.name)}</span><input data-variable-value="${escapeHtml(entry.name)}" value="${escapeHtml(entry.defaultValue)}" /></label>`).join("") : `<p class="lede">${tr("这个 Prompt 没有声明变量，可直接复制。", "This Prompt has no declared variables and can be copied directly.")}</p>`}
+              </div>
+            </div>
+          </div>
+          <div class="resource-detail-right">
+            <div class="resource-detail-copy">
+              <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(item.content_type))}</span><span class="pill">${tr("用户公开作品", "Public creator work")}</span></div>
+              <h1>${escapeHtml(item.title)}</h1>
+              <p>${escapeHtml(item.summary || tr("暂无简介", "No description"))}</p>
+              <dl class="resource-facts">
+                <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([item.model_name, item.model_version].filter(Boolean).join(" ") || tr("通用模型", "General model"))}</dd></div>
+                <div><dt>${tr("作者", "Creator")}</dt><dd>${escapeHtml(item.author_nickname)}</dd></div>
+                <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(item.license_code))}</dd></div>
+              </dl>
+            </div>
+            <aside class="prompt-stage">
+              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
+              <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
+            </aside>
           </div>
         </div>
-        <aside class="panel sticky-panel">
-          <div class="section-head"><div><p class="eyebrow">FINAL PROMPT</p><h2>${tr("最终 Prompt", "Final Prompt")}</h2></div></div>
-          <pre class="prompt-output" data-final-prompt></pre>
-          <div class="prompt-actions" style="margin-top:16px"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button>` : ""}</div>
-        </aside>
       </section>
       ${commentsSectionMarkup({ comments, isLoggedIn: Boolean(state.session), locale: state.locale })}`;
     bindPromptTool({
@@ -2003,6 +2075,18 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
       try {
         await rpc("yucang_admin_set_work_restricted", { p_work_id: item.work_id, p_restricted: true, p_reason: reason });
         notify(tr("作品已从公开入口下架，历史与审计记录已保留。", "The work is no longer public; history and audit records were retained."));
+        go("discover");
+      } catch (error) { notify(error.message); setBusy(button, false); }
+    });
+    app.querySelector("[data-admin-delete]")?.addEventListener("click", async (event) => {
+      const reason = window.prompt(tr("请输入删除原因（会写入审计记录）", "Enter a deletion reason (saved to the audit log)"), "")?.trim();
+      if (!reason) return;
+      if (!window.confirm(tr("确定删除这条作品吗？", "Delete this work?"))) return;
+      const button = event.currentTarget;
+      setBusy(button, true, tr("正在删除…", "Deleting…"));
+      try {
+        await rpc("yucang_delete_work", { p_work_id: item.work_id, p_reason: reason });
+        notify(tr("作品已删除，历史与审计记录已保留。", "The work was deleted; history and audit records were retained."));
         go("discover");
       } catch (error) { notify(error.message); setBusy(button, false); }
     });
@@ -2034,7 +2118,32 @@ async function renderAdminReview() {
   }
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取审核队列…", "Loading review queue…")}</p></section>`;
   try {
-    const items = await rpc("yucang_admin_list_pending");
+    const items = state.access?.is_admin
+      ? await rpc("yucang_list_public_works")
+      : await rpc("yucang_admin_list_pending");
+    if (state.access?.is_admin) {
+      app.innerHTML = `
+        <section>
+          <div class="section-head"><div><p class="eyebrow">CONTENT MANAGEMENT</p><h1 style="font-size:52px">${tr("公开内容管理", "Public content management")}</h1><p>${tr("作品发布后直接进入提示词库；你可以在这里查看、下架或删除违规内容。", "Works enter the library immediately; inspect, restrict, or delete violating content here.")}</p></div><span class="status">${items.length} ${tr("项", "items")}</span></div>
+          ${items.length ? `<div class="table-list">${items.map((item) => `
+            <article class="table-row"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author_nickname)} · v${item.version_no} · ${formatDate(item.published_at)}</p></div><div class="actions" style="margin:0"><a class="button" href="#/prompt/${item.work_id}">${tr("查看", "View")}</a><button class="button" data-manage-restrict="${item.work_id}">${tr("下架", "Restrict")}</button><button class="button danger" data-manage-delete="${item.work_id}">${tr("删除", "Delete")}</button></div></article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("暂无公开作品", "No public works")}</h3></div>`}
+        </section>`;
+      app.querySelectorAll("[data-manage-restrict]").forEach((button) => button.addEventListener("click", async () => {
+        const reason = window.prompt(tr("请输入下架原因", "Enter a restriction reason"), "")?.trim();
+        if (!reason) return;
+        setBusy(button, true);
+        try { await rpc("yucang_admin_set_work_restricted", { p_work_id: button.dataset.manageRestrict, p_restricted: true, p_reason: reason }); renderAdminReview(); }
+        catch (error) { notify(error.message); setBusy(button, false); }
+      }));
+      app.querySelectorAll("[data-manage-delete]").forEach((button) => button.addEventListener("click", async () => {
+        const reason = window.prompt(tr("请输入删除原因", "Enter a deletion reason"), "")?.trim();
+        if (!reason || !window.confirm(tr("确定删除这条作品吗？", "Delete this work?"))) return;
+        setBusy(button, true);
+        try { await rpc("yucang_delete_work", { p_work_id: button.dataset.manageDelete, p_reason: reason }); renderAdminReview(); }
+        catch (error) { notify(error.message); setBusy(button, false); }
+      }));
+      return;
+    }
     app.innerHTML = `
       <section class="split-layout">
         <div>
@@ -2157,6 +2266,7 @@ async function initialize() {
     localeToggle.addEventListener("click", () => {
       setLocale(state.locale === "en" ? "zh" : "en");
     });
+    themeToggle.addEventListener("click", toggleTheme);
     document.querySelectorAll(".main-nav a").forEach((link) => {
       link.addEventListener("click", () => setAccountDrawer(false));
     });
