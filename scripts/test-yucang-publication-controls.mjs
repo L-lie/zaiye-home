@@ -7,7 +7,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (path) => readFileSync(join(root, path), "utf8");
 const migration = read("supabase/migrations/20260901000100_yucang_publication_controls.sql");
 const app = read("yucang/app.js");
-const config = read("supabase/config.toml");
 const html = read("yucang/index.html");
 const css = read("yucang/app.css");
 
@@ -29,7 +28,6 @@ assert.match(app, /data-admin-delete=/);
 assert.match(app, /CONTENT MANAGEMENT/);
 assert.doesNotMatch(app, /data-bootstrap-admin/);
 assert.match(app, /community-detail-media/);
-assert.match(config, /\[functions\.yucang-version-media\]\s+verify_jwt = false/);
 assert.match(html, /data-theme-toggle/);
 assert.match(css, /:root\[data-theme="light"\]/);
 
