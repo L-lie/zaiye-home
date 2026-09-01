@@ -885,6 +885,7 @@ function bindTextFigure(canvas) {
     const centerX = cssWidth / 2;
     const scaleX = cssWidth * .77;
     const scaleY = cssHeight * .9;
+    const figureRgb = document.documentElement.dataset.theme === "light" ? "39, 41, 37" : "239, 239, 232";
     particles.forEach((particle) => {
         const drift = reducedMotion ? 0 : Math.sin(time * particle.speed + particle.phase) * (1.2 + particle.depth * 1.8);
         let x = centerX + particle.x * scaleX + drift;
@@ -908,8 +909,8 @@ function bindTextFigure(canvas) {
         context.font = `${Math.round(particle.size)}px "Songti SC", SimSun, STSong, serif`;
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillStyle = `rgba(239, 239, 232, ${Math.min(1, particle.alpha + interaction * .42)})`;
-        context.shadowColor = `rgba(239, 239, 232, ${.08 + particle.depth * .22 + interaction * .58})`;
+        context.fillStyle = `rgba(${figureRgb}, ${Math.min(1, particle.alpha + interaction * .42)})`;
+        context.shadowColor = `rgba(${figureRgb}, ${.08 + particle.depth * .22 + interaction * .58})`;
         context.shadowBlur = 2 + particle.depth * 5 + interaction * 14;
         context.fillText(particle.glyph, 0, 0);
         context.restore();
@@ -921,14 +922,19 @@ function bindTextFigure(canvas) {
       const alpha = Math.sin(Math.PI * travel) * .34;
       context.font = `${mote.size}px "Songti SC", SimSun, STSong, serif`;
       context.textAlign = "center";
-      context.fillStyle = `rgba(239, 239, 232, ${alpha})`;
+      context.fillStyle = `rgba(${figureRgb}, ${alpha})`;
       context.fillText(mote.glyph, x, y);
     });
     if (!reducedMotion) frame = requestAnimationFrame(draw);
   };
+  const themeObserver = new MutationObserver(() => {
+    if (reducedMotion) draw(performance.now());
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   draw();
   return () => {
     cancelAnimationFrame(frame);
+    themeObserver.disconnect();
     canvas.removeEventListener("pointermove", updatePointer);
     canvas.removeEventListener("pointerleave", clearPointer);
   };
