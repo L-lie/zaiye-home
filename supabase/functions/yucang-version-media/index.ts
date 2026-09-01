@@ -33,17 +33,15 @@ Deno.serve(async (request) => {
     const { data: allowed, error: accessError } = await client.rpc("yucang_can_access_version_media", { p_version_id: versionId });
     if (accessError || allowed !== true) return json(404, { ok: false, error: "media_not_found" });
 
-    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+    const { data: manifest, error: manifestError } = await client.rpc("yucang_get_version_media_manifest", {
+      p_version_id: versionId,
     });
-    const { data: manifest, error: manifestError } = await admin
-      .from("yucang_version_media")
-      .select("storage_path,mime_type,byte_size,position")
-      .eq("version_id", versionId)
-      .order("position");
     if (manifestError) return json(500, { ok: false, error: "media_lookup_failed" });
     if (!manifest?.length) return json(200, { ok: true, images: [] });
 
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const { data: signed, error: signedError } = await admin.storage
       .from("yucang-publication-media")
       .createSignedUrls(manifest.map((item) => item.storage_path), 3600);
@@ -54,7 +52,7 @@ Deno.serve(async (request) => {
         url: signed[index]?.signedUrl || "",
         mimeType: item.mime_type,
         byteSize: item.byte_size,
-        position: item.position,
+        position: item.media_position,
       })).filter((item) => item.url),
     });
   } catch {

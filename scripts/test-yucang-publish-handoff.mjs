@@ -166,6 +166,7 @@ assert.ok(edge.includes('remove(manifest.map((item) => item.storage_path))'), "f
 assert.ok(!edge.includes("prompt: row"), "server response must not echo Prompt content");
 const mediaEdge = read("supabase/functions/yucang-version-media/index.ts");
 assert.ok(mediaEdge.includes("yucang_can_access_version_media"));
+assert.ok(mediaEdge.includes("yucang_get_version_media_manifest"), "media lookup must use the access-controlled manifest RPC");
 assert.ok(mediaEdge.includes("createSignedUrls"));
 assert.ok(mediaEdge.includes('request.headers.get("origin") !== WEB_ORIGIN'));
 
