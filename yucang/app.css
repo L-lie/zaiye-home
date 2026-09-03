@@ -260,6 +260,10 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 .resource-save-button:disabled { opacity: .62; cursor: default; }
 .library-empty { grid-column: 1 / -1; padding: 64px 24px; border: 1px dashed var(--line); border-radius: 16px; text-align: center; }
 .library-empty p { margin: 0; color: var(--muted); }
+.page-exit-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.page-exit-nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 13px; }
+.page-exit-nav a:hover, .page-exit-nav a:focus-visible { color: var(--text); border-color: rgba(213,166,91,.52); outline: none; }
+.panel > .page-exit-nav:first-child { margin-top: -4px; }
 .creator-profile-page { display: grid; gap: 34px; padding-bottom: 42px; }
 .creator-profile-page > .back-link { margin-bottom: -12px; }
 .creator-profile-hero {

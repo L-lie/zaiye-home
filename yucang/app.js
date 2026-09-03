@@ -341,6 +341,13 @@ function go(path) {
   location.hash = `#/${path.replace(/^\//, "")}`;
 }
 
+function pageExitNavMarkup() {
+  return `<nav class="page-exit-nav" aria-label="${tr("退出当前页面", "Leave this page")}">
+    <a href="#/home">${tr("返回首页", "Back to home")}</a>
+    <a href="#/discover">${tr("提示词库", "Prompt Library")}</a>
+  </nav>`;
+}
+
 function postLoginPath(fallback = "home") {
   const pending = sessionStorage.getItem("yucangPostLoginPath");
   sessionStorage.removeItem("yucangPostLoginPath");
@@ -584,6 +591,7 @@ function renderAccountDrawer() {
       </header>
       <button class="button account-drawer-edit" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
       <nav class="account-drawer-nav" aria-label="${tr("我的功能", "My account sections")}">
+        ${state.access?.slug ? `<a href="#/creator/${encodeURIComponent(state.access.slug)}"><span>${tr("公开主页", "Public profile")}</span><strong>${tr("查看我的公开主页", "View my public profile")}</strong></a>` : ""}
         <a href="#/my-publications"><span>${tr("创作管理", "Creator workspace")}</span><strong>${tr("我的发布", "My publications")}</strong></a>
         ${state.access?.is_creator ? `<a href="#/publish/new"><span>${tr("发布入口", "Publishing")}</span><strong>${tr("网站新建 Prompt", "Create Prompt on website")}</strong></a>` : ""}
         <a href="#/governance"><span>${tr("社区安全", "Community safety")}</span><strong>${tr("我的举报与申诉", "My reports & appeals")}</strong></a>
@@ -1602,6 +1610,7 @@ function editorMarkup(record = {}) {
   const variables = normalizeVariables(record.variables);
   return `
     <section class="panel">
+      ${pageExitNavMarkup()}
       <p class="eyebrow">CREATOR STUDIO · ${record.version_id ? `V${record.version_no}` : "NEW"}</p>
       <h1>${record.version_id ? tr("编辑发布草稿", "Edit publication draft") : tr("新建公开作品", "Create public work")}</h1>
       <p class="lede">${tr(
@@ -1937,6 +1946,7 @@ async function renderMyPublications() {
     const items = await rpc("yucang_list_my_publications");
     app.innerHTML = `
       <section>
+        ${pageExitNavMarkup()}
         <div class="section-head"><div><p class="eyebrow">CREATOR STUDIO</p><h1 style="font-size:52px">${tr("我的发布", "My Works")}</h1></div><a class="button primary" href="#/publish/new">${tr("新建公开作品", "Create public work")}</a></div>
         ${items.length ? `<div class="table-list">${items.map((item) => `
           <article class="table-row">
@@ -2317,6 +2327,7 @@ async function renderGovernanceCenter() {
     ]);
     app.innerHTML = `
       <section class="governance-page">
+        ${pageExitNavMarkup()}
         <div class="section-head"><div><p class="eyebrow">COMMUNITY SAFETY</p><h1>${tr("举报与申诉", "Reports & appeals")}</h1><p>${tr("查看你提交的举报，并对属于你的被处置内容申请人工复核。", "Track your reports and request staff review of moderated content you own.")}</p></div><a class="button" href="rules.html" target="_blank" rel="noopener">${tr("社区规则", "Community rules")}</a></div>
         ${moderated.length ? `<section class="governance-section"><div class="tool-heading"><div><h2>${tr("可以申诉的处置", "Actions eligible for appeal")}</h2><p>${tr("申诉不会自动恢复内容，由平台人员复核。", "Appeals do not automatically restore content; staff review them.")}</p></div></div><div class="governance-list">${moderated.map((item) => `
           <article class="governance-card"><div><span class="pill">${governanceTargetLabel(item.target_type)}</span><h3>${escapeHtml(item.target_label)}</h3><p>${formatDate(item.actioned_at)}</p></div><button class="button primary" type="button" data-appeal-target="${escapeHtml(item.target_id)}" data-appeal-type="${escapeHtml(item.target_type)}" data-appeal-report="${escapeHtml(item.report_id || "")}" data-appeal-label="${escapeHtml(item.target_label)}">${tr("提交申诉", "Appeal")}</button></article>`).join("")}</div></section>` : ""}
@@ -2357,6 +2368,7 @@ async function renderAdminGovernance() {
     ]);
     app.innerHTML = `
       <section class="governance-page admin-governance">
+        ${pageExitNavMarkup()}
         <div class="section-head"><div><p class="eyebrow">GOVERNANCE DESK</p><h1>${tr("举报与申诉处理", "Reports & appeals desk")}</h1><p>${tr("所有决定都会写入不可变审计记录。处理人员不能修改用户原始内容。", "Every decision is written to append-only audit history. Staff cannot edit user content.")}</p></div><a class="button" href="#/admin/review">${tr("公开内容管理", "Content management")}</a></div>
         <section class="governance-section"><div class="tool-heading"><h2>${tr("举报工单", "Report cases")}</h2><span class="status">${reports.length}</span></div>${reports.length ? `<div class="governance-list">${reports.map((item) => `
           <article class="governance-card governance-case" data-report-case="${item.report_id}">
@@ -2418,6 +2430,7 @@ async function renderAdminReview() {
     if (state.access?.is_admin) {
       app.innerHTML = `
         <section>
+          ${pageExitNavMarkup()}
           <div class="section-head"><div><p class="eyebrow">CONTENT MANAGEMENT</p><h1 style="font-size:52px">${tr("公开内容管理", "Public content management")}</h1><p>${tr("作品发布后直接进入提示词库；你可以在这里查看、下架或删除违规内容。", "Works enter the library immediately; inspect, restrict, or delete violating content here.")}</p></div><span class="status">${items.length} ${tr("项", "items")}</span></div>
           ${items.length ? `<div class="table-list">${items.map((item) => `
             <article class="table-row"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author_nickname)} · v${item.version_no} · ${formatDate(item.published_at)}</p></div><div class="actions" style="margin:0"><a class="button" href="#/prompt/${item.work_id}">${tr("查看", "View")}</a><button class="button" data-manage-restrict="${item.work_id}">${tr("下架", "Restrict")}</button><button class="button danger" data-manage-delete="${item.work_id}">${tr("删除", "Delete")}</button></div></article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("暂无公开作品", "No public works")}</h3></div>`}
@@ -2441,6 +2454,7 @@ async function renderAdminReview() {
     app.innerHTML = `
       <section class="split-layout">
         <div>
+          ${pageExitNavMarkup()}
           <div class="section-head"><div><p class="eyebrow">REVIEW QUEUE</p><h1 style="font-size:52px">${tr("待审核", "Pending review")}</h1></div><span class="status">${items.length} ${tr("项", "items")}</span></div>
           ${items.length ? `<div class="table-list">${items.map((item) => `
             <article class="table-row"><div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.author_nickname)} · v${item.version_no} · ${formatDate(item.submitted_at)}</p></div><a class="button primary" href="#/admin/review/${item.submission_id}">${tr("打开审核", "Open review")}</a></article>`).join("")}</div>` : `<div class="empty-state"><h3>${tr("审核队列为空", "Review queue is empty")}</h3><p>${tr("创作者二次确认并提交后，会出现在这里。", "Creator submissions appear here after second confirmation.")}</p></div>`}
@@ -2483,6 +2497,7 @@ async function renderSubmission(submissionId) {
     app.innerHTML = `
       <section class="split-layout">
         <div class="panel review-snapshot">
+          ${pageExitNavMarkup()}
           <p class="eyebrow">FROZEN SUBMISSION · ${escapeHtml(item.content_hash.slice(0, 12))}</p>
           ${snapshotDetail(view)}
         </div>
