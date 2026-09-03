@@ -1062,7 +1062,7 @@ function renderHome({ showLogin = false } = {}) {
   const featured = HOME_FEATURED_ART.map((item) => {
     const title = state.locale === "en" ? item.titleEn : item.title;
     return `
-    <a class="home-art-card" href="#/prompt/${encodeURIComponent(item.promptId)}" aria-label="${escapeHtml(title)}, ${tr("打开对应 Prompt", "open the matching Prompt")}, ${item.likes} ${tr("个赞", "likes")}" style="--card-size:${item.size}" data-orbit-phase="${item.phase}" data-orbit-speed="${item.speed}" data-orbit-lane="${item.lane}" data-orbit-lift="${item.lift}">
+    <a class="home-art-card" href="#/prompt/${encodeURIComponent(item.promptId)}" aria-label="${escapeHtml(title)}, ${tr("打开对应 Prompt", "open the matching Prompt")}, ${item.likes} ${tr("个赞", "likes")}" style="--card-size:${item.size}" data-home-like-resource="official:${escapeHtml(item.promptId)}" data-home-title="${escapeHtml(title)}" data-orbit-phase="${item.phase}" data-orbit-speed="${item.speed}" data-orbit-lane="${item.lane}" data-orbit-lift="${item.lift}">
       <img src="${escapeHtml(item.src)}" alt="${escapeHtml(title)} ${tr("的 Prompt 示例效果", "Prompt example")}" width="512" height="512" />
       <span class="home-art-like" aria-label="${tr("点赞数", "Like count")}">♡ ${item.likes}</span>
     </a>`;
@@ -1078,12 +1078,12 @@ function renderHome({ showLogin = false } = {}) {
           "Discover working Prompts, adjust variables, and keep proven methods in your creative system.",
         )}</p>
       </div>
-      <div class="home-orbit" aria-label="${tr("首发 Prompt 示例图，当前均为 0 个赞", "Launch Prompt examples, all currently at 0 likes")}">
+      <div class="home-orbit" aria-label="${tr("首发 Prompt 示例图与社区真实点赞", "Launch Prompt examples with live community likes")}">
         ${featured}
         <canvas class="home-text-figure" role="img" aria-label="${tr("由流动中文文字汇聚成的无五官抽象人形", "A featureless abstract figure formed from flowing Chinese characters")}"></canvas>
       </div>
       <a class="button primary home-library-cta" href="#/discover">${tr("进入提示词库", "Explore Prompts")}</a>
-      <p class="home-feature-note">${tr("首发精选 · 社区点赞上线后将按真实热度更新", "Launch picks · will update from real community likes")}</p>
+      <p class="home-feature-note">${tr("首发精选 · 显示社区真实点赞", "Launch picks · live community likes")}</p>
     </section>
     ${showLogin && !state.session ? `
       <div class="home-login-layer" role="dialog" aria-modal="true" aria-labelledby="loginExperienceTitle">
@@ -1105,6 +1105,7 @@ function renderHome({ showLogin = false } = {}) {
       </div>` : ""}`;
   const stopOrbit = bindHomeOrbit(app.querySelector(".home-orbit"));
   const stopFigure = bindTextFigure(app.querySelector(".home-text-figure"));
+  hydrateHomeLikes(app);
   state.homeOrbitCleanup = () => {
     stopOrbit();
     stopFigure();
@@ -1160,6 +1161,62 @@ async function renderDiscover() {
     bindResourceLibrary(items);
   } catch (error) {
     renderError(error, tr("提示词库暂时不可用", "Prompt Library is unavailable"));
+  }
+}
+
+async function renderCreatorProfile(creatorSlug) {
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取创作者主页...", "Loading creator profile...")}</p></section>`;
+  try {
+    const [profileResult, communityItems] = await Promise.all([
+      rpc("yucang_get_public_creator", { p_slug: creatorSlug }),
+      loadCommunityResources(),
+    ]);
+    const profile = firstRow(profileResult);
+    if (!profile) throw new Error(tr("这个创作者主页不存在或尚无公开作品。", "This creator profile does not exist or has no public work."));
+    const works = communityItems.filter((item) => String(item.author_slug || "").toLowerCase() === String(profile.slug).toLowerCase());
+    const publishedLabel = profile.latest_published_at
+      ? tr(`最近发布于 ${formatDate(profile.latest_published_at)}`, `Latest work published ${formatDate(profile.latest_published_at)}`)
+      : tr("尚无公开作品", "No public work yet");
+    app.innerHTML = `
+      <section class="creator-profile-page" aria-labelledby="creatorTitle">
+        <a class="back-link" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
+        <header class="creator-profile-hero">
+          <div class="creator-profile-identity">
+            ${profileAvatarMarkup({ nickname: profile.nickname, avatarUrl: profile.avatar_url }, state.locale, "large")}
+            <div>
+              <p class="creator-profile-handle">@${escapeHtml(profile.slug)}</p>
+              <h1 id="creatorTitle">${escapeHtml(profile.nickname)}</h1>
+              <p>${escapeHtml(publishedLabel)}</p>
+            </div>
+          </div>
+          <div class="creator-profile-summary">
+            <strong>${Number(profile.published_work_count || works.length)}</strong>
+            <span>${tr("公开 Prompt", "Public Prompts")}</span>
+            <button class="button ghost" type="button" data-report-account="${escapeHtml(profile.user_id)}">${tr("举报账号", "Report account")}</button>
+          </div>
+        </header>
+        <section class="creator-work-section" aria-labelledby="creatorWorksTitle">
+          <div class="creator-work-heading">
+            <h2 id="creatorWorksTitle">${tr("公开作品", "Published work")}</h2>
+            <p>${works.length} ${tr("条作品", "works")}</p>
+          </div>
+          <div class="resource-grid creator-work-grid" data-creator-grid>
+            ${works.length ? works.map(renderResourceCard).join("") : `<div class="library-empty"><h3>${tr("暂时没有公开作品", "No public work yet")}</h3><p>${tr("创作者发布的新作品会显示在这里。", "New public work will appear here.")}</p></div>`}
+          </div>
+        </section>
+      </section>`;
+    const grid = app.querySelector("[data-creator-grid]");
+    if (works.length) {
+      bindResourceCardActions(grid, works);
+      layoutResourceMasonry(grid);
+    }
+    app.querySelector("[data-report-account]")?.addEventListener("click", () => openGovernanceDialog({
+      targetType: "account",
+      targetId: profile.user_id,
+      targetLabel: tr(`创作者：${profile.nickname}`, `Creator: ${profile.nickname}`),
+    }));
+  } catch (error) {
+    renderError(error, tr("无法打开创作者主页", "Unable to open creator profile"));
   }
 }
 
@@ -1332,11 +1389,35 @@ function updateThemeToggle() {
   themeToggle.setAttribute("aria-pressed", String(light));
 }
 
+function applyRouteDefaultTheme(section) {
+  if (localStorage.getItem("yucangTheme")) return;
+  document.documentElement.dataset.theme = section === "home" || section === "login" ? "dark" : "light";
+  updateThemeToggle();
+}
+
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = next;
   localStorage.setItem("yucangTheme", next);
   updateThemeToggle();
+}
+
+async function hydrateHomeLikes(root) {
+  const cards = [...root.querySelectorAll("[data-home-like-resource]")];
+  if (!cards.length) return;
+  try {
+    const counts = await rpc("yucang_get_like_counts", {
+      p_resource_keys: cards.map((card) => card.dataset.homeLikeResource),
+    });
+    const byKey = new Map(counts.map((item) => [item.resource_key, Number(item.like_count || 0)]));
+    cards.forEach((card) => {
+      const count = byKey.get(card.dataset.homeLikeResource) || 0;
+      const title = card.dataset.homeTitle || "";
+      card.setAttribute("aria-label", `${title}, ${tr("打开对应 Prompt", "open the matching Prompt")}, ${count} ${tr("个赞", "likes")}`);
+      const label = card.querySelector(".home-art-like");
+      if (label) label.textContent = `♡ ${count}`;
+    });
+  } catch { /* Keep the initial zero values if the like service is unavailable. */ }
 }
 
 async function loadCommunityResources() {
@@ -1385,7 +1466,9 @@ function renderResourceCard(item) {
       ${image ? `<span class="resource-category-badge">${escapeHtml(resourceCategoryLabel(item.category))}</span>
       <button class="resource-like" type="button" data-like-resource="${escapeHtml(resourceKey)}" title="${tr("点赞", "Like")}" aria-label="${tr("点赞", "Like")}">♡ <span>0</span></button>
       <div class="resource-hover-tools">
-        <span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>
+        ${item.sourceKind === "community" && item.author_slug
+          ? `<a class="resource-author" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.sourceName || tr("语藏用户", "Yucang creator"))}</a>`
+          : `<span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>`}
         <button type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
         <button type="button" data-copy-resource="${escapeHtml(item.id)}" title="${tr("复制 Prompt", "Copy Prompt")}" aria-label="${tr("复制 Prompt", "Copy Prompt")}">⧉</button>
       </div>` : `<button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
@@ -2150,7 +2233,7 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
               <p>${escapeHtml(item.summary || tr("暂无简介", "No description"))}</p>
               <dl class="resource-facts">
                 <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([item.model_name, item.model_version].filter(Boolean).join(" ") || tr("通用模型", "General model"))}</dd></div>
-                <div><dt>${tr("作者", "Creator")}</dt><dd>${escapeHtml(item.author_nickname)} <button class="inline-report-button" type="button" data-report-account="${escapeHtml(item.author_id)}">${tr("举报账号", "Report account")}</button></dd></div>
+                <div><dt>${tr("作者", "Creator")}</dt><dd><a class="creator-inline-link" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.author_nickname)}</a> <button class="inline-report-button" type="button" data-report-account="${escapeHtml(item.author_id)}">${tr("举报账号", "Report account")}</button></dd></div>
                 <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(item.license_code))}</dd></div>
               </dl>
             </div>
@@ -2436,6 +2519,7 @@ async function renderSubmission(submissionId) {
 
 async function renderRoute() {
   const [section, id, childId, detailId] = routeParts();
+  applyRouteDefaultTheme(section);
   state.homeOrbitCleanup?.();
   state.homeOrbitCleanup = null;
   const homeRoute = section === "home" || section === "login";
@@ -2460,6 +2544,7 @@ async function renderRoute() {
     return renderHome();
   }
   if (section === "login") return renderLogin();
+  if (section === "creator" && id) return renderCreatorProfile(id);
   if (section === "prompt" && id) return renderPublicPrompt(id, childId === "comment" ? detailId : "");
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
   if (section === "publish" && id === "new") return renderEditor();

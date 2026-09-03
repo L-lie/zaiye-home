@@ -67,6 +67,6 @@ assert.match(app, /openAccountProfileEditor/);
 assert.match(app, /data-edit-profile/);
 assert.match(app, /await loadProfile\(\);[\s\S]*state\.authReady = true/);
 assert.match(html, /account-profile\.css\?v=20260826-profile1/);
-assert.match(html, /app\.js\?v=20260902-governance1/);
+assert.match(html, /app\.js\?v=20260903-creators1/);
 
 console.log("Yucang account profile contract tests passed.");
