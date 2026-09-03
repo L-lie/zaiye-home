@@ -45,11 +45,12 @@ const RESOURCE_CATEGORY_LABELS = Object.freeze({
   all: ["全部", "All"],
   image: ["图像", "Image"],
   video: ["视频", "Video"],
+  "text-office": ["文字与办公", "Text & Office"],
   writing: ["写作", "Writing"],
   office: ["办公", "Office"],
   coding: ["编程", "Coding"],
 });
-const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "writing", "office", "coding"];
+const RESOURCE_CATEGORY_ORDER = ["all", "image", "video", "text-office", "coding"];
 const HOME_FEATURED_ART = Object.freeze([
   { src: "assets/featured/mushroom-city-1.webp", promptId: "image-mushroom-city", title: "蘑菇城", titleEn: "Mushroom City", likes: 0, size: 1.18, phase: .03, speed: .082, lane: 1.02, lift: -12 },
   { src: "assets/featured/mushroom-city-2.webp", promptId: "image-mushroom-realm", title: "蘑菇城秘境", titleEn: "Mushroom Realm", likes: 0, size: .82, phase: .10, speed: .112, lane: .9, lift: 14 },
@@ -112,6 +113,7 @@ function updateStaticLocale() {
   const navLabels = {
     home: tr("首页", "Home"),
     discover: tr("提示词库", "Prompt Library"),
+    creators: tr("创作者", "Creators"),
   };
   Object.entries(navLabels).forEach(([key, label]) => {
     const link = document.querySelector(`[data-nav="${key}"]`);
@@ -250,6 +252,9 @@ function communityPromptPayload(item, image = "") {
     modelVersion: item.model_version || "",
     basicParams: item.parameters || {},
     license: licenseLabel(item.license_code),
+    negative: item.negative_prompt_text || "",
+    usageInstruction: item.instructions || "",
+    dependencies: item.dependencies || [],
     sourceWorkId: item.work_id,
     sourceVersionId: item.version_id,
     sourceUrl: publicPromptUrl(item.work_id),
@@ -341,11 +346,31 @@ function go(path) {
   location.hash = `#/${path.replace(/^\//, "")}`;
 }
 
+function licenseRightsMarkup(code, { official = false, hasDependencies = false } = {}) {
+  const commercial = official || ["commercial", "commercial_client"].includes(code);
+  const client = code === "commercial_client";
+  const rights = [
+    [tr("收藏和复制", "Save and copy"), true],
+    [tr("修改 Prompt", "Modify Prompt"), true],
+    [tr("个人项目", "Personal projects"), true],
+    [tr("商业项目", "Commercial projects"), commercial],
+    [tr("客户项目", "Client projects"), client],
+    [tr("团队共享", "Team sharing"), false],
+    [tr("署名要求", "Attribution"), tr("按作品说明", "See work terms")],
+    [tr("重新发布或转售 Prompt", "Republish or resell Prompt"), false],
+  ];
+  return `<section class="license-rights" aria-labelledby="licenseRightsTitle"><h2 id="licenseRightsTitle">${tr("授权范围", "License scope")}</h2><div>${rights.map(([label, allowed]) => `<span class="license-right"><strong>${escapeHtml(label)}</strong><small>${typeof allowed === "string" ? escapeHtml(allowed) : allowed ? tr("允许", "Allowed") : tr("不允许", "Not allowed")}</small></span>`).join("")}</div><p>${hasDependencies ? tr("仍需遵守页面列出的模型、LoRA、参考图和第三方素材许可。", "The listed model, LoRA, reference image, and third-party material licenses still apply.") : tr("不包含重新发布、转售或冒充原作者的权利。", "This does not permit republishing, resale, or impersonating the creator.")}</p></section>`;
+}
+
 function pageExitNavMarkup() {
   return `<nav class="page-exit-nav" aria-label="${tr("退出当前页面", "Leave this page")}">
     <a href="#/home">${tr("返回首页", "Back to home")}</a>
     <a href="#/discover">${tr("提示词库", "Prompt Library")}</a>
   </nav>`;
+}
+
+function resourceFavoriteKey(item) {
+  return `${item.sourceKind === "community" ? "work" : "official"}:${item.id}`;
 }
 
 function postLoginPath(fallback = "home") {
@@ -591,6 +616,8 @@ function renderAccountDrawer() {
       </header>
       <button class="button account-drawer-edit" type="button" data-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
       <nav class="account-drawer-nav" aria-label="${tr("我的功能", "My account sections")}">
+        <a href="#/favorites"><span>${tr("个人收藏", "Saved items")}</span><strong>${tr("我的收藏", "My favorites")}</strong></a>
+        <a href="#/account"><span>${tr("账号设置", "Account settings")}</span><strong>${tr("账号与隐私", "Account & privacy")}</strong></a>
         ${state.access?.slug ? `<a href="#/creator/${encodeURIComponent(state.access.slug)}"><span>${tr("公开主页", "Public profile")}</span><strong>${tr("查看我的公开主页", "View my public profile")}</strong></a>` : ""}
         <a href="#/my-publications"><span>${tr("创作管理", "Creator workspace")}</span><strong>${tr("我的发布", "My publications")}</strong></a>
         ${state.access?.is_creator ? `<a href="#/publish/new"><span>${tr("发布入口", "Publishing")}</span><strong>${tr("网站新建 Prompt", "Create Prompt on website")}</strong></a>` : ""}
@@ -1130,7 +1157,7 @@ function renderHome({ showLogin = false } = {}) {
   }
 }
 
-async function renderDiscover() {
+async function renderDiscover({ initialCategory = "all", initialQuery = "" } = {}) {
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取提示词库...", "Loading Prompt Library...")}</p></section>`;
   try {
     const officialItems = await loadResources();
@@ -1158,15 +1185,15 @@ async function renderDiscover() {
           </div>
           <label class="library-search">
             <span>${tr("搜索", "Search")}</span>
-            <input type="search" data-resource-search placeholder="${tr("搜索标题、用途、模型或标签", "Search title, use, model, or tag")}" autocomplete="off" />
+            <input type="search" data-resource-search value="${escapeHtml(initialQuery)}" placeholder="${tr("搜索标题、用途、模型或标签", "Search title, use, model, or tag")}" autocomplete="off" />
           </label>
         </div>
         <div class="category-tabs" role="group" aria-label="${tr("提示词分类", "Prompt categories")}">
-          ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === "all"}">${resourceCategoryLabel(category)}</button>`).join("")}
+          ${RESOURCE_CATEGORY_ORDER.map((category) => `<button type="button" data-resource-category="${category}" aria-pressed="${category === initialCategory}">${resourceCategoryLabel(category)}</button>`).join("")}
         </div>
         <div class="resource-grid" data-resource-grid></div>
       </section>`;
-    bindResourceLibrary(items);
+    bindResourceLibrary(items, { initialCategory, initialQuery });
   } catch (error) {
     renderError(error, tr("提示词库暂时不可用", "Prompt Library is unavailable"));
   }
@@ -1195,12 +1222,15 @@ async function renderCreatorProfile(creatorSlug) {
               <p class="creator-profile-handle">@${escapeHtml(profile.slug)}</p>
               <h1 id="creatorTitle">${escapeHtml(profile.nickname)}</h1>
               <p>${escapeHtml(publishedLabel)}</p>
+              ${profile.bio ? `<p class="creator-profile-bio">${escapeHtml(profile.bio)}</p>` : ""}
             </div>
           </div>
           <div class="creator-profile-summary">
             <strong>${Number(profile.published_work_count || works.length)}</strong>
             <span>${tr("公开 Prompt", "Public Prompts")}</span>
-            <button class="button ghost" type="button" data-report-account="${escapeHtml(profile.user_id)}">${tr("举报账号", "Report account")}</button>
+            ${profile.is_owner
+              ? `<a class="button ghost" href="#/account">${tr("管理公开范围", "Manage visibility")}</a>`
+              : `<button class="button ghost" type="button" data-report-account="${escapeHtml(profile.user_id)}">${tr("举报账号", "Report account")}</button>`}
           </div>
         </header>
         <section class="creator-work-section" aria-labelledby="creatorWorksTitle">
@@ -1225,6 +1255,115 @@ async function renderCreatorProfile(creatorSlug) {
     }));
   } catch (error) {
     renderError(error, tr("无法打开创作者主页", "Unable to open creator profile"));
+  }
+}
+
+async function renderCreators() {
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取创作者...", "Loading creators...")}</p></section>`;
+  try {
+    const creators = await rpc("yucang_list_public_creators");
+    app.innerHTML = `
+      <section class="creator-directory" aria-labelledby="creatorDirectoryTitle">
+        <header class="library-intro">
+          <div><p class="eyebrow">${tr("创作者", "CREATORS")}</p><h1 id="creatorDirectoryTitle">${tr("发现公开创作者", "Discover creators")}</h1><p>${tr("从创作者主页继续浏览他们已经公开的 Prompt。", "Browse each creator's published Prompts from their public profile.")}</p></div>
+          <aside class="library-count"><strong>${creators.length}</strong><span>${tr("位公开创作者", "public creators")}</span></aside>
+        </header>
+        <div class="creator-directory-grid">
+          ${creators.length ? creators.map((creator) => `<a class="creator-directory-item" href="#/creator/${encodeURIComponent(creator.slug)}">
+            ${profileAvatarMarkup({ nickname: creator.nickname, avatarUrl: creator.avatar_url }, state.locale, "large")}
+            <div><span>@${escapeHtml(creator.slug)}</span><h2>${escapeHtml(creator.nickname)}</h2><p>${escapeHtml(creator.bio || tr("查看这位创作者的公开作品。", "View this creator's public work."))}</p><strong>${Number(creator.published_work_count || 0)} ${tr("条公开 Prompt", "public Prompts")}</strong></div>
+          </a>`).join("") : `<div class="library-empty"><h3>${tr("暂无公开创作者", "No public creators yet")}</h3><p>${tr("创作者发布第一条公开作品后会显示在这里。", "Creators appear here after publishing their first public work.")}</p></div>`}
+        </div>
+      </section>`;
+  } catch (error) {
+    renderError(error, tr("无法读取创作者", "Unable to load creators"));
+  }
+}
+
+async function renderFavorites() {
+  if (!requireLogin()) return;
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取我的收藏...", "Loading favorites...")}</p></section>`;
+  try {
+    const [favoriteRows, officialItems, communityItems] = await Promise.all([
+      rpc("yucang_list_my_favorites"),
+      loadResources(),
+      loadCommunityResources(),
+    ]);
+    const allItems = [...communityItems, ...officialItems];
+    const itemByKey = new Map(allItems.map((item) => [resourceFavoriteKey(item), item]));
+    const items = favoriteRows.map((row) => itemByKey.get(row.resource_key)).filter(Boolean);
+    app.innerHTML = `
+      <section class="favorites-page" aria-labelledby="favoritesTitle">
+        ${pageExitNavMarkup()}
+        <header class="section-head"><div><p class="eyebrow">SAVED</p><h1 id="favoritesTitle">${tr("我的收藏", "My favorites")}</h1><p>${tr("这里只保存网站账号的收藏记录，不读取 Prompt Vault 私库。", "These are website account bookmarks. Prompt Vault private data is never read.")}</p></div><span class="status">${items.length}</span></header>
+        <div class="resource-grid" data-favorites-grid>
+          ${items.length ? items.map(renderResourceCard).join("") : `<div class="library-empty"><h3>${tr("还没有网站收藏", "No website favorites yet")}</h3><p>${tr("在提示词卡片或详情页点击星标即可收藏。", "Use the star on a Prompt card or detail page to save it here.")}</p><a class="button primary" href="#/discover">${tr("浏览提示词库", "Browse Prompt Library")}</a></div>`}
+        </div>
+      </section>`;
+    const grid = app.querySelector("[data-favorites-grid]");
+    if (items.length) {
+      bindResourceCardActions(grid, items);
+      layoutResourceMasonry(grid);
+      grid.addEventListener("favoritechange", (event) => {
+        if (!event.detail?.favorited) renderFavorites();
+      });
+    }
+  } catch (error) {
+    renderError(error, tr("无法读取我的收藏", "Unable to load favorites"));
+  }
+}
+
+async function renderAccountPrivacy() {
+  if (!requireLogin()) return;
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取账号设置...", "Loading account settings...")}</p></section>`;
+  try {
+    const profile = state.access?.slug
+      ? firstRow(await rpc("yucang_get_public_creator", { p_slug: state.access.slug }))
+      : null;
+    app.innerHTML = `
+      <section class="account-settings-page" aria-labelledby="accountSettingsTitle">
+        ${pageExitNavMarkup()}
+        <header class="section-head"><div><p class="eyebrow">ACCOUNT</p><h1 id="accountSettingsTitle">${tr("账号与隐私", "Account & privacy")}</h1><p>${tr("管理公开主页、账号资料和登录状态。", "Manage your public profile, account details, and session.")}</p></div></header>
+        <div class="account-settings-layout">
+          <section class="panel account-identity-panel">
+            <div class="account-settings-identity">${profileAvatarMarkup(state.profile, state.locale, "large")}<div><h2>${escapeHtml(state.profile?.nickname || state.access?.nickname || "")}</h2><p>${escapeHtml(state.session.user.email || "")}</p></div></div>
+            <button class="button" type="button" data-account-edit-profile>${tr("编辑头像和昵称", "Edit avatar & nickname")}</button>
+            <p>${tr("登录不会公开或读取扩展中的私人 Prompt。", "Signing in does not publish or read private Prompts from the extension.")}</p>
+          </section>
+          <form class="panel account-privacy-form" data-account-privacy-form>
+            <div><h2>${tr("创作者公开主页", "Public creator profile")}</h2><p>${tr("关闭后，其他人无法打开或在创作者列表中找到你的主页。已经公开的作品和作品署名仍会保留。", "When off, others cannot open or discover your profile. Published work and its attribution remain visible.")}</p></div>
+            <label class="privacy-switch"><input type="checkbox" name="is_public" ${profile?.is_public !== false ? "checked" : ""} /><span><strong>${tr("允许其他人查看我的创作者主页", "Allow others to view my creator profile")}</strong><small>${profile?.is_public === false ? tr("当前仅自己可见", "Currently visible only to you") : tr("当前公开", "Currently public")}</small></span></label>
+            <label class="field"><span>${tr("个人简介", "Bio")}</span><textarea name="bio" maxlength="500" placeholder="${tr("介绍你的创作方向和擅长领域", "Describe your creative focus")}">${escapeHtml(profile?.bio || "")}</textarea><small>${tr("最多 500 个字符，仅在公开主页显示。", "Up to 500 characters, shown only on your public profile.")}</small></label>
+            <div class="actions"><button class="button primary" type="submit" data-account-save>${tr("保存公开设置", "Save visibility")}</button><a class="button" href="../privacy.html" target="_blank" rel="noopener">${tr("隐私政策", "Privacy policy")}</a></div>
+          </form>
+        </div>
+        <section class="account-session-row"><div><h2>${tr("当前登录", "Current session")}</h2><p>${tr("退出只会结束这个浏览器中的网站登录，不会删除账号或扩展数据。", "Signing out ends this website session only. It does not delete your account or extension data.")}</p></div><button class="button ghost" type="button" data-account-sign-out>${tr("退出当前账号", "Sign out")}</button></section>
+      </section>`;
+    app.querySelector("[data-account-edit-profile]").addEventListener("click", openProfileEditorFromAccount);
+    app.querySelector("[data-account-sign-out]").addEventListener("click", async () => {
+      await getClient().auth.signOut();
+      go("home");
+    });
+    app.querySelector("[data-account-privacy-form]").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const button = form.querySelector("[data-account-save]");
+      setBusy(button, true, tr("正在保存...", "Saving..."));
+      try {
+        const saved = firstRow(await rpc("yucang_update_creator_settings", {
+          p_bio: form.elements.bio.value,
+          p_is_public: form.elements.is_public.checked,
+        }));
+        if (state.access) state.access.profile_is_public = saved?.is_public !== false;
+        notify(tr("账号公开设置已保存。", "Profile visibility saved."));
+        await renderAccountPrivacy();
+      } catch (error) {
+        notify(error.message);
+        setBusy(button, false);
+      }
+    });
+  } catch (error) {
+    renderError(error, tr("无法读取账号设置", "Unable to load account settings"));
   }
 }
 
@@ -1477,9 +1616,10 @@ function renderResourceCard(item) {
         ${item.sourceKind === "community" && item.author_slug
           ? `<a class="resource-author" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.sourceName || tr("语藏用户", "Yucang creator"))}</a>`
           : `<span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>`}
+        <button type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏到网站", "Save on website")}" aria-label="${tr("收藏到网站", "Save on website")}">☆</button>
         <button type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
         <button type="button" data-copy-resource="${escapeHtml(item.id)}" title="${tr("复制 Prompt", "Copy Prompt")}" aria-label="${tr("复制 Prompt", "Copy Prompt")}">⧉</button>
-      </div>` : `<button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
+      </div>` : `<button class="resource-favorite-button" type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏到网站", "Save on website")}" aria-label="${tr("收藏到网站", "Save on website")}">☆</button><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
     </article>`;
 }
 
@@ -1511,6 +1651,50 @@ async function hydrateResourceLikes(root, items) {
   }));
 }
 
+async function hydrateResourceFavorites(root) {
+  const buttons = [...root.querySelectorAll("[data-favorite-resource]")];
+  if (!buttons.length) return;
+  let favoriteKeys = new Set();
+  if (state.session) {
+    try {
+      favoriteKeys = new Set((await rpc("yucang_list_my_favorites")).map((item) => item.resource_key));
+    } catch (error) {
+      if (!isSchemaMissing(error)) console.error(error);
+    }
+  }
+  const paint = (button, favorited) => {
+    button.classList.toggle("is-favorited", favorited);
+    button.textContent = button.classList.contains("button")
+      ? `${favorited ? "★" : "☆"} ${favorited ? tr("已收藏", "Saved") : tr("网站收藏", "Website favorite")}`
+      : (favorited ? "★" : "☆");
+    button.setAttribute("aria-label", favorited ? tr("取消网站收藏", "Remove website favorite") : tr("收藏到网站", "Save on website"));
+    button.title = button.getAttribute("aria-label");
+  };
+  buttons.forEach((button) => {
+    paint(button, favoriteKeys.has(button.dataset.favoriteResource));
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!state.session) {
+        sessionStorage.setItem("yucangPostLoginPath", location.hash.replace(/^#\/?/, "") || "discover");
+        go("login");
+        return;
+      }
+      button.disabled = true;
+      try {
+        const result = firstRow(await rpc("yucang_toggle_favorite", { p_resource_key: button.dataset.favoriteResource }));
+        paint(button, Boolean(result?.favorited));
+        button.dispatchEvent(new CustomEvent("favoritechange", { bubbles: true, detail: result }));
+        notify(result?.favorited ? tr("已收藏到网站账号。", "Saved to your website account.") : tr("已取消网站收藏。", "Website favorite removed."));
+      } catch (error) {
+        notify(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
 function bindResourceCardActions(root, items) {
   bindPromptVaultButtons(root, (itemId) => {
     const item = items.find((entry) => entry.id === itemId);
@@ -1532,6 +1716,7 @@ function bindResourceCardActions(root, items) {
     notify(tr("Prompt 已复制", "Prompt copied"));
   }));
   hydrateResourceLikes(root, items);
+  hydrateResourceFavorites(root);
 }
 
 let resourceMasonryObserver;
@@ -1557,17 +1742,18 @@ function layoutResourceMasonry(grid) {
   requestAnimationFrame(layout);
 }
 
-function bindResourceLibrary(items) {
+function bindResourceLibrary(items, { initialCategory = "all", initialQuery = "" } = {}) {
   const grid = app.querySelector("[data-resource-grid]");
   const search = app.querySelector("[data-resource-search]");
   const count = app.querySelector("[data-result-count]");
   const buttons = [...app.querySelectorAll("[data-resource-category]")];
-  let category = "all";
+  let category = RESOURCE_CATEGORY_ORDER.includes(initialCategory) ? initialCategory : "all";
+  search.value = initialQuery;
 
   const update = () => {
     const query = search.value.trim().toLocaleLowerCase("zh-CN");
     const filtered = items.filter((item) => (
-      (category === "all" || item.category === category)
+      (category === "all" || item.category === category || (category === "text-office" && ["writing", "office"].includes(item.category)))
       && (!query || resourceSearchText(item).includes(query))
     ));
     count.textContent = `${filtered.length} ${tr("条结果", "results")}`;
@@ -1578,10 +1764,15 @@ function bindResourceLibrary(items) {
     layoutResourceMasonry(grid);
   };
 
-  search.addEventListener("input", update);
+  search.addEventListener("input", () => {
+    const query = search.value.trim();
+    history.replaceState(null, "", `${location.pathname}${location.search}${query ? `#/search/${encodeURIComponent(query)}` : (category === "all" ? "#/discover" : `#/category/${category}`)}`);
+    update();
+  });
   buttons.forEach((button) => button.addEventListener("click", () => {
     category = button.dataset.resourceCategory;
     buttons.forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+    history.replaceState(null, "", `${location.pathname}${location.search}${category === "all" ? "#/discover" : `#/category/${category}`}`);
     update();
   }));
   update();
@@ -2069,7 +2260,7 @@ function renderOfficialResource(item) {
           <div class="resource-detail-copy">
             <div class="detail-meta">
               <span class="pill accent">${escapeHtml(resourceCategoryLabel(item.category))}</span>
-              <span class="pill">${tr("站方模板", "Official template")}</span>
+              <span class="pill">${tr("语藏官方", "Yucang official")}</span>
             </div>
             <h1>${escapeHtml(item.title)}</h1>
             <p>${escapeHtml(item.summary)}</p>
@@ -2082,10 +2273,11 @@ function renderOfficialResource(item) {
           <aside class="prompt-stage">
             <div class="tool-heading">
               <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
-              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-official="${escapeHtml(item.id)}">${tr("举报内容", "Report content")}</button></div>
+              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="official:${escapeHtml(item.id)}">☆ ${tr("网站收藏", "Website favorite")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-official="${escapeHtml(item.id)}">${tr("举报内容", "Report content")}</button></div>
             </div>
             <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+            ${licenseRightsMarkup(item.license, { official: true })}
           </aside>
         </div>
       </div>
@@ -2100,6 +2292,7 @@ function renderOfficialResource(item) {
     item,
     app.querySelector("[data-final-prompt]")?.textContent || resolvedOfficialPrompt(item),
   ));
+  hydrateResourceFavorites(app);
   app.querySelector("[data-report-official]")?.addEventListener("click", () => openGovernanceDialog({
     targetType: "official_resource", targetRef: item.id, targetLabel: item.title,
   }));
@@ -2198,7 +2391,22 @@ function bindCommunityDiscussion(workId, focusCommentId = "") {
   }
 }
 
-async function renderPublicPrompt(workId, focusCommentId = "") {
+function communityPublicationDetailsMarkup(item) {
+  const parameters = Object.entries(item.parameters || {});
+  const dependencies = Array.isArray(item.dependencies) ? item.dependencies : [];
+  return `${licenseRightsMarkup(item.license_code, { hasDependencies: dependencies.length > 0 })}<section class="publication-details" aria-labelledby="publicationDetailsTitle">
+    <h2 id="publicationDetailsTitle">${tr("发布说明", "Publication details")}</h2>
+    <dl>
+      ${item.negative_prompt_text ? `<div><dt>${tr("负面 Prompt", "Negative Prompt")}</dt><dd>${escapeHtml(item.negative_prompt_text)}</dd></div>` : ""}
+      ${parameters.length ? `<div><dt>${tr("生成参数", "Parameters")}</dt><dd>${parameters.map(([key, value]) => `${escapeHtml(key)}: ${escapeHtml(typeof value === "object" ? JSON.stringify(value) : value)}`).join("<br>")}</dd></div>` : ""}
+      ${dependencies.length ? `<div><dt>${tr("第三方依赖", "Dependencies")}</dt><dd>${dependencies.map((dependency) => escapeHtml([dependency.name, dependency.version, dependency.notes].filter(Boolean).join(" "))).join("<br>")}</dd></div>` : ""}
+      ${item.instructions ? `<div><dt>${tr("使用方法与注意事项", "Usage and notes")}</dt><dd>${escapeHtml(item.instructions)}</dd></div>` : ""}
+      <div><dt>${tr("标签", "Tags")}</dt><dd>${(item.tags || []).length ? (item.tags || []).map(escapeHtml).join(" / ") : tr("未填写", "Not provided")}</dd></div>
+    </dl>
+  </section>`;
+}
+
+async function renderPublicPrompt(workId, focusCommentId = "", versionId = "") {
   app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取 Prompt...", "Loading Prompt...")}</p></section>`;
   try {
     const resources = await loadResources();
@@ -2207,13 +2415,17 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
       renderOfficialResource(officialResource);
       return;
     }
-    const item = firstRow(await rpc("yucang_get_public_work", { p_work_id: workId }));
+    const item = firstRow(await rpc(
+      versionId ? "yucang_get_public_work_version" : "yucang_get_public_work",
+      versionId ? { p_work_id: workId, p_version_id: versionId } : { p_work_id: workId },
+    ));
     if (!item) throw new Error(tr(
       "作品不存在、尚未公开或当前不可公开访问。",
       "This work does not exist, is not public, or is not publicly accessible.",
     ));
     const variables = normalizeVariables(item.variables);
     const images = await loadVersionMedia(item.version_id);
+    const versions = await rpc("yucang_list_public_versions", { p_work_id: workId });
     let comments = [];
     try {
       comments = (await rpc("yucang_list_comments", { p_work_id: workId })).map((comment) => ({
@@ -2238,22 +2450,25 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
           </div>
           <div class="resource-detail-right">
             <div class="resource-detail-copy">
-              <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(item.content_type))}</span><span class="pill">${tr("用户公开作品", "Public creator work")}</span></div>
+              <div class="detail-meta"><span class="pill accent">${escapeHtml(contentTypeLabel(item.content_type))}</span><span class="pill">${tr("创作者发布", "Creator publication")}</span><span class="pill">v${Number(item.version_no || 1)}</span></div>
               <h1>${escapeHtml(item.title)}</h1>
               <p>${escapeHtml(item.summary || tr("暂无简介", "No description"))}</p>
               <dl class="resource-facts">
                 <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([item.model_name, item.model_version].filter(Boolean).join(" ") || tr("通用模型", "General model"))}</dd></div>
-                <div><dt>${tr("作者", "Creator")}</dt><dd><a class="creator-inline-link" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.author_nickname)}</a> <button class="inline-report-button" type="button" data-report-account="${escapeHtml(item.author_id)}">${tr("举报账号", "Report account")}</button></dd></div>
+                <div><dt>${tr("作者", "Creator")}</dt><dd>${item.author_slug ? `<a class="creator-inline-link" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.author_nickname)}</a>` : `<span>${escapeHtml(item.author_nickname)}</span>`} <button class="inline-report-button" type="button" data-report-account="${escapeHtml(item.author_id)}">${tr("举报账号", "Report account")}</button></dd></div>
                 <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(item.license_code))}</dd></div>
+                <div><dt>${tr("发布时间", "Published")}</dt><dd>${escapeHtml(formatDate(item.published_at))}</dd></div>
               </dl>
             </div>
             <aside class="prompt-stage">
-              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-work="${escapeHtml(item.work_id)}">${tr("举报作品", "Report work")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
+              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="work:${escapeHtml(item.work_id)}">☆ ${tr("网站收藏", "Website favorite")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-work="${escapeHtml(item.work_id)}">${tr("举报作品", "Report work")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
               <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             </aside>
+            ${communityPublicationDetailsMarkup(item)}
           </div>
         </div>
       </section>
+      ${versions.length > 1 ? `<section class="version-history" aria-labelledby="versionHistoryTitle"><div><h2 id="versionHistoryTitle">${tr("公开版本", "Public versions")}</h2><p>${tr("只显示曾经公开且当前可访问的不可变版本。", "Only immutable versions that were public and remain accessible are shown.")}</p></div><nav>${versions.map((version) => `<a href="#/prompt/${encodeURIComponent(workId)}/version/${encodeURIComponent(version.version_id)}" ${version.version_id === item.version_id ? 'aria-current="page"' : ""}><strong>v${Number(version.version_no)}</strong><span>${version.is_current ? tr("当前版本", "Current") : formatDate(version.published_at)}</span></a>`).join("")}</nav></section>` : ""}
       ${commentsSectionMarkup({ comments, isLoggedIn: Boolean(state.session), locale: state.locale })}`;
     bindPromptTool({
       template: item.prompt_text,
@@ -2262,6 +2477,7 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
       copyButton: app.querySelector("[data-copy-prompt]"),
     });
     bindPromptVaultButtons(app, () => communityPromptPayload(item, images[0]?.url || ""));
+    hydrateResourceFavorites(app);
     bindCommunityDiscussion(workId, focusCommentId);
     app.querySelector("[data-report-work]")?.addEventListener("click", () => openGovernanceDialog({
       targetType: "work", targetId: item.work_id, targetLabel: item.title,
@@ -2544,10 +2760,16 @@ async function renderRoute() {
   document.querySelectorAll(".main-nav a").forEach((link) => {
     link.removeAttribute("aria-current");
     if (link.getAttribute("href") === `#/${section}`) link.setAttribute("aria-current", "page");
+    if (["category", "search"].includes(section) && link.dataset.nav === "discover") link.setAttribute("aria-current", "page");
   });
   app.focus({ preventScroll: true });
   if (section === "home") return renderHome();
   if (section === "discover") return renderDiscover();
+  if (section === "category" && id) return renderDiscover({ initialCategory: id });
+  if (section === "search" && id) return renderDiscover({ initialQuery: decodeURIComponent(id) });
+  if (section === "creators") return renderCreators();
+  if (section === "favorites") return renderFavorites();
+  if (section === "account") return renderAccountPrivacy();
   if (section === "my") {
     if (!requireLogin()) return;
     setAccountDrawer(false);
@@ -2560,7 +2782,11 @@ async function renderRoute() {
   }
   if (section === "login") return renderLogin();
   if (section === "creator" && id) return renderCreatorProfile(id);
-  if (section === "prompt" && id) return renderPublicPrompt(id, childId === "comment" ? detailId : "");
+  if (section === "prompt" && id) return renderPublicPrompt(
+    id,
+    childId === "comment" ? detailId : "",
+    childId === "version" ? detailId : "",
+  );
   if (section === "publish" && id === "handoff" && childId) return renderPublishHandoff(childId);
   if (section === "publish" && id === "new") return renderEditor();
   if (section === "publish" && id) return renderEditor(id);

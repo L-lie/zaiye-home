@@ -11,13 +11,13 @@
     <link rel="icon" href="assets/prompt-vault-logo.png" type="image/png" />
     <link rel="stylesheet" href="../auth/login-experience.css" />
     <script>document.documentElement.dataset.theme = localStorage.getItem("yucangTheme") || (/^#\/?(?:home|login)(?:\/|$)/.test(location.hash) || !location.hash ? "dark" : "light");</script>
-    <link rel="stylesheet" href="app.css?v=20260903-exits1" />
+    <link rel="stylesheet" href="app.css?v=20260903-mvp2" />
     <link rel="stylesheet" href="account-profile.css?v=20260826-profile1" />
     <link rel="stylesheet" href="interactions.css?v=20260827-interactions1" />
     <script src="../assets/vendor/supabase-2.111.0.js" defer></script>
     <script src="../supabase-config.js" defer></script>
     <script src="../supabase-client.js" defer></script>
-    <script type="module" src="app.js?v=20260903-exits1"></script>
+    <script type="module" src="app.js?v=20260903-mvp2"></script>
   </head>
   <body>
     <header class="app-header">
@@ -28,6 +28,7 @@
       <nav class="main-nav" aria-label="主导航">
         <a href="#/home" data-nav="home">首页</a>
         <a href="#/discover" data-nav="discover">提示词库</a>
+        <a href="#/creators" data-nav="creators">创作者</a>
         <a href="#/admin/review" data-staff-link hidden>管理</a>
       </nav>
       <div class="header-actions">
