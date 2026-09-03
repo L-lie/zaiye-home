@@ -53,6 +53,7 @@ function replyMarkup(comment, locale) {
     <article class="interaction-reply" id="comment-${escapeHtml(comment.comment_id)}">
       ${commentMeta(comment, locale)}
       <p>${escapeHtml(comment.body)}</p>
+      <button class="interaction-report-trigger" type="button" data-report-comment="${escapeHtml(comment.comment_id)}">${copy(locale, "举报", "Report")}</button>
     </article>`;
 }
 
@@ -83,7 +84,10 @@ export function commentsSectionMarkup({ comments = [], isLoggedIn = false, local
       <div class="interaction-root">
         ${commentMeta(root, locale)}
         <p>${escapeHtml(root.body)}</p>
-        ${isLoggedIn ? `<button class="interaction-reply-trigger" type="button" data-reply-to="${escapeHtml(root.comment_id)}" data-reply-author="${escapeHtml(root.author_nickname || "")}">${copy(locale, "回复", "Reply")}</button>` : ""}
+        <div class="interaction-row-actions">
+          ${isLoggedIn ? `<button class="interaction-reply-trigger" type="button" data-reply-to="${escapeHtml(root.comment_id)}" data-reply-author="${escapeHtml(root.author_nickname || "")}">${copy(locale, "回复", "Reply")}</button>` : ""}
+          <button class="interaction-report-trigger" type="button" data-report-comment="${escapeHtml(root.comment_id)}">${copy(locale, "举报", "Report")}</button>
+        </div>
       </div>
       ${replies.length ? `<div class="interaction-replies">${replies.map((reply) => replyMarkup(reply, locale)).join("")}</div>` : ""}
       ${isLoggedIn ? `<div class="interaction-inline-reply" data-reply-form-for="${escapeHtml(root.comment_id)}" hidden></div>` : ""}

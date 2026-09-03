@@ -491,6 +491,68 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
 .ai-sources a { padding: 16px 4px; border-bottom: 1px solid var(--line); color: #dcd9cf; }
 .ai-sources a:hover, .ai-sources a:focus-visible { color: var(--accent-strong); outline: none; }
 
+.inline-report-button,
+.interaction-report-trigger {
+  appearance: none;
+  margin: 0;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.inline-report-button { margin-left: 8px; }
+.inline-report-button:hover,
+.interaction-report-trigger:hover,
+.inline-report-button:focus-visible,
+.interaction-report-trigger:focus-visible { color: var(--accent-strong); outline: none; }
+.interaction-row-actions { display: flex; align-items: center; gap: 14px; }
+
+.governance-dialog {
+  width: min(620px, calc(100% - 28px));
+  max-height: min(820px, calc(100svh - 28px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--panel-strong);
+  color: var(--text);
+  box-shadow: 0 28px 80px rgba(0,0,0,.38);
+}
+.governance-dialog::backdrop { background: rgba(8,10,9,.72); backdrop-filter: blur(9px); }
+.governance-dialog-card { display: grid; gap: 12px; padding: clamp(18px, 3vw, 24px); overflow: auto; }
+.governance-dialog-card header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }
+.governance-dialog-card h2 { margin: 2px 0 0; font-size: clamp(28px, 4vw, 36px); }
+.governance-dialog-card .lede { margin: 0; font-size: 14px; line-height: 1.55; }
+.governance-dialog-card .field { gap: 6px; }
+.governance-dialog-card .field textarea { min-height: 96px; }
+.governance-dialog-card .field small { line-height: 1.4; }
+.governance-target { display: grid; gap: 3px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.governance-target span { color: var(--muted); font-size: 12px; }
+.governance-rules-link { margin: -2px 0 0; font-size: 13px; }
+.governance-rules-link a { color: var(--accent-strong); }
+
+.governance-page { display: grid; gap: clamp(30px, 5vw, 58px); padding-bottom: 60px; }
+.governance-page .section-head h1 { font-size: clamp(40px, 7vw, 68px); }
+.governance-section { display: grid; gap: 18px; }
+.governance-list { display: grid; gap: 12px; }
+.governance-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 22px; padding: 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+.governance-card h3 { margin: 9px 0 5px; }
+.governance-card p { margin: 7px 0; color: var(--muted); line-height: 1.6; overflow-wrap: anywhere; }
+.governance-card small { color: var(--muted); }
+.governance-card .status { margin-left: 8px; }
+.governance-resolution { display: grid; gap: 4px; padding: 12px; border-left: 2px solid var(--accent); background: var(--panel-strong); }
+.governance-case { grid-template-columns: minmax(0, 1fr) minmax(280px, .55fr); }
+.governance-case-controls { display: grid; gap: 12px; }
+.governance-case-controls textarea { min-height: 92px; }
+
+@media (max-width: 760px) {
+  .governance-card,
+  .governance-case { grid-template-columns: 1fr; }
+  .governance-card > .button { width: 100%; }
+}
+
 @media (max-width: 860px) {
   .app-header { grid-template-columns: auto auto; gap: 12px; }
   .main-nav { grid-column: 1 / -1; order: 3; overflow-x: auto; }

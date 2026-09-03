@@ -26,7 +26,7 @@ import {
 import {
   commentsSectionMarkup,
   notificationPanelMarkup,
-} from "./interactions.mjs?v=20260827-interactions1";
+} from "./interactions.mjs?v=20260902-governance1";
 
 const app = document.getElementById("app");
 const accountActions = document.getElementById("accountActions");
@@ -586,6 +586,8 @@ function renderAccountDrawer() {
       <nav class="account-drawer-nav" aria-label="${tr("我的功能", "My account sections")}">
         <a href="#/my-publications"><span>${tr("创作管理", "Creator workspace")}</span><strong>${tr("我的发布", "My publications")}</strong></a>
         ${state.access?.is_creator ? `<a href="#/publish/new"><span>${tr("发布入口", "Publishing")}</span><strong>${tr("网站新建 Prompt", "Create Prompt on website")}</strong></a>` : ""}
+        <a href="#/governance"><span>${tr("社区安全", "Community safety")}</span><strong>${tr("我的举报与申诉", "My reports & appeals")}</strong></a>
+        ${(state.access?.is_admin || state.access?.is_reviewer) ? `<a href="#/admin/reports"><span>${tr("治理后台", "Governance")}</span><strong>${tr("处理举报与申诉", "Review reports & appeals")}</strong></a>` : ""}
         <a href="../prompt-vault.html"><span>Prompt Vault</span><strong>${tr("打开扩展介绍", "Open extension page")}</strong></a>
       </nav>
       <footer class="account-drawer-footer">
@@ -635,6 +637,90 @@ function requireStaff() {
       <a class="button" href="#/discover">${tr("返回提示词库", "Back to Prompt Library")}</a>
     </section>`;
   return false;
+}
+
+const REPORT_REASONS = Object.freeze([
+  ["copyright", ["版权或素材侵权", "Copyright or unauthorized material"]],
+  ["harassment", ["骚扰、仇恨或人身攻击", "Harassment, hate, or abuse"]],
+  ["spam", ["垃圾信息或恶意推广", "Spam or malicious promotion"]],
+  ["illegal", ["违法或危险内容", "Illegal or dangerous content"]],
+  ["misleading", ["冒充、虚假来源或误导", "Impersonation or misleading provenance"]],
+  ["privacy", ["隐私或个人信息泄露", "Privacy or personal-data exposure"]],
+  ["other", ["其他违反社区规则的内容", "Other community-rule violation"]],
+]);
+
+function governanceErrorMessage(error) {
+  const message = String(error?.message || error || "");
+  const known = {
+    contact_email_required: tr("未登录举报需要填写可联系邮箱。", "A contact email is required when reporting without signing in."),
+    duplicate_open_report: tr("你已经提交过相同目标的待处理举报。", "You already have an open report for this target."),
+    duplicate_open_appeal: tr("这项处置已经有一条待处理申诉。", "An open appeal already exists for this action."),
+    rate_limited: tr("提交过于频繁，请稍后再试。", "Too many submissions. Try again later."),
+    report_target_not_found: tr("举报目标不存在或已经不可访问。", "The reported item no longer exists or is inaccessible."),
+    appeal_target_not_owned_or_not_actioned: tr("只有被处置内容的所有者可以申诉。", "Only the owner of moderated content can appeal."),
+  };
+  const key = Object.keys(known).find((item) => message.includes(item));
+  return key ? known[key] : message;
+}
+
+function openGovernanceDialog({ mode = "report", targetType, targetId = null, targetRef = "", targetLabel = "", reportId = null } = {}) {
+  document.querySelector("[data-governance-dialog]")?.remove();
+  const isAppeal = mode === "appeal";
+  const dialog = document.createElement("dialog");
+  dialog.className = "governance-dialog";
+  dialog.dataset.governanceDialog = "";
+  const reasonOptions = REPORT_REASONS.map(([value, labels]) => `<option value="${value}">${escapeHtml(labels[state.locale === "en" ? 1 : 0])}</option>`).join("");
+  dialog.innerHTML = `
+    <form method="dialog" class="governance-dialog-card" data-governance-form>
+      <header>
+        <div><p class="eyebrow">COMMUNITY SAFETY</p><h2>${isAppeal ? tr("提交申诉", "Submit an appeal") : tr("举报内容", "Report content")}</h2></div>
+        <button class="icon-button" type="button" data-dialog-close aria-label="${tr("关闭", "Close")}">×</button>
+      </header>
+      <p class="lede">${isAppeal
+        ? tr("说明处置存在错误的原因和可核验信息。提交后由平台人员复核。", "Explain why the action was incorrect and provide verifiable context. Staff will review it.")
+        : tr("举报不会自动下架内容。平台会按社区规则核查，并保留处理记录。", "A report does not automatically remove content. Staff review it under the community rules and retain a handling record.")}</p>
+      <div class="governance-target"><span>${tr("目标", "Target")}</span><strong>${escapeHtml(targetLabel || `${targetType} · ${targetId}`)}</strong></div>
+      ${isAppeal ? "" : `<label class="field"><span>${tr("举报原因", "Reason")}</span><select name="reason" required>${reasonOptions}</select></label>`}
+      ${!isAppeal && !state.session ? `<label class="field"><span>${tr("联系邮箱", "Contact email")}</span><input name="email" type="email" maxlength="254" required /><small>${tr("仅用于处理结果与补充材料，不公开显示。", "Used only for case follow-up and never shown publicly.")}</small></label>` : ""}
+      <label class="field"><span>${isAppeal ? tr("申诉说明", "Appeal statement") : tr("具体说明", "Details")}</span><textarea name="details" minlength="${isAppeal ? 20 : 10}" maxlength="3000" required placeholder="${isAppeal ? tr("请提供事实、时间、来源或权利证明…", "Provide facts, dates, sources, or proof of rights…") : tr("请说明问题出现在哪里以及为什么违反规则…", "Explain where the issue appears and which rule it may violate…")}"></textarea></label>
+      <p class="governance-rules-link"><a href="rules.html" target="_blank" rel="noopener">${tr("查看语藏社区规则与知识产权流程", "Read the Yucang Community and IP Rules")}</a></p>
+      <div class="actions">
+        <button class="button ghost" type="button" data-dialog-close>${tr("取消", "Cancel")}</button>
+        <button class="button primary" type="submit">${isAppeal ? tr("提交申诉", "Submit appeal") : tr("提交举报", "Submit report")}</button>
+      </div>
+    </form>`;
+  document.body.append(dialog);
+  dialog.querySelectorAll("[data-dialog-close]").forEach((button) => button.addEventListener("click", () => dialog.close()));
+  dialog.addEventListener("close", () => dialog.remove(), { once: true });
+  dialog.querySelector("[data-governance-form]").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const button = form.querySelector('[type="submit"]');
+    const data = new FormData(form);
+    setBusy(button, true, isAppeal ? tr("正在提交申诉…", "Submitting appeal…") : tr("正在提交举报…", "Submitting report…"));
+    try {
+      if (isAppeal) {
+        await rpc("yucang_submit_appeal", {
+          p_target_type: targetType, p_target_id: targetId,
+          p_body: data.get("details"), p_report_id: reportId,
+        });
+      } else {
+        await rpc("yucang_submit_report", {
+          p_target_type: targetType, p_target_id: targetId,
+          p_reason_code: data.get("reason"), p_details: data.get("details"),
+          p_contact_email: data.get("email") || "", p_target_ref: targetRef,
+        });
+      }
+      dialog.close();
+      notify(isAppeal ? tr("申诉已提交，平台会进行人工复核。", "Appeal submitted for staff review.") : tr("举报已提交，平台会按规则核查。", "Report submitted for review."));
+      if (isAppeal && location.hash.includes("governance")) renderGovernanceCenter();
+    } catch (error) {
+      notify(governanceErrorMessage(error));
+      setBusy(button, false);
+    }
+  });
+  dialog.showModal();
+  dialog.querySelector("select, textarea, input")?.focus();
 }
 
 function bindWebsiteLogin(root) {
@@ -1903,7 +1989,7 @@ function renderOfficialResource(item) {
           <aside class="prompt-stage">
             <div class="tool-heading">
               <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
-              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button></div>
+              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-official="${escapeHtml(item.id)}">${tr("举报内容", "Report content")}</button></div>
             </div>
             <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
@@ -1921,6 +2007,9 @@ function renderOfficialResource(item) {
     item,
     app.querySelector("[data-final-prompt]")?.textContent || resolvedOfficialPrompt(item),
   ));
+  app.querySelector("[data-report-official]")?.addEventListener("click", () => openGovernanceDialog({
+    targetType: "official_resource", targetRef: item.id, targetLabel: item.title,
+  }));
 }
 
 async function createCommunityComment(workId, kind, body, parentId = null) {
@@ -1935,6 +2024,14 @@ async function createCommunityComment(workId, kind, body, parentId = null) {
 function bindCommunityDiscussion(workId, focusCommentId = "") {
   const discussion = app.querySelector("[data-community-discussion]");
   if (!discussion) return;
+
+  discussion.querySelectorAll("[data-report-comment]").forEach((button) => button.addEventListener("click", () => {
+    openGovernanceDialog({
+      targetType: "comment",
+      targetId: button.dataset.reportComment,
+      targetLabel: tr("作品讨论中的评论", "Comment in this work's discussion"),
+    });
+  }));
 
   discussion.querySelector("[data-comment-form]")?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -2053,12 +2150,12 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
               <p>${escapeHtml(item.summary || tr("暂无简介", "No description"))}</p>
               <dl class="resource-facts">
                 <div><dt>${tr("模型", "Model")}</dt><dd>${escapeHtml([item.model_name, item.model_version].filter(Boolean).join(" ") || tr("通用模型", "General model"))}</dd></div>
-                <div><dt>${tr("作者", "Creator")}</dt><dd>${escapeHtml(item.author_nickname)}</dd></div>
+                <div><dt>${tr("作者", "Creator")}</dt><dd>${escapeHtml(item.author_nickname)} <button class="inline-report-button" type="button" data-report-account="${escapeHtml(item.author_id)}">${tr("举报账号", "Report account")}</button></dd></div>
                 <div><dt>${tr("授权", "License")}</dt><dd>${escapeHtml(licenseLabel(item.license_code))}</dd></div>
               </dl>
             </div>
             <aside class="prompt-stage">
-              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
+              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-work="${escapeHtml(item.work_id)}">${tr("举报作品", "Report work")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
               <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             </aside>
           </div>
@@ -2073,6 +2170,13 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
     });
     bindPromptVaultButtons(app, () => communityPromptPayload(item, images[0]?.url || ""));
     bindCommunityDiscussion(workId, focusCommentId);
+    app.querySelector("[data-report-work]")?.addEventListener("click", () => openGovernanceDialog({
+      targetType: "work", targetId: item.work_id, targetLabel: item.title,
+    }));
+    app.querySelector("[data-report-account]")?.addEventListener("click", () => openGovernanceDialog({
+      targetType: "account", targetId: item.author_id,
+      targetLabel: tr(`创作者：${item.author_nickname}`, `Creator: ${item.author_nickname}`),
+    }));
     app.querySelector("[data-admin-restrict]")?.addEventListener("click", async (event) => {
       const reason = window.prompt(tr("请输入下架原因（会写入审计记录）", "Enter a restriction reason (saved to the audit log)"), "")?.trim();
       if (!reason) return;
@@ -2098,6 +2202,107 @@ async function renderPublicPrompt(workId, focusCommentId = "") {
     });
   } catch (error) {
     renderError(error, tr("无法打开 Prompt", "Unable to open Prompt"));
+  }
+}
+
+function governanceStatusLabel(status) {
+  const labels = {
+    submitted: ["待处理", "Submitted"], reviewing: ["处理中", "Reviewing"],
+    actioned: ["已处置", "Actioned"], dismissed: ["未发现违规", "Dismissed"],
+    upheld: ["申诉成立", "Upheld"], denied: ["维持原处置", "Denied"],
+  };
+  return (labels[status] || [status, status])[state.locale === "en" ? 1 : 0];
+}
+
+function governanceTargetLabel(type) {
+  const labels = { work: ["作品", "Work"], comment: ["评论", "Comment"], account: ["账号", "Account"], official_resource: ["站方模板", "Official template"] };
+  return (labels[type] || [type, type])[state.locale === "en" ? 1 : 0];
+}
+
+function governanceReasonLabel(code) {
+  const match = REPORT_REASONS.find(([value]) => value === code);
+  return match ? match[1][state.locale === "en" ? 1 : 0] : code;
+}
+
+async function renderGovernanceCenter() {
+  if (!requireLogin()) return;
+  setAccountDrawer(false);
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取举报与申诉…", "Loading reports and appeals…")}</p></section>`;
+  try {
+    const [reports, appeals, moderated] = await Promise.all([
+      rpc("yucang_list_my_reports"), rpc("yucang_list_my_appeals"), rpc("yucang_list_my_moderated_content"),
+    ]);
+    app.innerHTML = `
+      <section class="governance-page">
+        <div class="section-head"><div><p class="eyebrow">COMMUNITY SAFETY</p><h1>${tr("举报与申诉", "Reports & appeals")}</h1><p>${tr("查看你提交的举报，并对属于你的被处置内容申请人工复核。", "Track your reports and request staff review of moderated content you own.")}</p></div><a class="button" href="rules.html" target="_blank" rel="noopener">${tr("社区规则", "Community rules")}</a></div>
+        ${moderated.length ? `<section class="governance-section"><div class="tool-heading"><div><h2>${tr("可以申诉的处置", "Actions eligible for appeal")}</h2><p>${tr("申诉不会自动恢复内容，由平台人员复核。", "Appeals do not automatically restore content; staff review them.")}</p></div></div><div class="governance-list">${moderated.map((item) => `
+          <article class="governance-card"><div><span class="pill">${governanceTargetLabel(item.target_type)}</span><h3>${escapeHtml(item.target_label)}</h3><p>${formatDate(item.actioned_at)}</p></div><button class="button primary" type="button" data-appeal-target="${escapeHtml(item.target_id)}" data-appeal-type="${escapeHtml(item.target_type)}" data-appeal-report="${escapeHtml(item.report_id || "")}" data-appeal-label="${escapeHtml(item.target_label)}">${tr("提交申诉", "Appeal")}</button></article>`).join("")}</div></section>` : ""}
+        <section class="governance-section"><div class="tool-heading"><h2>${tr("我的举报", "My reports")}</h2></div>${reports.length ? `<div class="governance-list">${reports.map((item) => `
+          <article class="governance-card"><div><span class="pill">${governanceTargetLabel(item.target_type)}</span><span class="status">${governanceStatusLabel(item.status)}</span><h3>${governanceReasonLabel(item.reason_code)}</h3><p>${escapeHtml(item.details)}</p><small>${formatDate(item.created_at)}</small></div></article>`).join("")}</div>` : `<div class="empty-state"><p>${tr("你还没有提交过举报。作品和评论旁都提供举报入口。", "You have not submitted a report. Report controls appear beside works and comments.")}</p></div>`}</section>
+        <section class="governance-section"><div class="tool-heading"><h2>${tr("我的申诉", "My appeals")}</h2></div>${appeals.length ? `<div class="governance-list">${appeals.map((item) => `
+          <article class="governance-card"><div><span class="pill">${governanceTargetLabel(item.target_type)}</span><span class="status">${governanceStatusLabel(item.status)}</span><p>${escapeHtml(item.body)}</p>${item.resolution_notes ? `<p class="governance-resolution"><strong>${tr("复核说明", "Review notes")}</strong>${escapeHtml(item.resolution_notes)}</p>` : ""}<small>${formatDate(item.created_at)}</small></div></article>`).join("")}</div>` : `<div class="empty-state"><p>${tr("目前没有申诉记录。", "No appeals yet.")}</p></div>`}</section>
+      </section>`;
+    app.querySelectorAll("[data-appeal-target]").forEach((button) => button.addEventListener("click", () => openGovernanceDialog({
+      mode: "appeal", targetType: button.dataset.appealType, targetId: button.dataset.appealTarget,
+      targetLabel: button.dataset.appealLabel, reportId: button.dataset.appealReport || null,
+    })));
+  } catch (error) {
+    renderError(error, tr("无法读取举报与申诉", "Unable to load reports and appeals"));
+  }
+}
+
+function reportActionOptions(targetType) {
+  const options = [
+    ["reviewing", tr("标记为处理中", "Mark reviewing")],
+    ["dismissed", tr("驳回：未发现违规", "Dismiss: no violation")],
+    ["no_action", tr("结案：无需进一步处置", "Close: no further action")],
+  ];
+  if (targetType === "work") options.splice(1, 0, ["restrict_work", tr("下架作品", "Restrict work")]);
+  if (targetType === "comment") options.splice(1, 0, ["hide_comment", tr("隐藏评论", "Hide comment")]);
+  if (targetType === "account") options.splice(1, 0, ["account_warning", tr("记录账号警告", "Record account warning")]);
+  return options.map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
+}
+
+async function renderAdminGovernance() {
+  if (!requireStaff()) return;
+  setAccountDrawer(false);
+  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取治理工单…", "Loading governance cases…")}</p></section>`;
+  try {
+    const [reports, appeals] = await Promise.all([
+      rpc("yucang_admin_list_reports", { p_status: null }),
+      rpc("yucang_admin_list_appeals", { p_status: null }),
+    ]);
+    app.innerHTML = `
+      <section class="governance-page admin-governance">
+        <div class="section-head"><div><p class="eyebrow">GOVERNANCE DESK</p><h1>${tr("举报与申诉处理", "Reports & appeals desk")}</h1><p>${tr("所有决定都会写入不可变审计记录。处理人员不能修改用户原始内容。", "Every decision is written to append-only audit history. Staff cannot edit user content.")}</p></div><a class="button" href="#/admin/review">${tr("公开内容管理", "Content management")}</a></div>
+        <section class="governance-section"><div class="tool-heading"><h2>${tr("举报工单", "Report cases")}</h2><span class="status">${reports.length}</span></div>${reports.length ? `<div class="governance-list">${reports.map((item) => `
+          <article class="governance-card governance-case" data-report-case="${item.report_id}">
+            <div><span class="pill">${governanceTargetLabel(item.target_type)}</span><span class="status">${governanceStatusLabel(item.status)}</span><h3>${escapeHtml(item.target_label)}</h3><p><strong>${governanceReasonLabel(item.reason_code)}</strong> · ${escapeHtml(item.details)}</p><small>${escapeHtml(item.contact_email || tr("已登录用户", "Signed-in user"))} · ${formatDate(item.created_at)}</small></div>
+            ${["submitted", "reviewing"].includes(item.status) ? `<div class="governance-case-controls"><label class="field"><span>${tr("处理动作", "Action")}</span><select data-case-action>${reportActionOptions(item.target_type)}</select></label><label class="field"><span>${tr("处理说明", "Notes")}</span><textarea maxlength="3000" data-case-notes></textarea></label><button class="button primary" type="button" data-resolve-report>${tr("保存处理结果", "Save decision")}</button></div>` : ""}
+          </article>`).join("")}</div>` : `<div class="empty-state"><p>${tr("暂无举报工单。", "No report cases.")}</p></div>`}</section>
+        <section class="governance-section"><div class="tool-heading"><h2>${tr("申诉复核", "Appeal review")}</h2><span class="status">${appeals.length}</span></div>${appeals.length ? `<div class="governance-list">${appeals.map((item) => `
+          <article class="governance-card governance-case" data-appeal-case="${item.appeal_id}"><div><span class="pill">${governanceTargetLabel(item.target_type)}</span><span class="status">${governanceStatusLabel(item.status)}</span><p>${escapeHtml(item.body)}</p><small>${formatDate(item.created_at)}</small></div>${["submitted", "reviewing"].includes(item.status) ? `<div class="governance-case-controls"><label class="field"><span>${tr("复核决定", "Decision")}</span><select data-appeal-decision><option value="reviewing">${tr("标记为复核中", "Mark reviewing")}</option><option value="upheld">${tr("申诉成立并恢复内容", "Uphold and restore")}</option><option value="denied">${tr("驳回并维持原处置", "Deny and keep action")}</option></select></label><label class="field"><span>${tr("复核说明", "Review notes")}</span><textarea maxlength="3000" data-appeal-notes></textarea></label><button class="button primary" type="button" data-resolve-appeal>${tr("保存复核结果", "Save review")}</button></div>` : `<p class="governance-resolution">${escapeHtml(item.resolution_notes || "")}</p>`}</article>`).join("")}</div>` : `<div class="empty-state"><p>${tr("暂无申诉。", "No appeals.")}</p></div>`}</section>
+      </section>`;
+    app.querySelectorAll("[data-resolve-report]").forEach((button) => button.addEventListener("click", async () => {
+      const card = button.closest("[data-report-case]");
+      const action = card.querySelector("[data-case-action]").value;
+      const notes = card.querySelector("[data-case-notes]").value.trim();
+      if (action !== "reviewing" && notes.length < 5) return notify(tr("结案或处置必须填写至少 5 个字的说明。", "Final decisions require at least five characters of notes."));
+      setBusy(button, true);
+      try { await rpc("yucang_admin_resolve_report", { p_report_id: card.dataset.reportCase, p_action: action, p_notes: notes }); await renderAdminGovernance(); }
+      catch (error) { notify(governanceErrorMessage(error)); setBusy(button, false); }
+    }));
+    app.querySelectorAll("[data-resolve-appeal]").forEach((button) => button.addEventListener("click", async () => {
+      const card = button.closest("[data-appeal-case]");
+      const decision = card.querySelector("[data-appeal-decision]").value;
+      const notes = card.querySelector("[data-appeal-notes]").value.trim();
+      if (decision !== "reviewing" && notes.length < 5) return notify(tr("复核结论必须填写至少 5 个字的说明。", "Final appeal decisions require at least five characters of notes."));
+      setBusy(button, true);
+      try { await rpc("yucang_admin_resolve_appeal", { p_appeal_id: card.dataset.appealCase, p_decision: decision, p_notes: notes }); await renderAdminGovernance(); }
+      catch (error) { notify(governanceErrorMessage(error)); setBusy(button, false); }
+    }));
+  } catch (error) {
+    renderError(error, tr("无法打开治理后台", "Unable to open governance desk"));
   }
 }
 
@@ -2261,6 +2466,8 @@ async function renderRoute() {
   if (section === "publish" && id) return renderEditor(id);
   if (section === "preview" && id) return renderPreview(id);
   if (section === "my-publications") return renderMyPublications();
+  if (section === "governance") return renderGovernanceCenter();
+  if (section === "admin" && id === "reports") return renderAdminGovernance();
   if (section === "admin" && id === "review" && routeParts()[2]) return renderSubmission(routeParts()[2]);
   if (section === "admin" && id === "review") return renderAdminReview();
   renderError(new Error(tr("页面不存在。", "Page not found.")), tr("没有找到这个页面", "Page not found"));
