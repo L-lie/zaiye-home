@@ -54,7 +54,9 @@ assert.doesNotMatch(app, /async function renderCreators/);
 assert.match(app, /section === "creators"[\s\S]*?#\/discover[\s\S]*?renderDiscover\(\)/);
 assert.match(css, /:root\[data-theme="light"\] \.locale-toggle \{ background: rgba\(255,250,240,\.82\); \}/);
 assert.match(css, /:root\[data-theme="light"\] \.account-drawer-nav a \{ background: rgba\(255,250,240,\.72\); \}/);
-assert.match(html, /app\.js\?v=20260903-mvp5/);
-assert.match(html, /app\.css\?v=20260903-mvp5/);
+assert.match(app, /收藏此 Prompt/);
+assert.doesNotMatch(app, /网站收藏|收藏到网站|Website favorite|Save on website/);
+assert.match(html, /app\.js\?v=20260903-mvp6/);
+assert.match(html, /app\.css\?v=20260903-mvp6/);
 
 console.log("Yucang remaining free-community MVP surface checks passed.");

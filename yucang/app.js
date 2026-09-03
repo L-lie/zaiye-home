@@ -1273,9 +1273,9 @@ async function renderFavorites() {
     app.innerHTML = `
       <section class="favorites-page" aria-labelledby="favoritesTitle">
         ${pageExitNavMarkup()}
-        <header class="section-head"><div><p class="eyebrow">SAVED</p><h1 id="favoritesTitle">${tr("我的收藏", "My favorites")}</h1><p>${tr("这里只保存网站账号的收藏记录，不读取 Prompt Vault 私库。", "These are website account bookmarks. Prompt Vault private data is never read.")}</p></div><span class="status">${items.length}</span></header>
+        <header class="section-head"><div><p class="eyebrow">SAVED</p><h1 id="favoritesTitle">${tr("我的收藏", "My favorites")}</h1><p>${tr("这里只显示你收藏的 Prompt，不读取 Prompt Vault 私库。", "This shows your saved Prompts. Prompt Vault private data is never read.")}</p></div><span class="status">${items.length}</span></header>
         <div class="resource-grid" data-favorites-grid>
-          ${items.length ? items.map(renderResourceCard).join("") : `<div class="library-empty"><h3>${tr("还没有网站收藏", "No website favorites yet")}</h3><p>${tr("在提示词卡片或详情页点击星标即可收藏。", "Use the star on a Prompt card or detail page to save it here.")}</p><a class="button primary" href="#/discover">${tr("浏览提示词库", "Browse Prompt Library")}</a></div>`}
+          ${items.length ? items.map(renderResourceCard).join("") : `<div class="library-empty"><h3>${tr("还没有收藏的 Prompt", "No saved Prompts yet")}</h3><p>${tr("在提示词卡片或详情页点击星标，即可把 Prompt 保存到这里。", "Use the star on a Prompt card or detail page to save that Prompt here.")}</p><a class="button primary" href="#/discover">${tr("浏览提示词库", "Browse Prompt Library")}</a></div>`}
         </div>
       </section>`;
     const grid = app.querySelector("[data-favorites-grid]");
@@ -1515,7 +1515,6 @@ function updateThemeToggle() {
 }
 
 function applyRouteDefaultTheme(section) {
-  if (localStorage.getItem("yucangTheme")) return;
   document.documentElement.dataset.theme = section === "home" || section === "login" ? "dark" : "light";
   updateThemeToggle();
 }
@@ -1523,7 +1522,6 @@ function applyRouteDefaultTheme(section) {
 function toggleTheme() {
   const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
   document.documentElement.dataset.theme = next;
-  localStorage.setItem("yucangTheme", next);
   updateThemeToggle();
 }
 
@@ -1594,10 +1592,10 @@ function renderResourceCard(item) {
         ${item.sourceKind === "community" && item.author_slug
           ? `<a class="resource-author" href="#/creator/${encodeURIComponent(item.author_slug)}">${escapeHtml(item.sourceName || tr("语藏用户", "Yucang creator"))}</a>`
           : `<span class="resource-author">${escapeHtml(item.sourceName || tr("语藏", "Yucang"))}</span>`}
-        <button type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏到网站", "Save on website")}" aria-label="${tr("收藏到网站", "Save on website")}">☆</button>
+        <button type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏此 Prompt", "Save this Prompt")}" aria-label="${tr("收藏此 Prompt", "Save this Prompt")}">☆</button>
         <button type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
         <button type="button" data-copy-resource="${escapeHtml(item.id)}" title="${tr("复制 Prompt", "Copy Prompt")}" aria-label="${tr("复制 Prompt", "Copy Prompt")}">⧉</button>
-      </div>` : `<button class="resource-favorite-button" type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏到网站", "Save on website")}" aria-label="${tr("收藏到网站", "Save on website")}">☆</button><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
+      </div>` : `<button class="resource-favorite-button" type="button" data-favorite-resource="${escapeHtml(resourceKey)}" title="${tr("收藏此 Prompt", "Save this Prompt")}" aria-label="${tr("收藏此 Prompt", "Save this Prompt")}">☆</button><button class="resource-save-button" type="button" data-save-to-vault="${escapeHtml(item.id)}" title="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}" aria-label="${tr("收藏进 Prompt Vault 扩展", "Save to Prompt Vault extension")}"><svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>`}
     </article>`;
 }
 
@@ -1643,9 +1641,9 @@ async function hydrateResourceFavorites(root) {
   const paint = (button, favorited) => {
     button.classList.toggle("is-favorited", favorited);
     button.textContent = button.classList.contains("button")
-      ? `${favorited ? "★" : "☆"} ${favorited ? tr("已收藏", "Saved") : tr("网站收藏", "Website favorite")}`
+      ? `${favorited ? "★" : "☆"} ${favorited ? tr("已收藏", "Saved") : tr("收藏此 Prompt", "Save this Prompt")}`
       : (favorited ? "★" : "☆");
-    button.setAttribute("aria-label", favorited ? tr("取消网站收藏", "Remove website favorite") : tr("收藏到网站", "Save on website"));
+    button.setAttribute("aria-label", favorited ? tr("取消收藏此 Prompt", "Remove this Prompt from saved items") : tr("收藏此 Prompt", "Save this Prompt"));
     button.title = button.getAttribute("aria-label");
   };
   buttons.forEach((button) => {
@@ -1663,7 +1661,7 @@ async function hydrateResourceFavorites(root) {
         const result = firstRow(await rpc("yucang_toggle_favorite", { p_resource_key: button.dataset.favoriteResource }));
         paint(button, Boolean(result?.favorited));
         button.dispatchEvent(new CustomEvent("favoritechange", { bubbles: true, detail: result }));
-        notify(result?.favorited ? tr("已收藏到网站账号。", "Saved to your website account.") : tr("已取消网站收藏。", "Website favorite removed."));
+        notify(result?.favorited ? tr("已收藏此 Prompt。", "Prompt saved.") : tr("已取消收藏此 Prompt。", "Prompt removed from saved items."));
       } catch (error) {
         notify(error.message);
       } finally {
@@ -2251,7 +2249,7 @@ function renderOfficialResource(item) {
           <aside class="prompt-stage">
             <div class="tool-heading">
               <div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${escapeHtml(item.usage || tr("检查内容后直接复制使用。", "Review, then copy and use."))}</p></div>
-              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="official:${escapeHtml(item.id)}">☆ ${tr("网站收藏", "Website favorite")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-official="${escapeHtml(item.id)}">${tr("举报内容", "Report content")}</button></div>
+              <div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="official:${escapeHtml(item.id)}">☆ ${tr("收藏此 Prompt", "Save this Prompt")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-official="${escapeHtml(item.id)}">${tr("举报内容", "Report content")}</button></div>
             </div>
             <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             <div class="resource-tags">${(item.tags || []).map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
@@ -2439,7 +2437,7 @@ async function renderPublicPrompt(workId, focusCommentId = "", versionId = "") {
               </dl>
             </div>
             <aside class="prompt-stage">
-              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="work:${escapeHtml(item.work_id)}">☆ ${tr("网站收藏", "Website favorite")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-work="${escapeHtml(item.work_id)}">${tr("举报作品", "Report work")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
+              <div class="tool-heading"><div><h2>${tr("最终 Prompt", "Final Prompt")}</h2><p>${tr("检查内容后直接复制使用。", "Review, then copy and use.")}</p></div><div class="prompt-actions"><button class="button" type="button" data-save-to-vault="${escapeHtml(item.work_id)}">${tr("收进 Prompt Vault", "Save to Prompt Vault")}</button><button class="button" type="button" data-favorite-resource="work:${escapeHtml(item.work_id)}">☆ ${tr("收藏此 Prompt", "Save this Prompt")}</button><button class="button primary" type="button" data-copy-prompt>${tr("复制 Prompt", "Copy Prompt")}</button><button class="button ghost" type="button" data-report-work="${escapeHtml(item.work_id)}">${tr("举报作品", "Report work")}</button>${state.access?.is_admin ? `<button class="button danger" type="button" data-admin-restrict="${escapeHtml(item.work_id)}">${tr("管理员下架", "Restrict work")}</button><button class="button danger" type="button" data-admin-delete="${escapeHtml(item.work_id)}">${tr("管理员删除", "Admin delete")}</button>` : ""}</div></div>
               <pre class="prompt-output resource-prompt-output" data-final-prompt></pre>
             </aside>
             ${communityPublicationDetailsMarkup(item)}
