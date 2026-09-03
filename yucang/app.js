@@ -59,8 +59,8 @@ const HOME_FEATURED_ART = Object.freeze([
   { src: "assets/featured/watercolor-dessert.webp", promptId: "image-ink-watercolor-dessert", title: "钢笔水彩手绘", titleEn: "Ink & Watercolor", likes: 0, size: .72, phase: .44, speed: .122, lane: .87, lift: 8 },
   { src: "assets/featured/embroidered-mountain.webp", promptId: "image-embroidered-landscape", title: "刺绣山水", titleEn: "Embroidered Landscape", likes: 0, size: 1.22, phase: .57, speed: .086, lane: 1, lift: -8 },
   { src: "assets/featured/litian-demon.webp", promptId: "image-celestial-demon", title: "庶天妖", titleEn: "Celestial Demon", likes: 0, size: .84, phase: .69, speed: .106, lane: .92, lift: 22 },
-  { src: "assets/featured/dark-gothic.webp", promptId: "image-dark-gothic", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
-  { src: "assets/featured/particle-poster.webp", promptId: "image-particle-poster", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
+  { src: "assets/featured/dark-gothic.jpg", promptId: "image-dark-gothic", title: "暗黑哥特风", titleEn: "Dark Gothic", likes: 0, size: 1.08, phase: .82, speed: .09, lane: 1.06, lift: -18 },
+  { src: "assets/featured/particle-poster.jpg", promptId: "image-particle-poster", title: "粒子海报", titleEn: "Particle Poster", likes: 0, size: .76, phase: .94, speed: .116, lane: .89, lift: 12 },
   { src: "assets/featured/neon-action.webp", promptId: "image-neon-action", title: "霓虹动作场景", titleEn: "Neon Action", likes: 0, size: .9, phase: .37, speed: .098, lane: .96, lift: 24 },
   { src: "assets/featured/cosmic-eye.webp", promptId: "image-cosmic-eye", title: "宇宙之眼", titleEn: "Cosmic Eye", likes: 0, size: .7, phase: .63, speed: .126, lane: .86, lift: -6 },
   { src: "assets/featured/ink-character.webp", promptId: "image-ink-character", title: "黑白人物", titleEn: "Ink Character", likes: 0, size: .8, phase: .75, speed: .102, lane: 1.04, lift: 6 },
@@ -1255,28 +1255,6 @@ async function renderCreatorProfile(creatorSlug) {
     }));
   } catch (error) {
     renderError(error, tr("无法打开创作者主页", "Unable to open creator profile"));
-  }
-}
-
-async function renderCreators() {
-  app.innerHTML = `<section class="loading-state"><span class="spinner"></span><p>${tr("正在读取创作者...", "Loading creators...")}</p></section>`;
-  try {
-    const creators = await rpc("yucang_list_public_creators");
-    app.innerHTML = `
-      <section class="creator-directory" aria-labelledby="creatorDirectoryTitle">
-        <header class="library-intro">
-          <div><p class="eyebrow">${tr("创作者", "CREATORS")}</p><h1 id="creatorDirectoryTitle">${tr("发现公开创作者", "Discover creators")}</h1><p>${tr("从创作者主页继续浏览他们已经公开的 Prompt。", "Browse each creator's published Prompts from their public profile.")}</p></div>
-          <aside class="library-count"><strong>${creators.length}</strong><span>${tr("位公开创作者", "public creators")}</span></aside>
-        </header>
-        <div class="creator-directory-grid">
-          ${creators.length ? creators.map((creator) => `<a class="creator-directory-item" href="#/creator/${encodeURIComponent(creator.slug)}">
-            ${profileAvatarMarkup({ nickname: creator.nickname, avatarUrl: creator.avatar_url }, state.locale, "large")}
-            <div><span>@${escapeHtml(creator.slug)}</span><h2>${escapeHtml(creator.nickname)}</h2><p>${escapeHtml(creator.bio || tr("查看这位创作者的公开作品。", "View this creator's public work."))}</p><strong>${Number(creator.published_work_count || 0)} ${tr("条公开 Prompt", "public Prompts")}</strong></div>
-          </a>`).join("") : `<div class="library-empty"><h3>${tr("暂无公开创作者", "No public creators yet")}</h3><p>${tr("创作者发布第一条公开作品后会显示在这里。", "Creators appear here after publishing their first public work.")}</p></div>`}
-        </div>
-      </section>`;
-  } catch (error) {
-    renderError(error, tr("无法读取创作者", "Unable to load creators"));
   }
 }
 
@@ -2767,7 +2745,10 @@ async function renderRoute() {
   if (section === "discover") return renderDiscover();
   if (section === "category" && id) return renderDiscover({ initialCategory: id });
   if (section === "search" && id) return renderDiscover({ initialQuery: decodeURIComponent(id) });
-  if (section === "creators") return renderCreators();
+  if (section === "creators") {
+    history.replaceState(null, "", `${location.pathname}${location.search}#/discover`);
+    return renderDiscover();
+  }
   if (section === "favorites") return renderFavorites();
   if (section === "account") return renderAccountPrivacy();
   if (section === "my") {

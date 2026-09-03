@@ -34,11 +34,9 @@ assert.doesNotMatch(sql, /private_notebooks|prompt_vault_account_backups|chrome\
 for (const token of [
   "#/favorites",
   "#/account",
-  "#/creators",
   "data-favorite-resource",
   "renderFavorites",
   "renderAccountPrivacy",
-  "renderCreators",
   "管理公开范围",
   "公开版本",
   "#/category/",
@@ -51,8 +49,12 @@ assert.match(app, /childId === "version" \? detailId/);
 assert.match(app, /\["writing", "office"\]\.includes\(item\.category\)/);
 assert.match(css, /@media \(hover: none\)[\s\S]*\.resource-hover-tools/);
 assert.match(css, /\.account-settings-layout/);
-assert.match(css, /\.creator-directory-grid/);
-assert.match(html, /app\.js\?v=20260903-mvp2/);
-assert.match(html, /app\.css\?v=20260903-mvp2/);
+assert.doesNotMatch(html, /href="#\/creators"/);
+assert.doesNotMatch(app, /async function renderCreators/);
+assert.match(app, /section === "creators"[\s\S]*?#\/discover[\s\S]*?renderDiscover\(\)/);
+assert.match(css, /:root\[data-theme="light"\] \.locale-toggle \{ background: rgba\(255,250,240,\.82\); \}/);
+assert.match(css, /:root\[data-theme="light"\] \.account-drawer-nav a \{ background: rgba\(255,250,240,\.72\); \}/);
+assert.match(html, /app\.js\?v=20260903-mvp4/);
+assert.match(html, /app\.css\?v=20260903-mvp4/);
 
 console.log("Yucang remaining free-community MVP surface checks passed.");

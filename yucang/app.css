@@ -293,15 +293,6 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 .creator-inline-link { color: var(--accent-strong); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .18s ease; }
 .creator-inline-link:hover, .creator-inline-link:focus-visible { text-decoration-color: currentColor; outline: none; }
 .creator-profile-bio { max-width: 62ch; margin-top: 14px !important; color: var(--text) !important; line-height: 1.65; white-space: pre-line; }
-.creator-directory { display: grid; gap: 30px; }
-.creator-directory-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.creator-directory-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 18px; min-width: 0; padding: 22px 0; border-bottom: 1px solid var(--line); }
-.creator-directory-item:hover h2, .creator-directory-item:focus-visible h2 { color: var(--accent-strong); }
-.creator-directory-item:focus-visible { outline: 3px solid rgba(213,166,91,.28); outline-offset: 4px; }
-.creator-directory-item span, .creator-directory-item p { color: var(--muted); }
-.creator-directory-item h2 { margin: 4px 0 7px; font-size: 25px; }
-.creator-directory-item p { margin: 0 0 12px; line-height: 1.55; }
-.creator-directory-item strong { color: var(--accent-strong); font-size: 13px; }
 .favorites-page, .account-settings-page { display: grid; gap: 22px; }
 .account-settings-layout { display: grid; grid-template-columns: minmax(260px, .72fr) minmax(0, 1.28fr); gap: 16px; align-items: start; }
 .account-identity-panel, .account-privacy-form { display: grid; gap: 20px; }
@@ -333,6 +324,7 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 }
 :root[data-theme="light"] .app-header,
 :root[data-theme="light"] .account-drawer-head { background: rgba(244,240,231,.92); }
+:root[data-theme="light"] .locale-toggle { background: rgba(255,250,240,.82); }
 :root[data-theme="light"] .account-drawer,
 :root[data-theme="light"] .resource-card,
 :root[data-theme="light"] .resource-variable-panel,
@@ -340,6 +332,7 @@ h2 { font-size: clamp(24px, 3vw, 36px); letter-spacing: -.025em; }
 :root[data-theme="light"] .panel,
 :root[data-theme="light"] .state-card,
 :root[data-theme="light"] .table-row { background: rgba(255,250,240,.9); }
+:root[data-theme="light"] .account-drawer-nav a { background: rgba(255,250,240,.72); }
 :root[data-theme="light"] input,
 :root[data-theme="light"] textarea,
 :root[data-theme="light"] select,
@@ -692,8 +685,6 @@ input:focus, textarea:focus, select:focus { border-color: rgba(213,166,91,.65); 
   .creator-profile-identity .account-avatar.large { width: 66px; height: 66px; }
   .creator-profile-identity h1 { font-size: 38px; }
   .creator-work-heading { align-items: start; flex-direction: column; gap: 4px; }
-  .creator-directory-grid { grid-template-columns: 1fr; }
-  .creator-directory-item { padding: 18px 0; }
   .account-session-row { align-items: stretch; flex-direction: column; }
   .account-session-row .button { width: 100%; }
   .version-history nav { grid-template-columns: 1fr; }

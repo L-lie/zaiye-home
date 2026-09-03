@@ -37,7 +37,7 @@ assert.match(app, /yucang_submit_appeal/);
 assert.match(app, /yucang_admin_resolve_report/);
 assert.match(app, /yucang_admin_resolve_appeal/);
 assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.governance-card/);
-assert.match(index, /20260903-mvp2/);
+assert.match(index, /20260903-mvp4/);
 
 for (const heading of ["公开发布要求", "免费作品授权", "可以举报的情形", "处理流程", "知识产权投诉", "申诉与人工复核", "信息使用与记录保留"]) {
   assert.ok(rules.includes(heading), `missing governance rules section: ${heading}`);
