@@ -12,10 +12,11 @@ const migration = readFileSync(join(root, "supabase/migrations/20260903000100_yu
 const selfProfileMigration = readFileSync(join(root, "supabase/migrations/20260903000200_yucang_creator_self_profile.sql"), "utf8");
 
 assert.doesNotMatch(html, /localStorage\.getItem\("yucangTheme"\)/);
-assert.match(html, /home\|login[\s\S]*\? "dark" : "light"/);
+assert.match(html, /#\\\/\?home[\s\S]*\? "dark" : "light"/);
+assert.doesNotMatch(html, /home\|login/);
 assert.match(app, /function applyRouteDefaultTheme\(section\)/);
 assert.doesNotMatch(app, /localStorage\.(?:getItem|setItem)\("yucangTheme"/);
-assert.match(app, /section === "home" \|\| section === "login" \? "dark" : "light"/);
+assert.match(app, /section === "home" \? "dark" : "light"/);
 assert.match(rulesHtml, /document\.documentElement\.dataset\.theme = "light"/);
 assert.match(app, /yucang_get_like_counts/);
 assert.match(app, /data-home-like-resource="official:/);

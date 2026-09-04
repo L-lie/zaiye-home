@@ -56,7 +56,8 @@ assert.match(css, /:root\[data-theme="light"\] \.locale-toggle \{ background: rg
 assert.match(css, /:root\[data-theme="light"\] \.account-drawer-nav a \{ background: rgba\(255,250,240,\.72\); \}/);
 assert.match(app, /收藏此 Prompt/);
 assert.doesNotMatch(app, /网站收藏|收藏到网站|Website favorite|Save on website/);
-assert.match(html, /app\.js\?v=20260903-mvp6/);
-assert.match(html, /app\.css\?v=20260903-mvp6/);
+assert.match(app, /搜索标题、用途、模型、标签或创作者/);
+assert.match(html, /app\.js\?v=20260904-mvp7/);
+assert.match(html, /app\.css\?v=20260904-mvp7/);
 
 console.log("Yucang remaining free-community MVP surface checks passed.");

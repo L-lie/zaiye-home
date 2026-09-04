@@ -57,7 +57,7 @@ assert.match(appSource, /yucang_notification_unread_count/);
 assert.match(appSource, /prompt\/\$\{item\.dataset\.notificationWork\}\/comment\/\$\{item\.dataset\.notificationComment\}/);
 assert.match(appSource, /childId === "comment" \? detailId/);
 assert.match(indexSource, /interactions\.css\?v=20260827-interactions1/);
-assert.match(indexSource, /app\.js\?v=20260903-mvp6/);
+assert.match(indexSource, /app\.js\?v=20260904-mvp7/);
 assert.match(cssSource, /\.notification-panel/);
 assert.match(cssSource, /\.is-notification-target/);
 

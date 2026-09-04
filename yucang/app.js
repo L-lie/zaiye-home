@@ -1185,7 +1185,7 @@ async function renderDiscover({ initialCategory = "all", initialQuery = "" } = {
           </div>
           <label class="library-search">
             <span>${tr("搜索", "Search")}</span>
-            <input type="search" data-resource-search value="${escapeHtml(initialQuery)}" placeholder="${tr("搜索标题、用途、模型或标签", "Search title, use, model, or tag")}" autocomplete="off" />
+            <input type="search" data-resource-search value="${escapeHtml(initialQuery)}" placeholder="${tr("搜索标题、用途、模型、标签或创作者", "Search title, use, model, tag, or creator")}" autocomplete="off" />
           </label>
         </div>
         <div class="category-tabs" role="group" aria-label="${tr("提示词分类", "Prompt categories")}">
@@ -1515,7 +1515,7 @@ function updateThemeToggle() {
 }
 
 function applyRouteDefaultTheme(section) {
-  document.documentElement.dataset.theme = section === "home" || section === "login" ? "dark" : "light";
+  document.documentElement.dataset.theme = section === "home" ? "dark" : "light";
   updateThemeToggle();
 }
 
