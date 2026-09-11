@@ -34,6 +34,7 @@ function dbError(error: { message?: string } | null) {
     "account_not_available", "group_accounts_not_available", "friend_request_not_found",
     "group_invite_not_found", "group_not_available", "owner_must_close_group",
     "daily_share_limit_reached", "idempotency_conflict", "friend_not_available",
+    "friend_blocked_by_target", "friend_block_active",
     "member_not_available", "group_member_limit_reached", "group_permission_denied",
     "invalid_share_payload", "invalid_share_request", "invalid_share_target", "forbidden",
   ].find((code) => message.includes(code));
@@ -43,6 +44,8 @@ function dbError(error: { message?: string } | null) {
   if (known === "daily_share_limit_reached") return new FriendGroupError(429, known, "The daily free sharing limit has been reached.");
   if (known === "group_member_limit_reached") return new FriendGroupError(409, known, "The group member limit has been reached.");
   if (known === "group_permission_denied") return new FriendGroupError(403, known, "Only the group owner or an administrator can add members.");
+  if (known === "friend_blocked_by_target") return new FriendGroupError(403, known, "你已被该用户拉黑，暂时无法进行此操作。");
+  if (known === "friend_block_active") return new FriendGroupError(409, known, "你已拉黑该用户，请先解除拉黑。");
   if (known === "member_not_available") return new FriendGroupError(422, known, "One or more accounts cannot be invited.");
   if (known === "idempotency_conflict") return new FriendGroupError(409, known, "The request identifier was already used for different content.");
   if (known === "forbidden") return new FriendGroupError(403, known, "This action requires an administrator account.");
@@ -88,6 +91,18 @@ Deno.serve(async (request) => {
     } else if (action === "remove_friend") {
       const result = await userClient.rpc("yucang_remove_friend", { p_friend_user_id: uuid(base.friendUserId, "invalid_friend_user_id") });
       data = { removed: result.data }; error = result.error;
+    } else if (action === "block_friend") {
+      const result = await userClient.rpc("yucang_block_friend", {
+        p_blocked_user_id: uuid(base.friendUserId, "invalid_friend_user_id"),
+        p_request_id: requestId,
+      });
+      data = { blocked: result.data }; error = result.error;
+    } else if (action === "unblock_friend") {
+      const result = await userClient.rpc("yucang_unblock_friend", { p_blocked_user_id: uuid(base.friendUserId, "invalid_friend_user_id") });
+      data = { unblocked: result.data }; error = result.error;
+    } else if (action === "list_blocked") {
+      const result = await userClient.rpc("yucang_list_my_blocked_accounts");
+      data = result.data; error = result.error;
     } else if (action === "list_friends") {
       const result = await userClient.rpc("yucang_list_my_friendships"); data = result.data; error = result.error;
     } else if (action === "create_group") {
@@ -144,11 +159,19 @@ Deno.serve(async (request) => {
       const result = await userClient.rpc(rpc, { p_limit: limit }); data = result.data; error = result.error;
     } else if (action === "share_prompt") {
       const share = exactObject(base.share, ["targetKind", "targetId", "title", "prompt", "project", "category", "contentType", "tags", "variables", "model", "modelVersion", "parameters", "license", "negativePrompt", "usageInstruction", "sourceItemId", "image", "examples", "references"]);
+      const targetKind = requiredString(share.targetKind, "invalid_share_target", 10);
+      const targetId = uuid(share.targetId, "invalid_target_id");
+      if (targetKind === "friend") {
+        const blockState = await userClient.rpc("yucang_friend_block_state", { p_other_user_id: targetId });
+        if (blockState.error) throw dbError(blockState.error);
+        if (blockState.data === "blocked_by_them") throw new FriendGroupError(403, "friend_blocked_by_target", "你已被该用户拉黑，暂时无法进行此操作。");
+        if (blockState.data === "blocked_by_me") throw new FriendGroupError(409, "friend_block_active", "你已拉黑该用户，请先解除拉黑。");
+      }
       const media = shareMedia(share);
       const result = await userClient.rpc("yucang_share_prompt", {
         p_request_id: requestId,
-        p_target_kind: requiredString(share.targetKind, "invalid_share_target", 10),
-        p_target_id: uuid(share.targetId, "invalid_target_id"),
+        p_target_kind: targetKind,
+        p_target_id: targetId,
         p_title: requiredString(share.title, "invalid_title", 200),
         p_prompt_text: requiredString(share.prompt, "invalid_prompt", 100000),
         p_project: typeof share.project === "string" ? share.project : "",

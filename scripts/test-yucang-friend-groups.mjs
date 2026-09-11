@@ -9,6 +9,7 @@ const sentMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260
 const feedbackInboxMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000300_yucang_feedback_owner_inbox.sql"), "utf8");
 const addMembersMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000600_yucang_group_add_members.sql"), "utf8");
 const shareMediaMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260828000900_yucang_prompt_share_media.sql"), "utf8");
+const blockMigration = fs.readFileSync(path.join(root, "supabase/migrations/20260911000100_yucang_friend_blocks.sql"), "utf8");
 const shared = fs.readFileSync(path.join(root, "supabase/functions/_shared/yucang-friend-groups.ts"), "utf8");
 const fn = fs.readFileSync(path.join(root, "supabase/functions/yucang-friend-groups/index.ts"), "utf8");
 
@@ -33,6 +34,11 @@ for (const origin of [
 assert.doesNotMatch(shared, /chrome-extension:\/\/\*/);
 assert.match(fn, /auth\.getUser\(token\)/);
 assert.match(fn, /action === "request_friend"/);
+assert.match(fn, /action === "remove_friend"/);
+assert.match(fn, /action === "block_friend"/);
+assert.match(fn, /action === "unblock_friend"/);
+assert.match(fn, /action === "list_blocked"/);
+assert.match(fn, /yucang_friend_block_state/);
 assert.match(fn, /action === "create_group"/);
 assert.match(fn, /action === "add_group_members" \|\| action === "invite_group_members"/);
 assert.match(fn, /base\.friendUserIds \?\? base\.friendAccountIds/);
@@ -109,5 +115,20 @@ assert.match(shareMediaMigration, /shared\.image, shared\.examples, shared\.refe
 assert.match(shareMediaMigration, /where auth\.uid\(\) is not null/);
 assert.match(shareMediaMigration, /where shared\.sender_id = caller/);
 assert.doesNotMatch(shareMediaMigration, /private_notebooks|chrome\.storage|cloud.?sync/i);
+
+assert.match(blockMigration, /create table if not exists public\.yucang_friend_blocks/);
+assert.match(blockMigration, /primary key \(blocker_id, blocked_id\)/);
+assert.match(blockMigration, /function public\.yucang_block_friend\(/);
+assert.match(blockMigration, /function public\.yucang_unblock_friend\(/);
+assert.match(blockMigration, /function public\.yucang_list_my_blocked_accounts\(/);
+assert.match(blockMigration, /function public\.yucang_friend_block_state\(/);
+assert.match(blockMigration, /friend_blocked_by_target/);
+assert.match(blockMigration, /friend_block_active/);
+assert.match(blockMigration, /message_type = 'friend_blocked'/);
+assert.match(blockMigration, /你已被.*拉黑/);
+assert.match(blockMigration, /extensions\.digest\(/);
+assert.match(blockMigration, /request\.status in \('pending', 'accepted'\)/);
+assert.match(blockMigration, /grant execute on function public\.yucang_block_friend\(uuid, uuid\) to authenticated/);
+assert.doesNotMatch(blockMigration, /private_notebooks|prompt_text|chrome\.storage|cloud.?sync/i);
 
 console.log("Yucang friend/group endpoint contract tests passed.");
